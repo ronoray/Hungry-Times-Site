@@ -1,0 +1,358 @@
+/* src/pages/Offers.css */
+
+.offers-container {
+  min-height: 100vh;
+  background: #0f0f12;
+  color: #ffffff;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.offers-container > * {
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.offers-header {
+  text-align: center;
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid rgba(212, 175, 55, 0.2);
+}
+
+.back-link {
+  display: inline-block;
+  color: #d4af37;
+  text-decoration: none;
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+  transition: color 0.3s ease;
+}
+
+.back-link:hover {
+  color: #e5c158;
+}
+
+.offers-container h1 {
+  font-size: 2.5rem;
+  color: #d4af37;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  color: #a0a0a0;
+}
+
+.section {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 16px;
+  padding: 30px;
+  margin-bottom: 25px;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  color: #d4af37;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.section-description {
+  color: #a0a0a0;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.offer-highlight {
+  background: rgba(212, 175, 55, 0.1);
+  border-left: 4px solid #d4af37;
+  padding: 20px;
+  margin-bottom: 25px;
+  border-radius: 8px;
+}
+
+.offer-highlight h3 {
+  color: #d4af37;
+  font-size: 1.3rem;
+  margin-bottom: 10px;
+}
+
+.offer-highlight p {
+  color: #ffffff;
+  line-height: 1.6;
+}
+
+.offer-highlight ul {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 15px;
+}
+
+.offer-highlight li {
+  padding: 8px 0;
+  color: #a0a0a0;
+  position: relative;
+  padding-left: 25px;
+}
+
+.offer-highlight li:before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: #d4af37;
+  font-weight: bold;
+}
+
+.input-group {
+  margin-bottom: 20px;
+}
+
+.input-group label {
+  display: block;
+  color: #d4af37;
+  margin-bottom: 8px;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: #d4af37;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.input-group input::placeholder {
+  color: #666;
+}
+
+.btn {
+  width: 100%;
+  padding: 16px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.btn-primary {
+  background: #d4af37;
+  color: #0f0f12;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #e5c158;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(212, 175, 55, 0.3);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.result-box {
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: 10px;
+  display: none;
+}
+
+.result-box.success {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+  display: block;
+}
+
+.result-box.error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  display: block;
+}
+
+.result-box.info {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+  display: block;
+}
+
+.code-display {
+  font-family: 'Courier New', monospace;
+  font-size: 1.8rem;
+  font-weight: bold;
+  text-align: center;
+  padding: 20px;
+  margin: 15px 0;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  letter-spacing: 2px;
+}
+
+.loading {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(212, 175, 55, 0.3);
+  border-radius: 50%;
+  border-top-color: #d4af37;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* How It Works Section */
+.how-it-works {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 15px;
+  background: rgba(212, 175, 55, 0.05);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.step:hover {
+  background: rgba(212, 175, 55, 0.1);
+}
+
+.step-number {
+  min-width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #d4af37;
+  color: #0f0f12;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.step-content h4 {
+  color: #d4af37;
+  margin: 0 0 5px 0;
+  font-size: 1.1rem;
+}
+
+.step-content p {
+  color: #a0a0a0;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Loyalty Section */
+.loyalty-section-container {
+  background: rgba(212, 175, 55, 0.05);
+  border: 2px dashed rgba(212, 175, 55, 0.3);
+}
+
+.loyalty-section {
+  text-align: center;
+  padding: 20px;
+}
+
+.loyalty-icon {
+  font-size: 3.5rem;
+  margin-bottom: 15px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+.loyalty-section h3 {
+  color: #d4af37;
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+}
+
+.loading-text {
+  display: inline-block;
+  padding: 12px 24px;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid #d4af37;
+  border-radius: 20px;
+  color: #d4af37;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.loading-text::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.2), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+  .offers-container h1 {
+    font-size: 2rem;
+  }
+
+  .section {
+    padding: 20px;
+  }
+
+  .code-display {
+    font-size: 1.4rem;
+  }
+
+  .step {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .step-number {
+    margin-bottom: 10px;
+  }
+}
