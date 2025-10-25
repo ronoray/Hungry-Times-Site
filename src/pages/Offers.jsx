@@ -2,9 +2,10 @@
 import React, { useState } from 'react';
 import './Offers.css';
 
-const API_BASE = 'https://ops.hungrytimes.in/api';
+const API_BASE = '/api';
 
 export default function Offers() {
+  const [customerPhone, setCustomerPhone] = useState('');
   const [verifyCode, setVerifyCode] = useState('');
   const [verifyResult, setVerifyResult] = useState({ show: false, type: '', message: '' });
   const [verifying, setVerifying] = useState(false);
@@ -13,9 +14,22 @@ export default function Offers() {
     e.preventDefault();
     
     const code = verifyCode.trim().toUpperCase();
+    const phone = customerPhone.trim();
     
     if (!code) {
-      setVerifyResult({ show: true, type: 'error', message: 'Please enter a code' });
+      setVerifyResult({ show: true, type: 'error', message: 'Please enter a referral code' });
+      return;
+    }
+
+    if (!phone) {
+      setVerifyResult({ show: true, type: 'error', message: 'Please enter your phone number' });
+      return;
+    }
+
+    // Basic phone validation (10 digits)
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (cleanPhone.length < 10) {
+      setVerifyResult({ show: true, type: 'error', message: 'Please enter a valid 10-digit phone number' });
       return;
     }
 
@@ -23,55 +37,152 @@ export default function Offers() {
     setVerifyResult({ show: false, type: '', message: '' });
 
     try {
-      const response = await fetch(`${API_BASE}/referral/verify?code=${encodeURIComponent(code)}`);
+      const response = await fetch(`${API_BASE}/referral/validate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code: code,
+          customerPhone: phone
+        })
+      });
+
       const data = await response.json();
 
-      if (response.ok) {
+      if (response.ok && data) {
         if (data.valid) {
-          let statusMessage = '';
+          // CODE IS VALID AND CAN BE USED
           let statusClass = 'success';
+          let displayMessage = '';
 
-          if (data.status === 'active') {
-            statusMessage = '✅ This code is valid and ready to use! Enjoy 15% OFF on your order.';
-          } else if (data.status === 'pending') {
-            statusMessage = '⏳ This code is pending activation.';
-            statusClass = 'info';
-          } else if (data.status === 'used') {
-            statusMessage = '✓ This code has already been used.';
-            statusClass = 'info';
+          // Different scenarios based on state
+          switch (data.state) {
+            case 'CODE_READY_FOR_OWNER':
+              displayMessage = `
+                <div style="text-align: center;">
+                  <div class="code-display">${code}</div>
+                  <p style="font-weight: bold; color: #10b981;">✅ ${data.title}</p>
+                  <p>${data.message}</p>
+                  <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.9;">${data.details}</p>
+                  <p style="margin-top: 10px; padding: 10px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; font-weight: 500;">
+                    💰 <strong>${data.discount_percent}% OFF</strong> on your order!
+                  </p>
+                  <p style="margin-top: 8px; font-size: 0.85em; color: #6b7280;">${data.action}</p>
+                </div>
+              `;
+              break;
+
+            case 'CODE_READY_FOR_NEW_CUSTOMER':
+              displayMessage = `
+                <div style="text-align: center;">
+                  <div class="code-display">${code}</div>
+                  <p style="font-weight: bold; color: #10b981;">✅ ${data.title}</p>
+                  <p>${data.message}</p>
+                  <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.9;">${data.details}</p>
+                  <p style="margin-top: 10px; padding: 10px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; font-weight: 500;">
+                    💰 <strong>${data.discount_percent}% OFF</strong> on your first order!
+                  </p>
+                  <p style="margin-top: 8px; font-size: 0.85em; color: #6b7280;">${data.action}</p>
+                </div>
+              `;
+              break;
+
+            default:
+              displayMessage = `
+                <div style="text-align: center;">
+                  <div class="code-display">${code}</div>
+                  <p style="font-weight: bold; color: #10b981;">✅ ${data.title}</p>
+                  <p>${data.message}</p>
+                  ${data.details ? `<p style="margin-top: 10px; opacity: 0.9;">${data.details}</p>` : ''}
+                  ${data.discount_percent ? `<p style="margin-top: 10px; padding: 10px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; font-weight: 500;">💰 <strong>${data.discount_percent}% OFF</strong></p>` : ''}
+                </div>
+              `;
           }
 
           setVerifyResult({
             show: true,
             type: statusClass,
-            message: `
-              <div style="text-align: center;">
-                <div class="code-display">${code}</div>
-                <p>${statusMessage}</p>
-                ${data.message ? `<p style="margin-top: 10px; opacity: 0.9;">${data.message}</p>` : ''}
-              </div>
-            `
+            message: displayMessage
           });
         } else {
-          let errorMessage = '❌ This code is not valid.';
-          
-          if (data.status === 'expired') {
-            errorMessage = '⏰ This code has expired.';
-          } else if (data.message) {
-            errorMessage = data.message;
+          // CODE IS NOT VALID
+          let errorClass = 'error';
+          let errorMessage = '';
+
+          switch (data.state) {
+            case 'CODE_PENDING_ACTIVATION':
+              errorClass = 'info';
+              errorMessage = `
+                <div style="text-align: center;">
+                  <div class="code-display">${code}</div>
+                  <p style="font-weight: bold; color: #f59e0b;">⏳ ${data.title}</p>
+                  <p>${data.message}</p>
+                  <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.9;">${data.details}</p>
+                  <p style="margin-top: 10px; padding: 10px; background: rgba(245, 158, 11, 0.1); border-radius: 8px; font-size: 0.9em;">
+                    ${data.action}
+                  </p>
+                </div>
+              `;
+              break;
+
+            case 'CODE_EXPIRED':
+              errorMessage = `
+                <div style="text-align: center;">
+                  <div class="code-display">${code}</div>
+                  <p style="font-weight: bold; color: #ef4444;">⏰ ${data.title}</p>
+                  <p>${data.message}</p>
+                  <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.9;">${data.details}</p>
+                  <p style="margin-top: 8px; font-size: 0.85em; color: #6b7280;">${data.action}</p>
+                </div>
+              `;
+              break;
+
+            case 'CODE_ALREADY_USED':
+              errorMessage = `
+                <div style="text-align: center;">
+                  <div class="code-display">${code}</div>
+                  <p style="font-weight: bold; color: #6b7280;">✓ ${data.title}</p>
+                  <p>${data.message}</p>
+                  <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.9;">${data.details}</p>
+                </div>
+              `;
+              break;
+
+            case 'CODE_NOT_FOUND':
+              errorMessage = `
+                <div style="text-align: center;">
+                  <div class="code-display">${code}</div>
+                  <p style="font-weight: bold; color: #ef4444;">❌ ${data.title}</p>
+                  <p>${data.message}</p>
+                  <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.9;">${data.details}</p>
+                  <p style="margin-top: 8px; font-size: 0.85em; color: #6b7280;">${data.action}</p>
+                </div>
+              `;
+              break;
+
+            default:
+              errorMessage = `
+                <div style="text-align: center;">
+                  <div class="code-display">${code}</div>
+                  <p style="font-weight: bold; color: #ef4444;">❌ ${data.title || 'Code Not Valid'}</p>
+                  <p>${data.message || 'This code cannot be used.'}</p>
+                  ${data.details ? `<p style="margin-top: 10px; opacity: 0.9;">${data.details}</p>` : ''}
+                </div>
+              `;
           }
 
           setVerifyResult({
             show: true,
-            type: 'error',
-            message: `<div style="text-align: center;"><p>${errorMessage}</p></div>`
+            type: errorClass,
+            message: errorMessage
           });
         }
       } else {
         setVerifyResult({ 
           show: true, 
           type: 'error', 
-          message: data.error || data.message || 'Failed to verify code.' 
+          message: data.message || data.error || 'Failed to verify code.' 
         });
       }
     } catch (error) {
@@ -79,7 +190,7 @@ export default function Offers() {
       setVerifyResult({ 
         show: true, 
         type: 'error', 
-        message: 'Network error. Please check your connection and try again.' 
+        message: 'Unable to connect to server. Please check your connection and try again.' 
       });
     } finally {
       setVerifying(false);
@@ -91,19 +202,21 @@ export default function Offers() {
       {/* Header */}
       <div className="offers-header">
         <a href="/" className="back-link">← Back to Home</a>
-        <h1>🎉 Special Offers</h1>
-        <p className="subtitle">Get 15% OFF on your orders</p>
+        <h1>🎉 Referral Program</h1>
+        <p className="subtitle">Share & Earn 15% OFF Together!</p>
       </div>
 
       {/* Offer Description */}
       <div className="offer-highlight">
-        <h3>15% Discount Offer</h3>
-        <p>We're running an exclusive referral program! If you have a referral code, verify it below to enjoy amazing savings:</p>
+        <h3>How Our Referral Program Works</h3>
+        <p>Our referral program is designed to reward both you and your friends! Here's how it works:</p>
         <ul>
-          <li>Enter your unique referral code</li>
-          <li>Get 15% OFF on your order</li>
-          <li>Valid codes are active for 30 days</li>
-          <li>One-time use per code</li>
+          <li><strong>Get Your Code:</strong> Receive a unique referral code from Hungry Times</li>
+          <li><strong>Share with Friends:</strong> Give your code to someone who hasn't ordered from us before</li>
+          <li><strong>They Save 15%:</strong> Your friend gets 15% OFF on their first order using your code</li>
+          <li><strong>You Save 15%:</strong> After they use your code, it activates for YOU to get 15% OFF too!</li>
+          <li><strong>90-Day Validity:</strong> Codes are valid for 90 days from generation</li>
+          <li><strong>One-Time Use:</strong> Each code can be used twice total (once by friend, once by you)</li>
         </ul>
       </div>
 
@@ -111,10 +224,22 @@ export default function Offers() {
       <div className="section">
         <h2 className="section-title">Verify Your Referral Code</h2>
         <p className="section-description">
-          Have a referral code? Enter it below to check if it's valid and ready to use for your discount!
+          Have a referral code? Enter your phone number and the code below to check if it's valid and ready to use!
         </p>
 
         <form onSubmit={handleVerify}>
+          <div className="input-group">
+            <label htmlFor="customerPhone">Your Phone Number</label>
+            <input
+              type="tel"
+              id="customerPhone"
+              placeholder="Enter your 10-digit phone number"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              required
+            />
+          </div>
+
           <div className="input-group">
             <label htmlFor="verifyCode">Referral Code</label>
             <input
@@ -139,42 +264,106 @@ export default function Offers() {
 
       {/* How It Works Section */}
       <div className="section">
-        <h2 className="section-title">How It Works</h2>
+        <h2 className="section-title">Step-by-Step Guide</h2>
         <div className="how-it-works">
           <div className="step">
             <div className="step-number">1</div>
             <div className="step-content">
-              <h4>Get Your Code</h4>
-              <p>Receive a unique referral code from Hungry Times</p>
+              <h4>Receive Your Code</h4>
+              <p>Get a unique referral code from Hungry Times when you're selected for the program</p>
             </div>
           </div>
           <div className="step">
             <div className="step-number">2</div>
             <div className="step-content">
-              <h4>Verify Code</h4>
-              <p>Use the form above to verify your code is valid</p>
+              <h4>Share with New Customer</h4>
+              <p>Give your code to a friend who hasn't ordered from us before</p>
             </div>
           </div>
           <div className="step">
             <div className="step-number">3</div>
             <div className="step-content">
-              <h4>Place Order</h4>
-              <p>Apply your code at checkout and enjoy 15% OFF!</p>
+              <h4>Friend Gets 15% OFF</h4>
+              <p>Your friend uses the code on their first order and receives 15% discount</p>
             </div>
+          </div>
+          <div className="step">
+            <div className="step-number">4</div>
+            <div className="step-content">
+              <h4>Your Code Activates</h4>
+              <p>Once your friend uses the code, it becomes active for you to redeem</p>
+            </div>
+          </div>
+          <div className="step">
+            <div className="step-number">5</div>
+            <div className="step-content">
+              <h4>You Get 15% OFF</h4>
+              <p>Use your now-active code on your next order and enjoy 15% discount!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Code States Explained */}
+      <div className="section">
+        <h2 className="section-title">Understanding Code Status</h2>
+        <div className="status-guide">
+          <div className="status-item">
+            <span className="status-badge pending">Pending</span>
+            <p>Code is waiting to be used by a new customer first. Share it with a friend!</p>
+          </div>
+          <div className="status-item">
+            <span className="status-badge active">Active</span>
+            <p>Code has been activated by a new customer. The owner can now use it for their discount!</p>
+          </div>
+          <div className="status-item">
+            <span className="status-badge used">Used</span>
+            <p>Code has completed its lifecycle. Both the friend and owner have received their discounts.</p>
+          </div>
+          <div className="status-item">
+            <span className="status-badge expired">Expired</span>
+            <p>Code validity period (90 days) has ended. Request a new code to participate again.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* FAQ Section */}
+      <div className="section">
+        <h2 className="section-title">Frequently Asked Questions</h2>
+        <div className="faq-list">
+          <div className="faq-item">
+            <h4>Can I use my own code immediately?</h4>
+            <p>No, your code must first be used by a NEW customer (someone who hasn't ordered from us before). After they use it and get 15% off, your code becomes active for you to use.</p>
+          </div>
+          <div className="faq-item">
+            <h4>What happens when someone uses my code?</h4>
+            <p>When a new customer uses your code, they get 15% OFF on their order, and your code status changes from "Pending" to "Active". You can then use it for your own 15% discount!</p>
+          </div>
+          <div className="faq-item">
+            <h4>Can I share my code with multiple people?</h4>
+            <p>You can share your code with as many people as you want, but only the FIRST new customer who uses it will activate it. After that, you can redeem your discount.</p>
+          </div>
+          <div className="faq-item">
+            <h4>How long is my code valid?</h4>
+            <p>Referral codes are valid for 90 days from the date they are generated. Make sure to share and use them within this timeframe!</p>
+          </div>
+          <div className="faq-item">
+            <h4>Can I get multiple codes?</h4>
+            <p>Codes are issued by Hungry Times to selected customers. Contact us to inquire about receiving additional referral codes.</p>
           </div>
         </div>
       </div>
 
       {/* Loyalty Programs Section */}
       <div className="section loyalty-section-container">
-        <h2 className="section-title">Loyalty Program</h2>
+        <h2 className="section-title">More Rewards Coming Soon</h2>
         <div className="loyalty-section">
           <div className="loyalty-icon">🎁</div>
-          <h3>Coming Soon!</h3>
+          <h3>Loyalty Program in Development</h3>
           <p className="section-description">
-            Exciting loyalty rewards are on their way! Stay tuned for exclusive benefits, points, and special perks for our valued customers.
+            We're working on additional loyalty rewards and exclusive benefits for our valued customers. Stay tuned for points, special perks, and more ways to save!
           </p>
-          <div className="loading-text">Loyalty Program Loading...</div>
+          <div className="loading-text">Coming Soon...</div>
         </div>
       </div>
     </div>
