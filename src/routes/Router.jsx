@@ -1,27 +1,31 @@
-import { Routes, Route } from 'react-router-dom'
-import Home from '../pages/Home'
-import Menu from '../pages/Menu'
-import Order from '../pages/Order'
-import Gallery from '../pages/Gallery'
-import Testimonials from '../pages/Testimonials'
-import Contact from '../pages/Contact'
-import Feedback from '../pages/Feedback'
-import Reservation from '../pages/Reservation'
-import Careers from '../pages/Careers'
+// src/routes/Router.jsx
+// SIMPLE SETUP - Only 3 routes needed for your under construction site
 
+import { Routes, Route, Navigate } from 'react-router-dom'
+import UnderConstruction from '../pages/UnderConstruction'
+import Offers from '../pages/Offers'
 
 export default function Router() {
-return (
-<Routes>
-<Route path="/" element={<Home />} />
-<Route path="/menu" element={<Menu />} />
-<Route path="/order" element={<Order />} />
-<Route path="/gallery" element={<Gallery />} />
-<Route path="/testimonials" element={<Testimonials />} />
-<Route path="/contact" element={<Contact />} />
-<Route path="/feedback" element={<Feedback />} />
-<Route path="/reservation" element={<Reservation />} />
-<Route path="/careers" element={<Careers />} />
-</Routes>
-)
+  return (
+    <Routes>
+      {/* Main under construction page */}
+      <Route path="/" element={<UnderConstruction />} />
+      
+      {/* Offers page - verify 15% codes */}
+      <Route path="/offers" element={<Offers />} />
+      
+      {/* Public Testimonials - proxy to ops.hungrytimes.in */}
+      {/* This will be handled by nginx proxy, no React route needed */}
+      {/* But if someone directly navigates here, redirect to home */}
+      <Route path="/public-testimonials" element={<Navigate to="/" replace />} />
+      
+      {/* Public Feedback - proxy to ops.hungrytimes.in */}
+      {/* This will be handled by nginx proxy, no React route needed */}
+      {/* But if someone directly navigates here, redirect to home */}
+      <Route path="/public-feedback" element={<Navigate to="/" replace />} />
+      
+      {/* Catch all - redirect to under construction */}
+      <Route path="*" element={<UnderConstruction />} />
+    </Routes>
+  )
 }

@@ -1,0 +1,165 @@
+/* src/pages/UnderConstruction.css */
+/* Dark theme styling for Under Construction page */
+
+.uc-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: #0f0f12;
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.uc-content {
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+}
+
+.uc-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 30px;
+  opacity: 0.9;
+}
+
+.uc-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.uc-container h1 {
+  font-size: 2.5rem;
+  color: #d4af37;
+  margin-bottom: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.uc-container h2 {
+  font-size: 1.5rem;
+  color: #ffffff;
+  margin-bottom: 30px;
+  font-weight: 600;
+}
+
+.description {
+  font-size: 1rem;
+  color: #a0a0a0;
+  line-height: 1.6;
+  margin-bottom: 40px;
+}
+
+.buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 40px;
+}
+
+.btn {
+  display: inline-block;
+  padding: 16px 32px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-primary {
+  background: #d4af37;
+  color: #0f0f12;
+}
+
+.btn-primary:hover {
+  background: #e5c158;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(212, 175, 55, 0.3);
+}
+
+.btn-secondary {
+  background: rgba(212, 175, 55, 0.1);
+  color: #d4af37;
+  border: 2px solid #d4af37;
+}
+
+.btn-secondary:hover {
+  background: rgba(212, 175, 55, 0.2);
+  transform: translateY(-2px);
+}
+
+.feedback-link {
+  margin-top: 30px;
+}
+
+.feedback-link a {
+  color: #a0a0a0;
+  text-decoration: none;
+  font-size: 0.95rem;
+  border-bottom: 1px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.feedback-link a:hover {
+  color: #d4af37;
+  border-bottom-color: #d4af37;
+}
+
+.contact {
+  margin-top: 40px;
+  padding-top: 30px;
+  border-top: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.contact-title {
+  font-size: 1.1rem;
+  color: #d4af37;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.95rem;
+  color: #a0a0a0;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.contact-item a {
+  color: #d4af37;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.contact-item a:hover {
+  color: #e5c158;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+  .uc-container h1 {
+    font-size: 2rem;
+  }
+
+  .uc-container h2 {
+    font-size: 1.25rem;
+  }
+
+  .btn {
+    padding: 14px 28px;
+    font-size: 1rem;
+  }
+}
