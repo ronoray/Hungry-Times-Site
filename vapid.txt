@@ -1,0 +1,5 @@
+PS C:\Hungry-Times-Webapp\server> node -e "const wp=require('web-push');const v=wp.generateVAPIDKeys();console.log(v)"
+{
+  publicKey: 'BAZhB_ZfX1pQbQsT_lDFkn4doQFqxyW9I-EkgW4br0XBuuS_xe4EjyBwwiapAH-cwB7ZGiLm0390sYGoWLYi47M',
+  privateKey: 'po8FJCew9Fu1uQAcT0HsviVUbiO5TcJH-dAc394eXVg'
+}
