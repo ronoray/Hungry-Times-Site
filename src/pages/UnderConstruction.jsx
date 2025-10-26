@@ -3,6 +3,19 @@ import React from 'react';
 import './UnderConstruction.css';
 
 export default function UnderConstruction() {
+  // In dev, go straight to OPS (assets load correctly).
+  // In prod, use mirror paths so Traefik/NGINX handle it.
+  const isDev = import.meta.env.DEV;
+  const link = (path) => (isDev ? `https://ops.hungrytimes.in${path}` : path);
+
+  // Force a server navigation only in PROD (so mirrors kick in)
+  const hardNav = (e) => {
+    if (!isDev) {
+      e.preventDefault();
+      window.location.assign(e.currentTarget.href);
+    }
+  };
+
   return (
     <div className="uc-container">
       <div className="uc-content">
@@ -28,10 +41,10 @@ export default function UnderConstruction() {
 
         {/* Three Buttons */}
         <div className="buttons">
-          <a href="/public-testimonials" className="btn btn-primary">
+          <a href={link("/public-testimonials")} className="btn btn-primary" onClick={hardNav}>
             ⭐ Public Testimonials
           </a>
-          <a href="/public-feedback" className="btn btn-secondary">
+          <a href={link("/public-feedback")} className="btn btn-secondary" onClick={hardNav}>
             📝 Submit Feedback
           </a>
           <a href="/offers" className="btn btn-secondary">
