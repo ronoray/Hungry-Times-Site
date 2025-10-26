@@ -2,8 +2,18 @@
 <browserconfig>
   <msapplication>
     <tile>
-      <square150x150logo src="/icon-192.png"/>
-      <TileColor>#D32F2F</TileColor>
+      <!-- Windows Tile Icons -->
+      <square70x70logo src="/icon-128.png"/>
+      <square150x150logo src="/icon-256.png"/>
+      <wide310x150logo src="/icon-384.png"/>
+      <square310x310logo src="/icon-512.png"/>
+      <!-- Background color for pinned tiles -->
+      <TileColor>#0B0B0B</TileColor>
     </tile>
+    <notification>
+      <polling-uri src="/notifications/"/>
+      <frequency>30</frequency>
+      <cycle>1</cycle>
+    </notification>
   </msapplication>
 </browserconfig>
