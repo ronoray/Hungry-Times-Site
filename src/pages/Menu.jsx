@@ -18,7 +18,7 @@ export default function Menu() {
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch("/api/public/menu", { 
+        const res = await fetch("https://hungrytimes.in/api/public/menu", { 
           headers: { "Cache-Control": "no-cache" }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
