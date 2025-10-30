@@ -163,3 +163,45 @@
     font-size: 1rem;
   }
 }
+
+/* --- Left tabs layout for UC page --- */
+.uc-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 24px;
+  align-items: start;
+  margin-top: 20px;
+}
+
+.uc-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tab {
+  display: block;
+  padding: 10px 12px;
+  border: 1px solid #3a3a3a;
+  border-radius: 10px;
+  background: #121212;
+  color: #eee;
+  text-decoration: none;
+}
+
+.tab:hover {
+  border-color: #d4af37;
+  color: #fff;
+}
+
+.uc-panel {
+  border: 1px solid #3a3a3a;
+  border-radius: 14px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.order-note {
+  font-size: 0.95rem;
+  margin-bottom: 10px;
+}
