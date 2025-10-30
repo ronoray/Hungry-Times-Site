@@ -7,6 +7,13 @@ export default defineConfig({
     host: true,
     port: 5174,
     proxy: {
+      // ✅ ADD THIS - Proxy all /api requests to your Express backend
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false
+      },
+      // Keep your existing proxies
       '/public-testimonials': {
         target: 'https://ops.hungrytimes.in',
         changeOrigin: true,
@@ -21,6 +28,6 @@ export default defineConfig({
   },
   preview: {
     host: true,
-    port: 4174    // preview build on 4174
+    port: 4174
   }
 })

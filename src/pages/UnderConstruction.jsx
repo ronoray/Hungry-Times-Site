@@ -39,17 +39,23 @@ export default function UnderConstruction() {
           In the meantime, check out what we have available!
         </p>
 
-        {/* Three Buttons */}
-        <div className="buttons">
-          <a href={link("/public-testimonials")} className="btn btn-primary" onClick={hardNav}>
-            ⭐ Public Testimonials
-          </a>
-          <a href={link("/public-feedback")} className="btn btn-secondary" onClick={hardNav}>
-            📝 Submit Feedback
-          </a>
-          <a href="/offers" className="btn btn-secondary">
-            🎉 Offers - 15% OFF
-          </a>
+        {/* Left Tabs + Content Intro */}
+        <div className="uc-layout">
+          <nav className="uc-tabs">
+            <a href="/menu" className="tab">🍽️ Menu</a>
+            <a href="/offers" className="tab">🎉 Offers</a>
+            <a href={link("/public-testimonials")} className="tab" onClick={hardNav}>⭐ Public Testimonials</a>
+            <a href={link("/public-feedback")} className="tab" onClick={hardNav}>📝 Submit Feedback</a>
+          </nav>
+          <div className="uc-panel">
+            <p className="order-note">
+              We are a running restaurant—only the website is under construction.
+              For orders, please <strong>call or WhatsApp <a href="tel:+918420822919">8420822919</a></strong>.
+            </p>
+            <p className="description">
+              Explore our menu and current offers from the tabs on the left.
+            </p>
+          </div>
         </div>
 
         {/* Contact Info */}
