@@ -10,6 +10,7 @@ export default function Menu() {
 
   const [activeTop, setActiveTop] = useState(null);
   const [activeSub, setActiveSub] = useState(null);
+  const [expandedItems, setExpandedItems] = useState(new Set());
 
   const rightPaneRef = useRef(null);
 
@@ -25,7 +26,6 @@ export default function Menu() {
         const json = await res.json();
         if (!alive) return;
         setData(json);
-        // default selections
         const t0 = json?.topCategories?.[0]?.id ?? null;
         const s0 = json?.topCategories?.[0]?.subcategories?.[0]?.id ?? null;
         setActiveTop(t0);
@@ -58,6 +58,18 @@ export default function Menu() {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  const toggleExpand = (itemId) => {
+    setExpandedItems(prev => {
+      const next = new Set(prev);
+      if (next.has(itemId)) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      return next;
+    });
+  };
+
   if (loading) {
     return (
       <div className="menu-loading">
@@ -85,7 +97,7 @@ export default function Menu() {
 
   return (
     <div className="menu-page">
-      {/* Hero Section with 2 Images */}
+      {/* Hero Section with 2 Images - NO TRANSPARENCY OVERLAY */}
       <div className="menu-hero">
         <div className="hero-grid">
           <div className="hero-image-wrapper">
@@ -95,7 +107,7 @@ export default function Menu() {
               className="hero-image"
               loading="eager"
             />
-            <div className="hero-overlay">
+            <div className="hero-content-overlay">
               <h1 className="hero-title">Our Menu</h1>
               <p className="hero-subtitle">Crafted with passion, served with love</p>
             </div>
@@ -107,7 +119,7 @@ export default function Menu() {
               className="hero-image"
               loading="eager"
             />
-            <div className="hero-overlay">
+            <div className="hero-content-overlay">
               <div className="hero-cta">
                 <p className="cta-text">Ready to order?</p>
                 <a href="tel:+918420822919" className="cta-button">
@@ -129,78 +141,94 @@ export default function Menu() {
 
       {/* Menu Content Container */}
       <div className="menu-container">
-        {/* Top Categories Navigation */}
-        <nav className="category-nav">
-          <div className="category-nav-scroll">
-            {tops.map(tc => (
-              <button
-                key={tc.id}
-                className={`category-tab ${tc.id === activeTop ? 'active' : ''}`}
-                onClick={() => { 
-                  setActiveTop(tc.id); 
-                  setActiveSub((tc.subcategories?.[0]?.id) ?? null); 
-                }}
-              >
-                {tc.name}
-              </button>
-            ))}
-          </div>
-        </nav>
-
-        {/* Main Menu Grid */}
-        <div className="menu-grid">
-          {/* Sidebar: Subcategories */}
-          <aside className="menu-sidebar">
-            <div className="sidebar-sticky">
-              <h3 className="sidebar-title">Categories</h3>
-              {subs.length === 0 ? (
-                <div className="sidebar-empty">No subcategories</div>
-              ) : (
-                <div className="subcategory-list">
-                  {subs.map(sc => (
-                    <button
-                      key={sc.id}
-                      className={`subcategory-tab ${sc.id === activeSub ? 'active' : ''}`}
-                      onClick={() => scrollToSub(sc.id)}
-                    >
-                      <span className="subcategory-dot"></span>
-                      {sc.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+        {/* Main Layout: Sidebar + Content */}
+        <div className="menu-layout">
+          {/* Left Sidebar: Top Categories */}
+          <aside className="top-categories-sidebar">
+            <h3 className="sidebar-heading">Categories</h3>
+            <nav className="top-category-list">
+              {tops.map(tc => (
+                <button
+                  key={tc.id}
+                  className={`top-category-btn ${tc.id === activeTop ? 'active' : ''}`}
+                  onClick={() => { 
+                    setActiveTop(tc.id); 
+                    setActiveSub((tc.subcategories?.[0]?.id) ?? null); 
+                  }}
+                >
+                  {tc.name}
+                </button>
+              ))}
+            </nav>
           </aside>
 
-          {/* Main Content: Menu Items */}
-          <section className="menu-content" ref={rightPaneRef}>
-            {subs.map(sc => (
-              <div key={sc.id} data-sub={sc.id} className="menu-section">
-                <h2 className="section-title">{sc.name}</h2>
-                <div className="items-grid">
-                  {(itemsBySub.get(sc.id) || []).map(it => (
-                    <article key={it.id} className="menu-item-card">
-                      <div className="item-header">
-                        <h3 className="item-name">{it.name}</h3>
-                        <span className="item-price">
-                          ₹{Number(it.basePrice || 0).toFixed(0)}
-                        </span>
-                      </div>
-                      
-                      {it.description && (
-                        <p className="item-description">
-                          {String(it.description).slice(0, DESC_MAX)}
-                        </p>
-                      )}
-
-                      {renderVariants(it)}
-                      {renderAddons(it)}
-                    </article>
-                  ))}
-                </div>
+          {/* Main Content Area */}
+          <div className="menu-main">
+            {/* Top Bar: Subcategories */}
+            <nav className="subcategory-bar">
+              <div className="subcategory-scroll">
+                {subs.map(sc => (
+                  <button
+                    key={sc.id}
+                    className={`subcategory-btn ${sc.id === activeSub ? 'active' : ''}`}
+                    onClick={() => scrollToSub(sc.id)}
+                  >
+                    {sc.name}
+                  </button>
+                ))}
               </div>
-            ))}
-          </section>
+            </nav>
+
+            {/* Menu Items */}
+            <section className="menu-content" ref={rightPaneRef}>
+              {subs.map(sc => (
+                <div key={sc.id} data-sub={sc.id} className="menu-section">
+                  <h2 className="section-title">{sc.name}</h2>
+                  <div className="items-grid">
+                    {(itemsBySub.get(sc.id) || []).map(it => {
+                      const hasVariants = hasVariantsOrAddons(it, 'variant');
+                      const hasAddons = hasVariantsOrAddons(it, 'addon');
+                      const isExpanded = expandedItems.has(it.id);
+                      const showExpandBtn = hasVariants || hasAddons;
+
+                      return (
+                        <article key={it.id} className="menu-item-card">
+                          <div className="item-header">
+                            <h3 className="item-name">{it.name}</h3>
+                            <span className="item-price">
+                              ₹{Number(it.basePrice || 0).toFixed(0)}
+                            </span>
+                          </div>
+                          
+                          {it.description && (
+                            <p className="item-description">
+                              {String(it.description).slice(0, DESC_MAX)}
+                            </p>
+                          )}
+
+                          {showExpandBtn && (
+                            <button
+                              className="expand-btn"
+                              onClick={() => toggleExpand(it.id)}
+                            >
+                              {isExpanded ? '− Hide Options' : '+ View Options'}
+                            </button>
+                          )}
+
+                          {isExpanded && (
+                            <div className="options-container">
+                              {renderVariants(it)}
+                              {renderAddons(it)}
+                            </div>
+                          )}
+                        </article>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </section>
+          </div>
         </div>
       </div>
 
@@ -223,6 +251,12 @@ export default function Menu() {
           --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
           --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
           --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
         }
 
         /* === LOADING & ERROR STATES === */
@@ -259,7 +293,7 @@ export default function Menu() {
           color: var(--color-text);
         }
 
-        /* === HERO SECTION === */
+        /* === HERO SECTION - REMOVED TRANSPARENCY === */
         .menu-hero {
           position: relative;
           width: 100%;
@@ -283,238 +317,210 @@ export default function Menu() {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          transition: transform 0.6s ease;
+          display: block;
         }
 
-        .hero-image-wrapper:hover .hero-image {
-          transform: scale(1.05);
-        }
-
-        .hero-overlay {
+        /* Content overlay without background transparency */
+        .hero-content-overlay {
           position: absolute;
           inset: 0;
-          background: linear-gradient(
-            to bottom,
-            rgba(0, 0, 0, 0.3) 0%,
-            rgba(0, 0, 0, 0.7) 100%
-          );
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
           padding: 2rem;
+          z-index: 2;
         }
 
         .hero-title {
-          font-size: clamp(2.5rem, 5vw, 4rem);
+          font-size: clamp(2rem, 5vw, 3.5rem);
           font-weight: 800;
-          margin: 0 0 0.5rem 0;
-          color: var(--color-text);
-          text-shadow: 0 4px 16px rgba(0, 0, 0, 0.8);
-          letter-spacing: -0.02em;
+          color: #ffffff;
+          margin-bottom: 0.5rem;
+          text-shadow: 0 2px 20px rgba(0, 0, 0, 0.8);
         }
 
         .hero-subtitle {
-          font-size: clamp(1rem, 2vw, 1.25rem);
-          color: var(--color-text-dim);
-          text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
-          margin: 0;
+          font-size: clamp(0.9rem, 2vw, 1.25rem);
+          color: rgba(255, 255, 255, 0.95);
+          text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
         }
 
         .hero-cta {
           display: flex;
           flex-direction: column;
-          gap: 0.75rem;
           align-items: center;
+          gap: 1rem;
         }
 
         .cta-text {
-          font-size: 1.25rem;
+          font-size: clamp(1rem, 2vw, 1.5rem);
           font-weight: 600;
-          margin: 0 0 0.5rem 0;
-          color: var(--color-text);
-          text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+          color: #ffffff;
+          margin-bottom: 0.5rem;
+          text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
         }
 
         .cta-button {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.875rem 1.5rem;
-          background: var(--color-accent);
-          color: #000;
-          font-weight: 600;
+          display: inline-block;
+          padding: 0.875rem 2rem;
+          background: linear-gradient(135deg, var(--color-accent) 0%, #d97706 100%);
+          color: #ffffff;
           text-decoration: none;
-          border-radius: var(--radius-md);
-          box-shadow: var(--shadow-md);
+          border-radius: 50px;
+          font-weight: 700;
+          font-size: 1rem;
           transition: all 0.3s ease;
+          box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
         }
 
         .cta-button:hover {
-          background: #fbbf24;
           transform: translateY(-2px);
-          box-shadow: var(--shadow-lg);
+          box-shadow: 0 6px 20px rgba(245, 158, 11, 0.6);
         }
 
         .cta-button-whatsapp {
-          background: #25d366;
-          color: #fff;
+          background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+          box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
         }
 
         .cta-button-whatsapp:hover {
-          background: #20ba5a;
+          box-shadow: 0 6px 20px rgba(37, 211, 102, 0.6);
         }
 
         /* === MENU CONTAINER === */
         .menu-container {
-          max-width: 1400px;
+          max-width: 1600px;
           margin: 0 auto;
           padding: 2rem 1rem;
         }
 
-        /* === CATEGORY NAVIGATION === */
-        .category-nav {
-          margin-bottom: 2rem;
+        /* === LAYOUT: SIDEBAR + MAIN === */
+        .menu-layout {
+          display: grid;
+          grid-template-columns: 250px 1fr;
+          gap: 2rem;
+          align-items: start;
+        }
+
+        /* === TOP CATEGORIES SIDEBAR === */
+        .top-categories-sidebar {
+          position: sticky;
+          top: 2rem;
+          background: var(--color-surface);
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius-md);
+          padding: 1.5rem;
+        }
+
+        .sidebar-heading {
+          font-size: 1.25rem;
+          font-weight: 700;
+          color: var(--color-accent);
+          margin-bottom: 1rem;
+          padding-bottom: 0.75rem;
+          border-bottom: 2px solid var(--color-border);
+        }
+
+        .top-category-list {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .top-category-btn {
+          display: block;
+          width: 100%;
+          padding: 0.875rem 1rem;
+          background: transparent;
+          border: 1px solid var(--color-border);
+          border-left: 3px solid transparent;
+          color: var(--color-text-dim);
+          text-align: left;
+          font-size: 1rem;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          border-radius: var(--radius-sm);
+          font-family: inherit;
+        }
+
+        .top-category-btn:hover {
+          background: var(--color-surface-hover);
+          color: var(--color-text);
+          border-left-color: var(--color-accent);
+        }
+
+        .top-category-btn.active {
+          background: var(--color-accent-dim);
+          color: var(--color-accent);
+          font-weight: 600;
+          border-left-color: var(--color-accent);
+        }
+
+        /* === MAIN CONTENT === */
+        .menu-main {
+          min-height: 600px;
+        }
+
+        /* === SUBCATEGORY BAR === */
+        .subcategory-bar {
           position: sticky;
           top: 0;
           background: var(--color-bg);
-          z-index: 100;
+          border-bottom: 2px solid var(--color-border);
+          margin-bottom: 2rem;
           padding: 1rem 0;
-          border-bottom: 1px solid var(--color-border);
+          z-index: 10;
         }
 
-        .category-nav-scroll {
+        .subcategory-scroll {
           display: flex;
           gap: 0.75rem;
           overflow-x: auto;
-          padding-bottom: 0.5rem;
           scrollbar-width: thin;
           scrollbar-color: var(--color-border) transparent;
+          padding-bottom: 0.5rem;
         }
 
-        .category-nav-scroll::-webkit-scrollbar {
+        .subcategory-scroll::-webkit-scrollbar {
           height: 6px;
         }
 
-        .category-nav-scroll::-webkit-scrollbar-track {
+        .subcategory-scroll::-webkit-scrollbar-track {
           background: transparent;
         }
 
-        .category-nav-scroll::-webkit-scrollbar-thumb {
+        .subcategory-scroll::-webkit-scrollbar-thumb {
           background: var(--color-border);
           border-radius: 3px;
         }
 
-        .category-tab {
+        .subcategory-btn {
           flex-shrink: 0;
-          padding: 0.75rem 1.5rem;
+          padding: 0.625rem 1.25rem;
           background: var(--color-surface);
           border: 1px solid var(--color-border);
-          border-radius: var(--radius-md);
           color: var(--color-text-dim);
-          font-weight: 500;
           font-size: 0.95rem;
+          font-weight: 500;
           cursor: pointer;
           transition: all 0.3s ease;
+          border-radius: 999px;
           white-space: nowrap;
+          font-family: inherit;
         }
 
-        .category-tab:hover {
+        .subcategory-btn:hover {
           background: var(--color-surface-hover);
           color: var(--color-text);
           border-color: var(--color-accent);
         }
 
-        .category-tab.active {
-          background: var(--color-accent-dim);
+        .subcategory-btn.active {
+          background: var(--color-accent);
+          color: #ffffff;
+          font-weight: 600;
           border-color: var(--color-accent);
-          color: var(--color-accent);
-          font-weight: 600;
-        }
-
-        /* === MENU GRID === */
-        .menu-grid {
-          display: grid;
-          grid-template-columns: 280px 1fr;
-          gap: 2rem;
-        }
-
-        /* === SIDEBAR === */
-        .menu-sidebar {
-          position: relative;
-        }
-
-        .sidebar-sticky {
-          position: sticky;
-          top: 140px;
-        }
-
-        .sidebar-title {
-          font-size: 1rem;
-          font-weight: 600;
-          color: var(--color-text-muted);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          margin: 0 0 1rem 0;
-        }
-
-        .sidebar-empty {
-          color: var(--color-text-muted);
-          font-size: 0.875rem;
-          font-style: italic;
-        }
-
-        .subcategory-list {
-          display: flex;
-          flex-direction: column;
-          gap: 0.25rem;
-        }
-
-        .subcategory-tab {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          padding: 0.75rem 1rem;
-          background: transparent;
-          border: none;
-          border-left: 2px solid transparent;
-          color: var(--color-text-dim);
-          text-align: left;
-          font-size: 0.95rem;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          border-radius: var(--radius-sm);
-        }
-
-        .subcategory-dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: var(--color-text-muted);
-          transition: all 0.3s ease;
-        }
-
-        .subcategory-tab:hover {
-          background: var(--color-surface);
-          color: var(--color-text);
-          border-left-color: var(--color-accent);
-        }
-
-        .subcategory-tab:hover .subcategory-dot {
-          background: var(--color-accent);
-          transform: scale(1.3);
-        }
-
-        .subcategory-tab.active {
-          background: var(--color-surface);
-          color: var(--color-accent);
-          font-weight: 600;
-          border-left-color: var(--color-accent);
-        }
-
-        .subcategory-tab.active .subcategory-dot {
-          background: var(--color-accent);
-          transform: scale(1.5);
         }
 
         /* === MENU CONTENT === */
@@ -524,7 +530,7 @@ export default function Menu() {
 
         .menu-section {
           margin-bottom: 3rem;
-          scroll-margin-top: 140px;
+          scroll-margin-top: 100px;
         }
 
         .section-title {
@@ -539,7 +545,7 @@ export default function Menu() {
         /* === ITEMS GRID === */
         .items-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
           gap: 1.25rem;
         }
 
@@ -550,7 +556,6 @@ export default function Menu() {
           border-radius: var(--radius-md);
           padding: 1.25rem;
           transition: all 0.3s ease;
-          cursor: pointer;
         }
 
         .menu-item-card:hover {
@@ -591,12 +596,55 @@ export default function Menu() {
           line-height: 1.5;
         }
 
+        /* === EXPAND BUTTON === */
+        .expand-btn {
+          width: 100%;
+          padding: 0.625rem;
+          background: var(--color-accent-dim);
+          border: 1px solid var(--color-accent);
+          color: var(--color-accent);
+          font-size: 0.875rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          border-radius: var(--radius-sm);
+          margin-top: 0.75rem;
+          font-family: inherit;
+        }
+
+        .expand-btn:hover {
+          background: var(--color-accent);
+          color: #ffffff;
+        }
+
+        /* === OPTIONS CONTAINER === */
+        .options-container {
+          margin-top: 1rem;
+          padding-top: 1rem;
+          border-top: 1px solid var(--color-border);
+          animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
         /* === VARIANTS & ADDONS === */
         .variants-section,
         .addons-section {
-          margin-top: 0.75rem;
-          padding-top: 0.75rem;
-          border-top: 1px solid var(--color-border);
+          margin-bottom: 1rem;
+        }
+
+        .variants-section:last-child,
+        .addons-section:last-child {
+          margin-bottom: 0;
         }
 
         .section-label {
@@ -640,12 +688,24 @@ export default function Menu() {
 
         /* === RESPONSIVE === */
         @media (max-width: 1024px) {
-          .menu-grid {
+          .menu-layout {
             grid-template-columns: 1fr;
           }
 
-          .menu-sidebar {
-            display: none;
+          .top-categories-sidebar {
+            position: static;
+            max-width: 100%;
+          }
+
+          .top-category-list {
+            flex-direction: row;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+          }
+
+          .top-category-btn {
+            white-space: nowrap;
+            min-width: fit-content;
           }
 
           .hero-grid {
@@ -663,7 +723,7 @@ export default function Menu() {
             padding: 1rem 0.75rem;
           }
 
-          .category-nav {
+          .subcategory-bar {
             padding: 0.75rem 0;
           }
 
@@ -682,6 +742,34 @@ export default function Menu() {
           .section-title {
             font-size: 1.5rem;
           }
+
+          .cta-button {
+            padding: 0.75rem 1.5rem;
+            font-size: 0.9rem;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .menu-layout {
+            gap: 1rem;
+          }
+
+          .top-categories-sidebar {
+            padding: 1rem;
+          }
+
+          .sidebar-heading {
+            font-size: 1.1rem;
+          }
+
+          .subcategory-btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+          }
+
+          .menu-item-card {
+            padding: 1rem;
+          }
         }
       `}</style>
     </div>
@@ -689,6 +777,20 @@ export default function Menu() {
 }
 
 // === HELPER FUNCTIONS ===
+
+function hasVariantsOrAddons(it, type) {
+  const families = (it.families || []).filter(f => f.type === type);
+  if (families.length > 0) {
+    return families.some(fam => (fam.options || []).length > 0);
+  }
+  if (type === 'variant') {
+    return (it.variants || []).length > 0;
+  }
+  if (type === 'addon') {
+    return (it.addonGroups || []).length > 0;
+  }
+  return false;
+}
 
 function renderVariants(it) {
   const famVariants = (it.families || []).filter(f => f.type === "variant");
