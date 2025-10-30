@@ -97,16 +97,10 @@ export default function Menu() {
 
   return (
     <div className="menu-page">
-      {/* Hero Section with 2 Images - NO TRANSPARENCY OVERLAY */}
+      {/* Hero Section with 2 Images */}
       <div className="menu-hero">
         <div className="hero-grid">
-          <div className="hero-image-wrapper">
-            <img
-              src="/images/menu/menu-hero-1.jpg"
-              alt="Hungry Times - Fresh Ingredients"
-              className="hero-image"
-              loading="eager"
-            />
+          <div className="hero-image-wrapper hero-black-bg">
             <div className="hero-content-overlay">
               <h1 className="hero-title">Our Menu</h1>
               <p className="hero-subtitle">Crafted with passion, served with love</p>
@@ -141,30 +135,51 @@ export default function Menu() {
 
       {/* Menu Content Container */}
       <div className="menu-container">
-        {/* Main Layout: Sidebar + Content */}
+        {/* Top Categories - Horizontal on Mobile, Sidebar on Desktop */}
+        <div className="top-categories-section">
+          <h3 className="categories-heading">Categories</h3>
+          <nav className="top-category-nav">
+            {tops.map(tc => (
+              <button
+                key={tc.id}
+                className={`top-category-btn ${tc.id === activeTop ? 'active' : ''}`}
+                onClick={() => { 
+                  setActiveTop(tc.id); 
+                  setActiveSub((tc.subcategories?.[0]?.id) ?? null); 
+                }}
+              >
+                {tc.name}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* Main Content Layout */}
         <div className="menu-layout">
-          {/* Left Sidebar: Top Categories */}
-          <aside className="top-categories-sidebar">
-            <h3 className="sidebar-heading">Categories</h3>
-            <nav className="top-category-list">
-              {tops.map(tc => (
-                <button
-                  key={tc.id}
-                  className={`top-category-btn ${tc.id === activeTop ? 'active' : ''}`}
-                  onClick={() => { 
-                    setActiveTop(tc.id); 
-                    setActiveSub((tc.subcategories?.[0]?.id) ?? null); 
-                  }}
-                >
-                  {tc.name}
-                </button>
-              ))}
-            </nav>
+          {/* Sidebar: Top Categories (Desktop Only) */}
+          <aside className="desktop-sidebar">
+            <div className="sidebar-sticky">
+              <h3 className="sidebar-heading">Categories</h3>
+              <nav className="sidebar-category-list">
+                {tops.map(tc => (
+                  <button
+                    key={tc.id}
+                    className={`sidebar-category-btn ${tc.id === activeTop ? 'active' : ''}`}
+                    onClick={() => { 
+                      setActiveTop(tc.id); 
+                      setActiveSub((tc.subcategories?.[0]?.id) ?? null); 
+                    }}
+                  >
+                    {tc.name}
+                  </button>
+                ))}
+              </nav>
+            </div>
           </aside>
 
           {/* Main Content Area */}
           <div className="menu-main">
-            {/* Top Bar: Subcategories */}
+            {/* Subcategories Bar */}
             <nav className="subcategory-bar">
               <div className="subcategory-scroll">
                 {subs.map(sc => (
@@ -248,9 +263,6 @@ export default function Menu() {
           --radius-sm: 8px;
           --radius-md: 12px;
           --radius-lg: 16px;
-          --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-          --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
-          --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
         }
 
         * {
@@ -270,6 +282,7 @@ export default function Menu() {
           min-height: 60vh;
           padding: 2rem;
           text-align: center;
+          color: var(--color-text);
         }
 
         .spinner {
@@ -291,13 +304,18 @@ export default function Menu() {
           min-height: 100vh;
           background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
           color: var(--color-text);
+          width: 100%;
+          overflow-x: hidden;
         }
 
-        /* === HERO SECTION - REMOVED TRANSPARENCY === */
+        /* === HERO SECTION === */
         .menu-hero {
           position: relative;
           width: 100%;
           overflow: hidden;
+          background: #000000;
+          /* Override global color-scheme to prevent browser color adjustments */
+          color-scheme: normal;
         }
 
         .hero-grid {
@@ -305,22 +323,54 @@ export default function Menu() {
           grid-template-columns: repeat(2, 1fr);
           gap: 0;
           max-height: 500px;
+          background: #000000;
         }
 
         .hero-image-wrapper {
           position: relative;
           overflow: hidden;
           aspect-ratio: 16 / 9;
+          background: #000000;
+        }
+
+        /* Pure CSS black background for first hero - no image */
+        .hero-black-bg {
+          background: #000000 !important;
+        }
+
+        /* Force pure black background behind images */
+        .hero-image-wrapper::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: #000000;
+          z-index: 0;
         }
 
         .hero-image {
+          position: relative;
           width: 100%;
           height: 100%;
           object-fit: cover;
           display: block;
+          background: #000000;
+          z-index: 1;
+          /* Prevent browser from adjusting colors in dark mode */
+          color-scheme: light;
+          /* Force exact color rendering */
+          image-rendering: auto;
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
+          transform: translateZ(0);
+          -webkit-transform: translateZ(0);
+          /* Prevent any color adjustments */
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+          /* Remove any filters */
+          filter: none;
+          -webkit-filter: none;
         }
 
-        /* Content overlay without background transparency */
         .hero-content-overlay {
           position: absolute;
           inset: 0;
@@ -392,19 +442,86 @@ export default function Menu() {
         .menu-container {
           max-width: 1600px;
           margin: 0 auto;
-          padding: 2rem 1rem;
+          padding: 0;
+          width: 100%;
         }
 
-        /* === LAYOUT: SIDEBAR + MAIN === */
+        /* === TOP CATEGORIES SECTION (Mobile Only) === */
+        .top-categories-section {
+          display: none;
+          background: var(--color-bg);
+          border-bottom: 2px solid var(--color-border);
+          padding: 1rem;
+        }
+
+        .categories-heading {
+          font-size: 1.1rem;
+          font-weight: 700;
+          color: var(--color-accent);
+          margin-bottom: 0.75rem;
+        }
+
+        .top-category-nav {
+          display: flex;
+          gap: 0.75rem;
+          overflow-x: auto;
+          scrollbar-width: thin;
+          scrollbar-color: var(--color-border) transparent;
+          padding-bottom: 0.5rem;
+        }
+
+        .top-category-nav::-webkit-scrollbar {
+          height: 6px;
+        }
+
+        .top-category-nav::-webkit-scrollbar-thumb {
+          background: var(--color-border);
+          border-radius: 3px;
+        }
+
+        .top-category-btn {
+          flex-shrink: 0;
+          padding: 0.625rem 1.25rem;
+          background: var(--color-surface);
+          border: 1px solid var(--color-border);
+          color: var(--color-text-dim);
+          font-size: 0.95rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          border-radius: 999px;
+          white-space: nowrap;
+          font-family: inherit;
+        }
+
+        .top-category-btn:hover {
+          background: var(--color-surface-hover);
+          color: var(--color-text);
+          border-color: var(--color-accent);
+        }
+
+        .top-category-btn.active {
+          background: var(--color-accent);
+          color: #ffffff;
+          font-weight: 600;
+          border-color: var(--color-accent);
+        }
+
+        /* === LAYOUT === */
         .menu-layout {
           display: grid;
           grid-template-columns: 250px 1fr;
           gap: 2rem;
           align-items: start;
+          padding: 2rem 1rem;
         }
 
-        /* === TOP CATEGORIES SIDEBAR === */
-        .top-categories-sidebar {
+        /* === DESKTOP SIDEBAR === */
+        .desktop-sidebar {
+          display: block;
+        }
+
+        .sidebar-sticky {
           position: sticky;
           top: 2rem;
           background: var(--color-surface);
@@ -422,13 +539,13 @@ export default function Menu() {
           border-bottom: 2px solid var(--color-border);
         }
 
-        .top-category-list {
+        .sidebar-category-list {
           display: flex;
           flex-direction: column;
           gap: 0.5rem;
         }
 
-        .top-category-btn {
+        .sidebar-category-btn {
           display: block;
           width: 100%;
           padding: 0.875rem 1rem;
@@ -444,13 +561,13 @@ export default function Menu() {
           font-family: inherit;
         }
 
-        .top-category-btn:hover {
+        .sidebar-category-btn:hover {
           background: var(--color-surface-hover);
           color: var(--color-text);
           border-left-color: var(--color-accent);
         }
 
-        .top-category-btn.active {
+        .sidebar-category-btn.active {
           background: var(--color-accent-dim);
           color: var(--color-accent);
           font-weight: 600;
@@ -460,6 +577,7 @@ export default function Menu() {
         /* === MAIN CONTENT === */
         .menu-main {
           min-height: 600px;
+          width: 100%;
         }
 
         /* === SUBCATEGORY BAR === */
@@ -484,10 +602,6 @@ export default function Menu() {
 
         .subcategory-scroll::-webkit-scrollbar {
           height: 6px;
-        }
-
-        .subcategory-scroll::-webkit-scrollbar-track {
-          background: transparent;
         }
 
         .subcategory-scroll::-webkit-scrollbar-thumb {
@@ -526,6 +640,7 @@ export default function Menu() {
         /* === MENU CONTENT === */
         .menu-content {
           min-height: 600px;
+          width: 100%;
         }
 
         .menu-section {
@@ -547,6 +662,7 @@ export default function Menu() {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
           gap: 1.25rem;
+          width: 100%;
         }
 
         /* === MENU ITEM CARD === */
@@ -556,13 +672,14 @@ export default function Menu() {
           border-radius: var(--radius-md);
           padding: 1.25rem;
           transition: all 0.3s ease;
+          width: 100%;
         }
 
         .menu-item-card:hover {
           background: var(--color-surface-hover);
           border-color: var(--color-accent);
           transform: translateY(-2px);
-          box-shadow: var(--shadow-sm);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
 
         .item-header {
@@ -579,6 +696,7 @@ export default function Menu() {
           color: var(--color-text);
           margin: 0;
           flex: 1;
+          word-wrap: break-word;
         }
 
         .item-price {
@@ -686,28 +804,8 @@ export default function Menu() {
           font-weight: 600;
         }
 
-        /* === RESPONSIVE === */
+        /* === MOBILE RESPONSIVE === */
         @media (max-width: 1024px) {
-          .menu-layout {
-            grid-template-columns: 1fr;
-          }
-
-          .top-categories-sidebar {
-            position: static;
-            max-width: 100%;
-          }
-
-          .top-category-list {
-            flex-direction: row;
-            overflow-x: auto;
-            padding-bottom: 0.5rem;
-          }
-
-          .top-category-btn {
-            white-space: nowrap;
-            min-width: fit-content;
-          }
-
           .hero-grid {
             grid-template-columns: 1fr;
             max-height: none;
@@ -716,27 +814,40 @@ export default function Menu() {
           .hero-image-wrapper {
             aspect-ratio: 16 / 10;
           }
+
+          /* Hide desktop sidebar, show mobile section */
+          .desktop-sidebar {
+            display: none;
+          }
+
+          .top-categories-section {
+            display: block;
+          }
+
+          .menu-layout {
+            grid-template-columns: 1fr;
+            padding: 1rem;
+            gap: 0;
+          }
+
+          .items-grid {
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+          }
         }
 
         @media (max-width: 768px) {
-          .menu-container {
-            padding: 1rem 0.75rem;
+          .menu-layout {
+            padding: 0.75rem;
           }
 
           .subcategory-bar {
             padding: 0.75rem 0;
+            margin-bottom: 1.5rem;
           }
 
           .items-grid {
             grid-template-columns: 1fr;
-          }
-
-          .hero-title {
-            font-size: 2rem;
-          }
-
-          .hero-subtitle {
-            font-size: 0.9rem;
+            gap: 1rem;
           }
 
           .section-title {
@@ -747,28 +858,50 @@ export default function Menu() {
             padding: 0.75rem 1.5rem;
             font-size: 0.9rem;
           }
-        }
 
-        @media (max-width: 480px) {
-          .menu-layout {
-            gap: 1rem;
-          }
-
-          .top-categories-sidebar {
+          .menu-item-card {
             padding: 1rem;
           }
 
-          .sidebar-heading {
-            font-size: 1.1rem;
+          .item-name {
+            font-size: 1rem;
           }
 
+          .item-price {
+            font-size: 1rem;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .top-categories-section {
+            padding: 0.75rem;
+          }
+
+          .categories-heading {
+            font-size: 1rem;
+          }
+
+          .top-category-btn,
           .subcategory-btn {
             padding: 0.5rem 1rem;
             font-size: 0.875rem;
           }
 
-          .menu-item-card {
-            padding: 1rem;
+          .hero-title {
+            font-size: 1.75rem;
+          }
+
+          .hero-subtitle {
+            font-size: 0.85rem;
+          }
+
+          .cta-text {
+            font-size: 0.95rem;
+          }
+
+          .cta-button {
+            padding: 0.625rem 1.25rem;
+            font-size: 0.85rem;
           }
         }
       `}</style>
