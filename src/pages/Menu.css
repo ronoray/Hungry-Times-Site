@@ -2,14 +2,16 @@
 
 /* CRITICAL: Reset wrapper to override App.css */
 .menu-page-wrapper {
-  all: initial;
+  /* SAFE: do not use `all: initial` here */
   display: block;
   width: 100%;
-  max-width: 100% !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  text-align: left !important;
+  margin: 0;
+  padding: 0;
+  text-align: left;
 }
+
+.menu-page { overflow-x: hidden; }
+.subcategory-scroll { -webkit-overflow-scrolling: touch; }
 
 /* Button reset */
 .menu-page button {
