@@ -473,8 +473,59 @@
   font-weight: 600 !important;
 }
 
+/* === MOBILE HAMBURGER & OVERLAY === */
+.mobile-menu-toggle {
+  display: none;
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 1001;
+  background: var(--color-accent) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  width: 50px !important;
+  height: 50px !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4) !important;
+  transition: all 0.2s ease !important;
+}
+
+.mobile-menu-toggle:active {
+  transform: scale(0.95) !important;
+}
+
+.mobile-menu-toggle span {
+  display: block !important;
+  width: 24px !important;
+  height: 3px !important;
+  background: #000 !important;
+  border-radius: 2px !important;
+  transition: all 0.3s ease !important;
+}
+
+.mobile-overlay {
+  display: none !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(0,0,0,0.7) !important;
+  z-index: 999 !important;
+  backdrop-filter: blur(3px) !important;
+}
+
 /* === MOBILE === */
 @media (max-width: 1024px) {
+  /* Show hamburger button on mobile */
+  .mobile-menu-toggle {
+    display: flex !important;
+  }
+
   .hero-grid {
     grid-template-columns: 1fr !important;
     max-height: none !important;
@@ -492,25 +543,37 @@
   .menu-layout {
     grid-template-columns: 1fr !important;
     gap: 0 !important;
+    position: relative !important;
   }
 
-  /* CRITICAL: Horizontal categories */
+  /* SLIDE-OUT SIDEBAR - Hidden by default, slides in from left */
   .categories-sidebar {
-    position: sticky !important;
+    position: fixed !important;
     top: 0 !important;
-    z-index: 100 !important;
+    left: -300px !important;
+    bottom: 0 !important;
+    width: 280px !important;
+    max-width: 85vw !important;
+    z-index: 1000 !important;
     background: #0a0a0a !important;
-    border-bottom: 1px solid var(--color-accent) !important;
-    padding: 1rem !important;
+    border-right: 2px solid var(--color-accent) !important;
+    padding: 80px 0 1rem 0 !important;
     margin: 0 !important;
-    width: 100% !important;
+    overflow-y: auto !important;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.5) !important;
+  }
+
+  /* Sidebar OPEN state - slides into view */
+  .categories-sidebar.open {
+    left: 0 !important;
   }
 
   .sidebar-sticky {
     position: static !important;
     background: transparent !important;
     border: none !important;
-    padding: 0 !important;
+    padding: 1rem !important;
     box-shadow: none !important;
     backdrop-filter: none !important;
   }
@@ -519,76 +582,72 @@
     font-size: 0.875rem !important;
     font-weight: 600 !important;
     color: var(--color-accent) !important;
-    margin-bottom: 0.625rem !important;
+    margin-bottom: 1rem !important;
     text-transform: uppercase !important;
     letter-spacing: 0.05em !important;
+    padding: 0 0.5rem !important;
   }
 
-  /* NUCLEAR FIX for horizontal scroll */
+  /* VERTICAL category list - NO horizontal scroll */
   .sidebar-category-list {
     display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    gap: 0.625rem !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    padding-bottom: 0.75rem !important;
-    scrollbar-width: none !important;
-    -webkit-overflow-scrolling: touch !important;
-  }
-
-  .sidebar-category-list::-webkit-scrollbar {
-    display: none !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    overflow: visible !important;
   }
 
   .sidebar-category-btn {
-    flex: 0 0 auto !important;
-    flex-shrink: 0 !important;
-    flex-grow: 0 !important;
-    width: auto !important;
-    min-width: fit-content !important;
-    white-space: nowrap !important;
-    padding: 0.625rem 1.25rem !important;
-    font-size: 0.875rem !important;
-    border-radius: 999px !important;
+    width: 100% !important;
+    padding: 0.875rem 1rem !important;
+    font-size: 0.9375rem !important;
+    border-radius: 8px !important;
+    text-align: left !important;
     transform: none !important;
     background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: var(--color-text) !important;
+    transition: all 0.2s ease !important;
   }
 
   .sidebar-category-btn:hover {
-    transform: none !important;
+    transform: translateX(4px) !important;
     background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
   }
 
   .sidebar-category-btn.active {
-    transform: none !important;
+    transform: translateX(4px) !important;
     background: var(--color-accent) !important;
     border-color: var(--color-accent) !important;
     color: #000 !important;
     font-weight: 600 !important;
   }
 
+  /* Main content - Full width, no sidebar taking space */
   .menu-main {
     padding: 1rem !important;
     width: 100% !important;
+    max-width: 100% !important;
   }
 
-  .items-grid {
-    grid-template-columns: 1fr !important;
-    gap: 1rem !important;
-  }
-
+  /* Subcategory bar - contained horizontal scroll only for subcategories */
   .subcategory-bar {
     margin-top: 0 !important;
     margin-bottom: 1.5rem !important;
     padding: 0.75rem !important;
     position: static !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-radius: 12px !important;
+    border: 1px solid var(--color-border) !important;
   }
 
   .subcategory-scroll {
+    display: flex !important;
     gap: 0.5rem !important;
+    overflow-x: auto !important;
     scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 0.5rem !important;
   }
 
   .subcategory-scroll::-webkit-scrollbar {
@@ -596,24 +655,65 @@
   }
 
   .subcategory-btn {
-    padding: 0.5rem 1rem !important;
+    flex: 0 0 auto !important;
+    padding: 0.625rem 1rem !important;
     font-size: 0.8125rem !important;
+    white-space: nowrap !important;
+    border-radius: 999px !important;
+  }
+
+  /* Items grid - single column */
+  .items-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  /* Prevent any overflow */
+  .menu-item-card,
+  .options-container,
+  .options-row {
+    max-width: 100% !important;
+    overflow-wrap: break-word !important;
+  }
+
+  .option-chip {
+    flex: 0 0 auto !important;
+    max-width: 100% !important;
   }
 }
 
+/* Small mobile devices */
 @media (max-width: 480px) {
+  .mobile-menu-toggle {
+    top: 12px !important;
+    left: 12px !important;
+    width: 46px !important;
+    height: 46px !important;
+  }
+
+  .mobile-menu-toggle span {
+    width: 22px !important;
+  }
+
   .categories-sidebar {
-    padding: 0.875rem !important;
+    width: 260px !important;
+    padding-top: 70px !important;
+    left: -280px !important;
   }
 
   .sidebar-heading {
     font-size: 0.8125rem !important;
-    margin-bottom: 0.5rem !important;
+    margin-bottom: 0.75rem !important;
   }
 
   .sidebar-category-btn {
-    padding: 0.5rem 1rem !important;
-    font-size: 0.8125rem !important;
+    padding: 0.75rem 1rem !important;
+    font-size: 0.875rem !important;
+  }
+
+  .subcategory-bar {
+    padding: 0.625rem !important;
+    margin-bottom: 1.25rem !important;
   }
 
   .subcategory-btn {
