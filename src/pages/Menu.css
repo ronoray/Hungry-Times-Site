@@ -1,6 +1,6 @@
-/* Menu.css - FINAL VERSION with maximum specificity */
+/* Menu.css - COMPLETE FIX */
 
-/* NUCLEAR RESET - Override everything including Tailwind */
+/* NUCLEAR RESET */
 .menu-page-wrapper,
 .menu-page-wrapper * {
   box-sizing: border-box !important;
@@ -16,7 +16,6 @@
   overflow-x: hidden !important;
 }
 
-/* Button reset */
 .menu-page button {
   all: unset;
   box-sizing: border-box !important;
@@ -70,7 +69,6 @@
   font-size: 1rem !important;
 }
 
-/* Page */
 .menu-page {
   background: var(--color-bg) !important;
   min-height: 100vh !important;
@@ -198,16 +196,6 @@
   display: block !important;
 }
 
-@media (min-width: 1025px) {
-  .categories-sidebar {
-    position: relative !important;
-    left: auto !important;
-    width: auto !important;
-    padding: 0 !important;
-    border: none !important;
-  }
-}
-
 .sidebar-sticky {
   position: sticky !important;
   top: 2rem !important;
@@ -265,21 +253,17 @@
   transform: translateX(4px) !important;
 }
 
-/* Main content */
 .menu-main {
   min-width: 0 !important;
 }
 
 /* Subcategories */
 .subcategory-bar {
-  background: rgba(10, 10, 10, 0.8) !important;
+  background: rgba(10, 10, 10, 0.95) !important;
   border: 1px solid var(--color-border) !important;
   border-radius: 1rem !important;
   padding: 1rem !important;
   margin-bottom: 2rem !important;
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 20 !important;
   backdrop-filter: blur(20px) !important;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5) !important;
 }
@@ -336,7 +320,6 @@
   transform: translateY(-2px) !important;
 }
 
-/* Menu content */
 .menu-content {
   display: flex !important;
   flex-direction: column !important;
@@ -362,7 +345,6 @@
   gap: 1.5rem !important;
 }
 
-/* Menu items */
 .menu-item-card {
   background: rgba(255, 255, 255, 0.03) !important;
   border: 1px solid var(--color-border) !important;
@@ -429,7 +411,6 @@
   color: #ffffff !important;
 }
 
-/* Options */
 .options-container {
   display: flex !important;
   flex-direction: column !important;
@@ -483,80 +464,59 @@
   font-weight: 600 !important;
 }
 
-/* === MOBILE HAMBURGER & OVERLAY === */
+/* === MOBILE HAMBURGER - HIDDEN ON DESKTOP === */
 .mobile-menu-toggle {
-  display: none !important; /* Hidden by default on desktop */
-  position: fixed;
-  top: 16px;
-  left: 16px;
-  z-index: 1001;
-  background: var(--color-accent) !important;
-  border: none !important;
-  border-radius: 8px !important;
-  width: 50px !important;
-  height: 50px !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 5px !important;
-  cursor: pointer !important;
-  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4) !important;
-  transition: all 0.2s ease !important;
-}
-
-.mobile-menu-toggle:active {
-  transform: scale(0.95) !important;
-}
-
-.mobile-menu-toggle span {
-  display: block !important;
-  width: 26px !important;
-  height: 3px !important;
-  background: #000 !important;
-  border-radius: 3px !important;
-  transition: all 0.3s ease !important;
+  display: none !important;
 }
 
 .mobile-overlay {
   display: none !important;
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  background: rgba(0,0,0,0.7) !important;
-  z-index: 999 !important;
-  backdrop-filter: blur(3px) !important;
 }
 
-/* Hide mobile elements on desktop */
-@media (min-width: 1025px) {
-  .mobile-menu-toggle,
-  .mobile-overlay {
-    display: none !important;
-  }
-}
-
-/* === MOBILE === */
+/* === MOBILE ONLY === */
 @media (max-width: 1024px) {
-  /* Show hamburger button on mobile */
+  /* Show hamburger on mobile */
   .mobile-menu-toggle {
     display: flex !important;
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 1001;
+    background: var(--color-accent) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    width: 56px !important;
+    height: 56px !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.5) !important;
+    transition: all 0.2s ease !important;
   }
 
+  .mobile-menu-toggle:active {
+    transform: scale(0.95) !important;
+  }
+
+  .mobile-menu-toggle span {
+    display: block !important;
+    width: 28px !important;
+    height: 3px !important;
+    background: #000 !important;
+    border-radius: 3px !important;
+  }
+
+  /* Hero adjustments */
   .hero-grid {
     grid-template-columns: 1fr !important;
     max-height: none !important;
   }
 
   .hero-image-wrapper {
-    aspect-ratio: 16 / 9 !important;
     min-height: 200px !important;
-    max-height: 300px !important;
-  }
-
-  .hero-content-overlay {
-    padding-top: 3rem !important;
+    max-height: 280px !important;
   }
 
   .menu-container {
@@ -567,10 +527,9 @@
   .menu-layout {
     grid-template-columns: 1fr !important;
     gap: 0 !important;
-    position: relative !important;
   }
 
-  /* SLIDE-OUT SIDEBAR - Hidden by default, slides in from left */
+  /* Slide-out sidebar */
   .categories-sidebar {
     position: fixed !important;
     top: 0 !important;
@@ -581,14 +540,13 @@
     z-index: 1000 !important;
     background: #0a0a0a !important;
     border-right: 2px solid var(--color-accent) !important;
-    padding: 80px 0 1rem 0 !important;
+    padding: 90px 0 1rem 0 !important;
     margin: 0 !important;
     overflow-y: auto !important;
-    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    box-shadow: 4px 0 24px rgba(0,0,0,0.5) !important;
+    transition: left 0.3s ease !important;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.7) !important;
   }
 
-  /* Sidebar OPEN state - slides into view */
   .categories-sidebar.open {
     left: 0 !important;
   }
@@ -599,25 +557,16 @@
     border: none !important;
     padding: 1rem !important;
     box-shadow: none !important;
-    backdrop-filter: none !important;
   }
 
   .sidebar-heading {
-    font-size: 0.875rem !important;
-    font-weight: 600 !important;
-    color: var(--color-accent) !important;
+    font-size: 1rem !important;
     margin-bottom: 1rem !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.05em !important;
     padding: 0 0.5rem !important;
   }
 
-  /* VERTICAL category list - NO horizontal scroll */
   .sidebar-category-list {
-    display: flex !important;
     flex-direction: column !important;
-    gap: 0.5rem !important;
-    overflow: visible !important;
   }
 
   .sidebar-category-btn {
@@ -626,94 +575,28 @@
     font-size: 0.9375rem !important;
     border-radius: 8px !important;
     text-align: left !important;
-    transform: none !important;
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    color: var(--color-text) !important;
-    transition: all 0.2s ease !important;
   }
 
-  .sidebar-category-btn:hover {
-    transform: translateX(4px) !important;
-    background: rgba(255, 255, 255, 0.08) !important;
-    border-color: rgba(255, 255, 255, 0.2) !important;
-  }
-
-  .sidebar-category-btn.active {
-    transform: translateX(4px) !important;
-    background: var(--color-accent) !important;
-    border-color: var(--color-accent) !important;
-    color: #000 !important;
-    font-weight: 600 !important;
-  }
-
-  /* Main content - Full width, no sidebar taking space */
   .menu-main {
-    padding: 1.5rem 1rem !important;
+    padding: 2rem 1rem 1rem 1rem !important;
     width: 100% !important;
-    max-width: 100% !important;
   }
 
-  /* Subcategory bar - contained horizontal scroll only for subcategories */
   .subcategory-bar {
-    margin-top: 1rem !important;
+    margin-top: 0 !important;
     margin-bottom: 1.5rem !important;
-    padding: 0.75rem !important;
     position: static !important;
-    background: rgba(10, 10, 10, 0.95) !important;
-    border-radius: 12px !important;
-    border: 1px solid var(--color-border) !important;
-    backdrop-filter: blur(10px) !important;
   }
 
-  .subcategory-scroll {
-    display: flex !important;
-    gap: 0.5rem !important;
-    overflow-x: auto !important;
-    scrollbar-width: none !important;
-    -webkit-overflow-scrolling: touch !important;
-    padding-bottom: 0.5rem !important;
-  }
-
-  .subcategory-scroll::-webkit-scrollbar {
-    display: none !important;
-  }
-
-  .subcategory-btn {
-    flex: 0 0 auto !important;
-    padding: 0.625rem 1rem !important;
-    font-size: 0.8125rem !important;
-    white-space: nowrap !important;
-    border-radius: 999px !important;
-  }
-
-  /* Items grid - single column */
   .items-grid {
     grid-template-columns: 1fr !important;
-    gap: 1rem !important;
-  }
-
-  /* Prevent any overflow */
-  .menu-item-card,
-  .options-container,
-  .options-row {
-    max-width: 100% !important;
-    overflow-wrap: break-word !important;
-  }
-
-  .option-chip {
-    flex: 0 0 auto !important;
-    max-width: 100% !important;
   }
 }
 
-/* Small mobile devices */
 @media (max-width: 480px) {
   .mobile-menu-toggle {
-    top: 12px !important;
-    left: 12px !important;
-    width: 48px !important;
-    height: 48px !important;
+    width: 50px !important;
+    height: 50px !important;
   }
 
   .mobile-menu-toggle span {
@@ -722,54 +605,10 @@
 
   .hero-image-wrapper {
     min-height: 180px !important;
-    max-height: 250px !important;
-  }
-
-  .categories-sidebar {
-    width: 260px !important;
-    padding-top: 70px !important;
-    left: -280px !important;
-  }
-
-  .sidebar-heading {
-    font-size: 0.8125rem !important;
-    margin-bottom: 0.75rem !important;
-  }
-
-  .sidebar-category-btn {
-    padding: 0.75rem 1rem !important;
-    font-size: 0.875rem !important;
-  }
-
-  .subcategory-bar {
-    padding: 0.625rem !important;
-    margin-bottom: 1.25rem !important;
-  }
-
-  .subcategory-btn {
-    padding: 0.5rem 0.875rem !important;
-    font-size: 0.75rem !important;
-  }
-
-  .hero-title {
-    font-size: 1.75rem !important;
-  }
-
-  .cta-button {
-    padding: 0.625rem 1.25rem !important;
-    font-size: 0.875rem !important;
-  }
-
-  .menu-item-card {
-    padding: 1rem !important;
-  }
-
-  .item-name,
-  .item-price {
-    font-size: 1rem !important;
+    max-height: 240px !important;
   }
 
   .menu-main {
-    padding: 0.875rem !important;
+    padding: 1.5rem 0.875rem !important;
   }
 }
