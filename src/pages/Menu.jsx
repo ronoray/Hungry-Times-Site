@@ -249,15 +249,17 @@ export default function Menu() {
 
       {/* Styles */}
       <style>{`
-        /* === RESET & VARIABLES === */
-        * {
-          margin: 0;
-          padding: 0;
+        /* === CRITICAL: RESET ALL BUTTON STYLES === */
+        .menu-page button {
+          all: unset;
           box-sizing: border-box;
+          display: inline-block;
         }
 
-        button {
-          all: unset;
+        /* === RESET & VARIABLES === */
+        .menu-page * {
+          margin: 0;
+          padding: 0;
           box-sizing: border-box;
         }
 
@@ -528,9 +530,9 @@ export default function Menu() {
 
         .subcategory-btn {
           flex-shrink: 0;
-          display: inline-block;
-          width: auto;
-          height: auto;
+          display: inline-block !important;
+          width: auto !important;
+          height: auto !important;
           padding: 0.625rem 1.25rem;
           background: transparent;
           border: 1px solid var(--color-border);
@@ -542,9 +544,7 @@ export default function Menu() {
           border-radius: 999px;
           white-space: nowrap;
           font-family: inherit;
-          line-height: 1.2;
-          text-align: center;
-          min-width: auto;
+          line-height: normal;
         }
 
         .subcategory-btn:hover {
@@ -725,7 +725,7 @@ export default function Menu() {
 
           /* Show mobile top categories */
           .mobile-top-categories {
-            display: block;
+            display: block !important;
             background: var(--color-bg);
             border-bottom: 2px solid var(--color-border);
             padding: 1rem;
@@ -759,25 +759,30 @@ export default function Menu() {
             border-radius: 3px;
           }
 
+          /* CRITICAL FIX: Prevent circular buttons */
           .mobile-category-btn {
             flex-shrink: 0;
-            display: inline-block;
-            width: auto;
-            height: auto;
-            padding: 0.625rem 1.25rem;
+            display: inline-block !important;
+            width: auto !important;
+            height: auto !important;
+            min-width: 0 !important;
+            min-height: 0 !important;
+            max-width: none !important;
+            max-height: none !important;
+            aspect-ratio: auto !important;
+            padding: 0.625rem 1.25rem !important;
             background: var(--color-surface);
-            border: 1px solid var(--color-border);
+            border: 1px solid var(--color-border) !important;
             color: var(--color-text-dim);
             font-size: 0.875rem;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
-            border-radius: 999px;
+            border-radius: 999px !important;
             white-space: nowrap;
             font-family: inherit;
-            line-height: 1.2;
+            line-height: normal;
             text-align: center;
-            min-width: auto;
           }
 
           .mobile-category-btn:hover {
@@ -787,10 +792,10 @@ export default function Menu() {
           }
 
           .mobile-category-btn.active {
-            background: var(--color-accent);
-            color: #ffffff;
+            background: var(--color-accent) !important;
+            color: #ffffff !important;
             font-weight: 600;
-            border-color: var(--color-accent);
+            border-color: var(--color-accent) !important;
           }
 
           .menu-layout {
@@ -840,7 +845,7 @@ export default function Menu() {
 
           .mobile-category-btn,
           .subcategory-btn {
-            padding: 0.5rem 1rem;
+            padding: 0.5rem 1rem !important;
             font-size: 0.8125rem;
           }
 
