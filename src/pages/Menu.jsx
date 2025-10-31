@@ -141,7 +141,7 @@ export default function Menu() {
               </div>
             </aside>
 
-            <div className="menu-main">
+            <div className="menu-main" onClick={() => sidebarOpen && setSidebarOpen(false)}>
               <nav className="subcategory-bar">
                 <div className="subcategory-scroll">
                   {subs.map(sc => (

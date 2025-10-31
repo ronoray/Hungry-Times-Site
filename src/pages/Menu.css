@@ -482,9 +482,9 @@
     top: 16px;
     left: 16px;
     z-index: 1001;
-    background: var(--color-accent) !important;
-    border: none !important;
-    border-radius: 8px !important;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(245, 158, 11, 0.85)) !important;
+    border: 2px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 12px !important;
     width: 56px !important;
     height: 56px !important;
     flex-direction: column !important;
@@ -492,8 +492,14 @@
     justify-content: center !important;
     gap: 5px !important;
     cursor: pointer !important;
-    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.5) !important;
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3) !important;
     transition: all 0.2s ease !important;
+    backdrop-filter: blur(10px) !important;
+  }
+
+  .mobile-menu-toggle:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.6), 0 3px 10px rgba(0, 0, 0, 0.3) !important;
   }
 
   .mobile-menu-toggle:active {
@@ -506,6 +512,7 @@
     height: 3px !important;
     background: #000 !important;
     border-radius: 3px !important;
+    transition: all 0.2s ease !important;
   }
 
   /* Hero adjustments */
