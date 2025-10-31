@@ -1,6 +1,6 @@
 // site/src/pages/Menu.jsx
 import { useEffect, useMemo, useState, useRef } from "react";
-import "./Menu.css"; // IMPORT EXTERNAL CSS FILE
+import "./Menu.css";
 
 const DESC_MAX = 160;
 
@@ -98,7 +98,7 @@ export default function Menu() {
 
   return (
     <div className="menu-page">
-      {/* Hero Section with 2 Images */}
+      {/* Hero Section */}
       <div className="menu-hero">
         <div className="hero-grid">
           <div className="hero-image-wrapper hero-black-bg">
@@ -134,12 +134,12 @@ export default function Menu() {
         </div>
       </div>
 
-      {/* Menu Content Container */}
+      {/* Menu Content */}
       <div className="menu-container">
-        {/* Main Content Layout */}
         <div className="menu-layout">
-          {/* Sidebar: Top Categories (Desktop Only) */}
-          <aside className="desktop-sidebar">
+          
+          {/* Sidebar: Categories - Shows on BOTH desktop and mobile */}
+          <aside className="categories-sidebar">
             <div className="sidebar-sticky">
               <h3 className="sidebar-heading">Categories</h3>
               <nav className="sidebar-category-list">
@@ -159,27 +159,9 @@ export default function Menu() {
             </div>
           </aside>
 
-          {/* Main Content Area */}
+          {/* Main Content */}
           <div className="menu-main">
-            {/* Mobile: Top Categories */}
-            <nav className="mobile-top-categories">
-              <h3 className="mobile-heading">Categories</h3>
-              <div className="mobile-category-scroll">
-                {tops.map(tc => (
-                  <button
-                    key={tc.id}
-                    className={`mobile-category-btn ${tc.id === activeTop ? 'active' : ''}`}
-                    onClick={() => { 
-                      setActiveTop(tc.id); 
-                      setActiveSub((tc.subcategories?.[0]?.id) ?? null); 
-                    }}
-                  >
-                    {tc.name}
-                  </button>
-                ))}
-              </div>
-            </nav>
-
+            
             {/* Subcategories Bar */}
             <nav className="subcategory-bar">
               <div className="subcategory-scroll">
@@ -251,8 +233,7 @@ export default function Menu() {
   );
 }
 
-// === HELPER FUNCTIONS ===
-
+// Helper functions
 function hasVariantsOrAddons(it, type) {
   const families = (it.families || []).filter(f => f.type === type);
   if (families.length > 0) {
