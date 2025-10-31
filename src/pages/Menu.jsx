@@ -256,6 +256,11 @@ export default function Menu() {
           box-sizing: border-box;
         }
 
+        button {
+          all: unset;
+          box-sizing: border-box;
+        }
+
         :root {
           --color-bg: #0a0a0a;
           --color-surface: rgba(255, 255, 255, 0.04);
@@ -523,6 +528,9 @@ export default function Menu() {
 
         .subcategory-btn {
           flex-shrink: 0;
+          display: inline-block;
+          width: auto;
+          height: auto;
           padding: 0.625rem 1.25rem;
           background: transparent;
           border: 1px solid var(--color-border);
@@ -534,6 +542,9 @@ export default function Menu() {
           border-radius: 999px;
           white-space: nowrap;
           font-family: inherit;
+          line-height: 1.2;
+          text-align: center;
+          min-width: auto;
         }
 
         .subcategory-btn:hover {
@@ -750,6 +761,9 @@ export default function Menu() {
 
           .mobile-category-btn {
             flex-shrink: 0;
+            display: inline-block;
+            width: auto;
+            height: auto;
             padding: 0.625rem 1.25rem;
             background: var(--color-surface);
             border: 1px solid var(--color-border);
@@ -761,6 +775,9 @@ export default function Menu() {
             border-radius: 999px;
             white-space: nowrap;
             font-family: inherit;
+            line-height: 1.2;
+            text-align: center;
+            min-width: auto;
           }
 
           .mobile-category-btn:hover {
