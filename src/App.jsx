@@ -1,17 +1,22 @@
-import Navbar from './components/Navbar'
-import Footer from './components/Footer'
-import Router from './routes/Router'
-import { CartProvider } from './context/CartContext'
-import { AuthProvider } from './context/AuthContext'
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import UnderConstruction from './pages/UnderConstruction';
-import Offers from './pages/Offers';
+// src/App.jsx
+import React from "react";
+
+// Providers (adjust paths to match your project)
+import { CartProvider } from "./context/CartContext";
+import { AuthProvider } from "./context/AuthContext";
+
+// Layout
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
+
+// Centralized route map
+import Router from "./routes/Router";
 
 export default function App() {
   return (
     <AuthProvider>
       <CartProvider>
-        <div className="min-h-screen flex flex-col">
+        <div className="min-h-screen flex flex-col bg-[#0B0B0B] text-white">
           <Navbar />
           <main className="flex-1">
             <Router />
@@ -20,5 +25,5 @@ export default function App() {
         </div>
       </CartProvider>
     </AuthProvider>
-  )
+  );
 }
