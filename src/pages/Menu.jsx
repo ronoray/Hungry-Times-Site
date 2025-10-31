@@ -135,25 +135,6 @@ export default function Menu() {
 
       {/* Menu Content Container */}
       <div className="menu-container">
-        {/* Top Categories - Horizontal on Mobile, Sidebar on Desktop */}
-        <div className="top-categories-section">
-          <h3 className="categories-heading">Categories</h3>
-          <nav className="top-category-nav">
-            {tops.map(tc => (
-              <button
-                key={tc.id}
-                className={`top-category-btn ${tc.id === activeTop ? 'active' : ''}`}
-                onClick={() => { 
-                  setActiveTop(tc.id); 
-                  setActiveSub((tc.subcategories?.[0]?.id) ?? null); 
-                }}
-              >
-                {tc.name}
-              </button>
-            ))}
-          </nav>
-        </div>
-
         {/* Main Content Layout */}
         <div className="menu-layout">
           {/* Sidebar: Top Categories (Desktop Only) */}
@@ -179,6 +160,25 @@ export default function Menu() {
 
           {/* Main Content Area */}
           <div className="menu-main">
+            {/* Mobile: Top Categories */}
+            <nav className="mobile-top-categories">
+              <h3 className="mobile-heading">Categories</h3>
+              <div className="mobile-category-scroll">
+                {tops.map(tc => (
+                  <button
+                    key={tc.id}
+                    className={`mobile-category-btn ${tc.id === activeTop ? 'active' : ''}`}
+                    onClick={() => { 
+                      setActiveTop(tc.id); 
+                      setActiveSub((tc.subcategories?.[0]?.id) ?? null); 
+                    }}
+                  >
+                    {tc.name}
+                  </button>
+                ))}
+              </div>
+            </nav>
+
             {/* Subcategories Bar */}
             <nav className="subcategory-bar">
               <div className="subcategory-scroll">
@@ -249,7 +249,13 @@ export default function Menu() {
 
       {/* Styles */}
       <style>{`
-        /* === VARIABLES === */
+        /* === RESET & VARIABLES === */
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+
         :root {
           --color-bg: #0a0a0a;
           --color-surface: rgba(255, 255, 255, 0.04);
@@ -260,15 +266,6 @@ export default function Menu() {
           --color-text-muted: rgba(255, 255, 255, 0.5);
           --color-accent: #f59e0b;
           --color-accent-dim: rgba(245, 158, 11, 0.2);
-          --radius-sm: 8px;
-          --radius-md: 12px;
-          --radius-lg: 16px;
-        }
-
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
         }
 
         /* === LOADING & ERROR STATES === */
@@ -305,6 +302,7 @@ export default function Menu() {
           background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
           color: var(--color-text);
           width: 100%;
+          max-width: 100vw;
           overflow-x: hidden;
         }
 
@@ -314,7 +312,6 @@ export default function Menu() {
           width: 100%;
           overflow: hidden;
           background: #000000;
-          /* Override global color-scheme to prevent browser color adjustments */
           color-scheme: normal;
         }
 
@@ -333,42 +330,15 @@ export default function Menu() {
           background: #000000;
         }
 
-        /* Pure CSS black background for first hero - no image */
         .hero-black-bg {
           background: #000000 !important;
         }
 
-        /* Force pure black background behind images */
-        .hero-image-wrapper::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: #000000;
-          z-index: 0;
-        }
-
         .hero-image {
-          position: relative;
           width: 100%;
           height: 100%;
           object-fit: cover;
           display: block;
-          background: #000000;
-          z-index: 1;
-          /* Prevent browser from adjusting colors in dark mode */
-          color-scheme: light;
-          /* Force exact color rendering */
-          image-rendering: auto;
-          backface-visibility: hidden;
-          -webkit-backface-visibility: hidden;
-          transform: translateZ(0);
-          -webkit-transform: translateZ(0);
-          /* Prevent any color adjustments */
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-          /* Remove any filters */
-          filter: none;
-          -webkit-filter: none;
         }
 
         .hero-content-overlay {
@@ -407,7 +377,6 @@ export default function Menu() {
           font-size: clamp(1rem, 2vw, 1.5rem);
           font-weight: 600;
           color: #ffffff;
-          margin-bottom: 0.5rem;
           text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
         }
 
@@ -446,67 +415,6 @@ export default function Menu() {
           width: 100%;
         }
 
-        /* === TOP CATEGORIES SECTION (Mobile Only) === */
-        .top-categories-section {
-          display: none;
-          background: var(--color-bg);
-          border-bottom: 2px solid var(--color-border);
-          padding: 1rem;
-        }
-
-        .categories-heading {
-          font-size: 1.1rem;
-          font-weight: 700;
-          color: var(--color-accent);
-          margin-bottom: 0.75rem;
-        }
-
-        .top-category-nav {
-          display: flex;
-          gap: 0.75rem;
-          overflow-x: auto;
-          scrollbar-width: thin;
-          scrollbar-color: var(--color-border) transparent;
-          padding-bottom: 0.5rem;
-        }
-
-        .top-category-nav::-webkit-scrollbar {
-          height: 6px;
-        }
-
-        .top-category-nav::-webkit-scrollbar-thumb {
-          background: var(--color-border);
-          border-radius: 3px;
-        }
-
-        .top-category-btn {
-          flex-shrink: 0;
-          padding: 0.625rem 1.25rem;
-          background: var(--color-surface);
-          border: 1px solid var(--color-border);
-          color: var(--color-text-dim);
-          font-size: 0.95rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          border-radius: 999px;
-          white-space: nowrap;
-          font-family: inherit;
-        }
-
-        .top-category-btn:hover {
-          background: var(--color-surface-hover);
-          color: var(--color-text);
-          border-color: var(--color-accent);
-        }
-
-        .top-category-btn.active {
-          background: var(--color-accent);
-          color: #ffffff;
-          font-weight: 600;
-          border-color: var(--color-accent);
-        }
-
         /* === LAYOUT === */
         .menu-layout {
           display: grid;
@@ -526,7 +434,7 @@ export default function Menu() {
           top: 2rem;
           background: var(--color-surface);
           border: 1px solid var(--color-border);
-          border-radius: var(--radius-md);
+          border-radius: 12px;
           padding: 1.5rem;
         }
 
@@ -557,7 +465,7 @@ export default function Menu() {
           font-size: 1rem;
           cursor: pointer;
           transition: all 0.3s ease;
-          border-radius: var(--radius-sm);
+          border-radius: 8px;
           font-family: inherit;
         }
 
@@ -574,10 +482,16 @@ export default function Menu() {
           border-left-color: var(--color-accent);
         }
 
+        /* === MOBILE TOP CATEGORIES (Hidden on Desktop) === */
+        .mobile-top-categories {
+          display: none;
+        }
+
         /* === MAIN CONTENT === */
         .menu-main {
           min-height: 600px;
           width: 100%;
+          max-width: 100%;
         }
 
         /* === SUBCATEGORY BAR === */
@@ -669,7 +583,7 @@ export default function Menu() {
         .menu-item-card {
           background: var(--color-surface);
           border: 1px solid var(--color-border);
-          border-radius: var(--radius-md);
+          border-radius: 12px;
           padding: 1.25rem;
           transition: all 0.3s ease;
           width: 100%;
@@ -686,24 +600,27 @@ export default function Menu() {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          gap: 1rem;
+          gap: 0.75rem;
           margin-bottom: 0.75rem;
         }
 
         .item-name {
-          font-size: 1.1rem;
+          font-size: 1rem;
           font-weight: 600;
           color: var(--color-text);
           margin: 0;
           flex: 1;
           word-wrap: break-word;
+          overflow-wrap: break-word;
+          line-height: 1.3;
         }
 
         .item-price {
-          font-size: 1.125rem;
+          font-size: 1rem;
           font-weight: 700;
           color: var(--color-accent);
           white-space: nowrap;
+          flex-shrink: 0;
         }
 
         .item-description {
@@ -725,7 +642,7 @@ export default function Menu() {
           font-weight: 600;
           cursor: pointer;
           transition: all 0.3s ease;
-          border-radius: var(--radius-sm);
+          border-radius: 8px;
           margin-top: 0.75rem;
           font-family: inherit;
         }
@@ -815,39 +732,92 @@ export default function Menu() {
             aspect-ratio: 16 / 10;
           }
 
-          /* Hide desktop sidebar, show mobile section */
+          /* Hide desktop sidebar */
           .desktop-sidebar {
             display: none;
           }
 
-          .top-categories-section {
+          /* Show mobile top categories */
+          .mobile-top-categories {
             display: block;
+            background: var(--color-bg);
+            border-bottom: 2px solid var(--color-border);
+            padding: 1rem;
+            margin-bottom: 0;
+          }
+
+          .mobile-heading {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--color-accent);
+            margin-bottom: 0.75rem;
+          }
+
+          .mobile-category-scroll {
+            display: flex;
+            gap: 0.75rem;
+            overflow-x: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--color-border) transparent;
+            padding-bottom: 0.5rem;
+          }
+
+          .mobile-category-scroll::-webkit-scrollbar {
+            height: 6px;
+          }
+
+          .mobile-category-scroll::-webkit-scrollbar-thumb {
+            background: var(--color-border);
+            border-radius: 3px;
+          }
+
+          .mobile-category-btn {
+            flex-shrink: 0;
+            padding: 0.625rem 1.25rem;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-dim);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 999px;
+            white-space: nowrap;
+            font-family: inherit;
+          }
+
+          .mobile-category-btn:hover {
+            background: var(--color-surface-hover);
+            color: var(--color-text);
+            border-color: var(--color-accent);
+          }
+
+          .mobile-category-btn.active {
+            background: var(--color-accent);
+            color: #ffffff;
+            font-weight: 600;
+            border-color: var(--color-accent);
           }
 
           .menu-layout {
             grid-template-columns: 1fr;
-            padding: 1rem;
+            padding: 0;
             gap: 0;
           }
 
+          .menu-main {
+            padding: 0 1rem;
+          }
+
           .items-grid {
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            grid-template-columns: 1fr;
           }
         }
 
         @media (max-width: 768px) {
-          .menu-layout {
-            padding: 0.75rem;
-          }
-
           .subcategory-bar {
             padding: 0.75rem 0;
             margin-bottom: 1.5rem;
-          }
-
-          .items-grid {
-            grid-template-columns: 1fr;
-            gap: 1rem;
           }
 
           .section-title {
@@ -862,26 +832,18 @@ export default function Menu() {
           .menu-item-card {
             padding: 1rem;
           }
-
-          .item-name {
-            font-size: 1rem;
-          }
-
-          .item-price {
-            font-size: 1rem;
-          }
         }
 
         @media (max-width: 480px) {
-          .top-categories-section {
+          .mobile-top-categories {
             padding: 0.75rem;
           }
 
-          .categories-heading {
+          .mobile-heading {
             font-size: 1rem;
           }
 
-          .top-category-btn,
+          .mobile-category-btn,
           .subcategory-btn {
             padding: 0.5rem 1rem;
             font-size: 0.875rem;
@@ -902,6 +864,14 @@ export default function Menu() {
           .cta-button {
             padding: 0.625rem 1.25rem;
             font-size: 0.85rem;
+          }
+
+          .item-name {
+            font-size: 0.95rem;
+          }
+
+          .item-price {
+            font-size: 0.95rem;
           }
         }
       `}</style>
