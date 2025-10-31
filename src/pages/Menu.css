@@ -198,6 +198,16 @@
   display: block !important;
 }
 
+@media (min-width: 1025px) {
+  .categories-sidebar {
+    position: relative !important;
+    left: auto !important;
+    width: auto !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+}
+
 .sidebar-sticky {
   position: sticky !important;
   top: 2rem !important;
@@ -475,7 +485,7 @@
 
 /* === MOBILE HAMBURGER & OVERLAY === */
 .mobile-menu-toggle {
-  display: none;
+  display: none !important; /* Hidden by default on desktop */
   position: fixed;
   top: 16px;
   left: 16px;
@@ -500,10 +510,10 @@
 
 .mobile-menu-toggle span {
   display: block !important;
-  width: 24px !important;
+  width: 26px !important;
   height: 3px !important;
   background: #000 !important;
-  border-radius: 2px !important;
+  border-radius: 3px !important;
   transition: all 0.3s ease !important;
 }
 
@@ -519,6 +529,14 @@
   backdrop-filter: blur(3px) !important;
 }
 
+/* Hide mobile elements on desktop */
+@media (min-width: 1025px) {
+  .mobile-menu-toggle,
+  .mobile-overlay {
+    display: none !important;
+  }
+}
+
 /* === MOBILE === */
 @media (max-width: 1024px) {
   /* Show hamburger button on mobile */
@@ -532,7 +550,13 @@
   }
 
   .hero-image-wrapper {
-    aspect-ratio: 16 / 10 !important;
+    aspect-ratio: 16 / 9 !important;
+    min-height: 200px !important;
+    max-height: 300px !important;
+  }
+
+  .hero-content-overlay {
+    padding-top: 3rem !important;
   }
 
   .menu-container {
@@ -625,20 +649,21 @@
 
   /* Main content - Full width, no sidebar taking space */
   .menu-main {
-    padding: 1rem !important;
+    padding: 1.5rem 1rem !important;
     width: 100% !important;
     max-width: 100% !important;
   }
 
   /* Subcategory bar - contained horizontal scroll only for subcategories */
   .subcategory-bar {
-    margin-top: 0 !important;
+    margin-top: 1rem !important;
     margin-bottom: 1.5rem !important;
     padding: 0.75rem !important;
     position: static !important;
-    background: rgba(255, 255, 255, 0.03) !important;
+    background: rgba(10, 10, 10, 0.95) !important;
     border-radius: 12px !important;
     border: 1px solid var(--color-border) !important;
+    backdrop-filter: blur(10px) !important;
   }
 
   .subcategory-scroll {
@@ -687,12 +712,17 @@
   .mobile-menu-toggle {
     top: 12px !important;
     left: 12px !important;
-    width: 46px !important;
-    height: 46px !important;
+    width: 48px !important;
+    height: 48px !important;
   }
 
   .mobile-menu-toggle span {
-    width: 22px !important;
+    width: 24px !important;
+  }
+
+  .hero-image-wrapper {
+    min-height: 180px !important;
+    max-height: 250px !important;
   }
 
   .categories-sidebar {
