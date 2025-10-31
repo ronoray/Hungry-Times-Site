@@ -113,87 +113,87 @@
   flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
+  background: rgba(0, 0, 0, 0.4) !important;
   padding: 2rem !important;
-  z-index: 10 !important;
   text-align: center !important;
 }
 
 .hero-title {
-  font-size: 2.5rem !important;
+  font-size: 3rem !important;
   font-weight: 800 !important;
-  color: var(--color-text) !important;
-  margin-bottom: 0.5rem !important;
-  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7) !important;
+  color: #ffffff !important;
+  margin-bottom: 0.75rem !important;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8) !important;
 }
 
 .hero-subtitle {
-  font-size: 1rem !important;
-  color: var(--color-text-dim) !important;
-  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.7) !important;
+  font-size: 1.25rem !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-weight: 400 !important;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8) !important;
 }
 
 .hero-cta {
   display: flex !important;
   flex-direction: column !important;
-  gap: 1rem !important;
   align-items: center !important;
+  gap: 1rem !important;
 }
 
 .cta-text {
-  font-size: 1.125rem !important;
+  font-size: 1.5rem !important;
   font-weight: 600 !important;
-  color: var(--color-text) !important;
-  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.7) !important;
+  color: #ffffff !important;
+  margin-bottom: 0.5rem !important;
+  text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.8) !important;
 }
 
 .cta-button {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 0.5rem !important;
+  justify-content: center !important;
   padding: 0.875rem 2rem !important;
-  background: var(--color-accent) !important;
-  color: #fff !important;
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+  color: #000000 !important;
+  font-size: 1.125rem !important;
   font-weight: 700 !important;
-  font-size: 1rem !important;
   border-radius: 999px !important;
   text-decoration: none !important;
   transition: all 0.3s ease !important;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3) !important;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4) !important;
+  min-width: 240px !important;
+  cursor: pointer !important;
 }
 
 .cta-button:hover {
-  background: #d97706 !important;
   transform: translateY(-2px) !important;
-  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4) !important;
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.6) !important;
 }
 
 .cta-button-whatsapp {
-  background: #25D366 !important;
-  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3) !important;
+  background: linear-gradient(135deg, #25d366, #128c7e) !important;
+  color: #ffffff !important;
 }
 
 .cta-button-whatsapp:hover {
-  background: #1DA851 !important;
-  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4) !important;
+  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.6) !important;
 }
 
-/* Menu container */
 .menu-container {
-  max-width: 1400px !important;
+  max-width: 1440px !important;
   margin: 0 auto !important;
-  padding: 2rem 1rem !important;
+  padding: 3rem 2rem !important;
 }
 
 .menu-layout {
   display: grid !important;
-  grid-template-columns: 260px 1fr !important;
-  gap: 2rem !important;
+  grid-template-columns: 280px 1fr !important;
+  gap: 2.5rem !important;
   align-items: start !important;
 }
 
-/* Categories sidebar - DESKTOP */
 .categories-sidebar {
-  display: block !important;
+  position: relative !important;
 }
 
 .sidebar-sticky {
@@ -348,90 +348,86 @@
 .menu-item-card {
   background: rgba(255, 255, 255, 0.03) !important;
   border: 1px solid var(--color-border) !important;
-  border-radius: 1.25rem !important;
+  border-radius: 1rem !important;
   padding: 1.5rem !important;
   transition: all 0.3s ease !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 0.875rem !important;
   backdrop-filter: blur(10px) !important;
 }
 
 .menu-item-card:hover {
   background: rgba(255, 255, 255, 0.06) !important;
   border-color: var(--color-accent) !important;
-  transform: translateY(-4px) !important;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.15) !important;
+  transform: translateY(-2px) !important;
 }
 
 .item-header {
   display: flex !important;
   justify-content: space-between !important;
-  align-items: flex-start !important;
+  align-items: baseline !important;
   gap: 1rem !important;
+  margin-bottom: 0.75rem !important;
 }
 
 .item-name {
   font-size: 1.125rem !important;
   font-weight: 600 !important;
   color: var(--color-text) !important;
-  line-height: 1.4 !important;
   flex: 1 !important;
 }
 
 .item-price {
-  font-size: 1.125rem !important;
+  font-size: 1.25rem !important;
   font-weight: 700 !important;
   color: var(--color-accent) !important;
   white-space: nowrap !important;
 }
 
 .item-description {
-  font-size: 0.875rem !important;
-  color: var(--color-text-muted) !important;
+  font-size: 0.9375rem !important;
+  color: var(--color-text-dim) !important;
   line-height: 1.6 !important;
+  margin-bottom: 1rem !important;
 }
 
 .expand-btn {
-  align-self: flex-start !important;
-  padding: 0.5rem 1rem !important;
+  width: 100% !important;
+  padding: 0.625rem 1rem !important;
   background: rgba(245, 158, 11, 0.1) !important;
-  border: 1px solid var(--color-accent) !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
   color: var(--color-accent) !important;
   font-size: 0.875rem !important;
   font-weight: 600 !important;
   cursor: pointer !important;
   transition: all 0.2s ease !important;
-  border-radius: 999px !important;
+  border-radius: 0.5rem !important;
+  margin-top: 0.75rem !important;
   font-family: inherit !important;
 }
 
 .expand-btn:hover {
-  background: var(--color-accent) !important;
-  color: #ffffff !important;
+  background: rgba(245, 158, 11, 0.2) !important;
+  border-color: var(--color-accent) !important;
 }
 
 .options-container {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 1rem !important;
-  padding-top: 0.5rem !important;
+  margin-top: 1rem !important;
+  padding-top: 1rem !important;
   border-top: 1px solid var(--color-border) !important;
 }
 
 .variants-section,
 .addons-section {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 0.75rem !important;
+  margin-bottom: 1rem !important;
 }
 
 .section-label {
-  font-size: 0.75rem !important;
+  font-size: 0.875rem !important;
   font-weight: 600 !important;
-  color: var(--color-text-muted) !important;
+  color: var(--color-text) !important;
+  margin-bottom: 0.5rem !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.05em !important;
+  letter-spacing: 0.5px !important;
 }
 
 .options-row {
@@ -443,28 +439,23 @@
 .option-chip {
   display: inline-flex !important;
   align-items: center !important;
+  gap: 0.25rem !important;
   padding: 0.375rem 0.75rem !important;
-  background: rgba(255, 255, 255, 0.06) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
   border: 1px solid var(--color-border) !important;
-  border-radius: 999px !important;
-  font-size: 0.8125rem !important;
   color: var(--color-text-dim) !important;
-  transition: all 0.2s ease !important;
-}
-
-.option-chip:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-color: var(--color-accent) !important;
-  color: var(--color-text) !important;
+  font-size: 0.8125rem !important;
+  border-radius: 999px !important;
+  white-space: nowrap !important;
 }
 
 .option-price-delta {
-  margin-left: 0.25rem !important;
   color: var(--color-accent) !important;
   font-weight: 600 !important;
+  margin-left: 0.25rem !important;
 }
 
-/* === MOBILE HAMBURGER - HIDDEN ON DESKTOP === */
+/* DESKTOP: Hide mobile elements */
 .mobile-menu-toggle {
   display: none !important;
 }
@@ -475,44 +466,70 @@
 
 /* === MOBILE ONLY === */
 @media (max-width: 1024px) {
-  /* Show hamburger on mobile */
+  /* IMPROVED HAMBURGER ICON - More obvious and better looking */
   .mobile-menu-toggle {
     display: flex !important;
     position: fixed;
-    top: 16px;
-    left: 16px;
+    top: 20px;
+    left: 20px;
     z-index: 1001;
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(245, 158, 11, 0.85)) !important;
-    border: 2px solid rgba(255, 255, 255, 0.2) !important;
-    border-radius: 12px !important;
-    width: 56px !important;
-    height: 56px !important;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+    border: 3px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 14px !important;
+    width: 60px !important;
+    height: 60px !important;
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 5px !important;
+    gap: 6px !important;
     cursor: pointer !important;
-    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    box-shadow: 
+      0 6px 20px rgba(245, 158, 11, 0.7),
+      0 2px 8px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
     transition: all 0.2s ease !important;
     backdrop-filter: blur(10px) !important;
   }
 
   .mobile-menu-toggle:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.6), 0 3px 10px rgba(0, 0, 0, 0.3) !important;
+    transform: translateY(-3px) scale(1.05) !important;
+    box-shadow: 
+      0 8px 25px rgba(245, 158, 11, 0.8),
+      0 4px 12px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
   }
 
   .mobile-menu-toggle:active {
     transform: scale(0.95) !important;
+    box-shadow: 
+      0 4px 15px rgba(245, 158, 11, 0.6),
+      0 2px 6px rgba(0, 0, 0, 0.3),
+      inset 0 2px 4px rgba(0, 0, 0, 0.2) !important;
   }
 
   .mobile-menu-toggle span {
     display: block !important;
-    width: 28px !important;
-    height: 3px !important;
+    width: 32px !important;
+    height: 4px !important;
     background: #000 !important;
-    border-radius: 3px !important;
+    border-radius: 4px !important;
     transition: all 0.2s ease !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  /* Add visual indication when hovering */
+  .mobile-menu-toggle:hover span {
+    width: 34px !important;
+  }
+
+  /* Mobile overlay that closes sidebar */
+  .mobile-overlay {
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    z-index: 999 !important;
+    backdrop-filter: blur(4px) !important;
   }
 
   /* Hero adjustments */
@@ -524,6 +541,24 @@
   .hero-image-wrapper {
     min-height: 200px !important;
     max-height: 280px !important;
+  }
+
+  .hero-title {
+    font-size: 2rem !important;
+  }
+
+  .hero-subtitle {
+    font-size: 1rem !important;
+  }
+
+  .cta-text {
+    font-size: 1.25rem !important;
+  }
+
+  .cta-button {
+    font-size: 1rem !important;
+    padding: 0.75rem 1.5rem !important;
+    min-width: 200px !important;
   }
 
   .menu-container {
@@ -547,7 +582,7 @@
     z-index: 1000 !important;
     background: #0a0a0a !important;
     border-right: 2px solid var(--color-accent) !important;
-    padding: 90px 0 1rem 0 !important;
+    padding: 100px 0 1rem 0 !important;
     margin: 0 !important;
     overflow-y: auto !important;
     transition: left 0.3s ease !important;
@@ -584,8 +619,9 @@
     text-align: left !important;
   }
 
+  /* CRITICAL FIX: Menu main padding to prevent subcategory bar overlap */
   .menu-main {
-    padding: 2rem 1rem 1rem 1rem !important;
+    padding: 3rem 1rem 1rem 1rem !important;
     width: 100% !important;
   }
 
@@ -602,12 +638,15 @@
 
 @media (max-width: 480px) {
   .mobile-menu-toggle {
-    width: 50px !important;
-    height: 50px !important;
+    width: 56px !important;
+    height: 56px !important;
+    top: 16px !important;
+    left: 16px !important;
   }
 
   .mobile-menu-toggle span {
-    width: 24px !important;
+    width: 28px !important;
+    height: 3px !important;
   }
 
   .hero-image-wrapper {
@@ -615,7 +654,11 @@
     max-height: 240px !important;
   }
 
+  .hero-title {
+    font-size: 1.75rem !important;
+  }
+
   .menu-main {
-    padding: 1.5rem 0.875rem !important;
+    padding: 2.5rem 0.875rem 1rem 0.875rem !important;
   }
 }
