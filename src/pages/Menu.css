@@ -1,5 +1,16 @@
 /* Menu.css - Clean responsive design */
 
+/* CRITICAL: Reset wrapper to override App.css */
+.menu-page-wrapper {
+  all: initial;
+  display: block;
+  width: 100%;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
+}
+
 /* Button reset */
 .menu-page button {
   all: unset;

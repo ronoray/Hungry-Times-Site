@@ -97,7 +97,8 @@ export default function Menu() {
   }
 
   return (
-    <div className="menu-page">
+    <div className="menu-page-wrapper">
+      <div className="menu-page">
       {/* Hero Section */}
       <div className="menu-hero">
         <div className="hero-grid">
@@ -229,6 +230,7 @@ export default function Menu() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }

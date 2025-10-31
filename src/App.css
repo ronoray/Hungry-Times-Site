@@ -1,4 +1,14 @@
+/* App.css - Fixed to not interfere with full-width pages */
+
 #root {
+  /* Removed max-width and padding that was breaking Menu layout */
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* Only apply these styles to specific pages if needed */
+.app-container-centered {
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
@@ -11,9 +21,11 @@
   will-change: filter;
   transition: filter 300ms;
 }
+
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
 }
+
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
