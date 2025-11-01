@@ -686,3 +686,34 @@
     padding: 2.5rem 0.875rem 1rem 0.875rem !important;
   }
 }
+/* View Image Button Styling */
+.view-image-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-top: 0.5rem !important;
+  font-size: 0.875rem !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 0.5rem !important;
+  background: rgba(31, 41, 55, 0.8) !important;
+  color: #e5e7eb !important;
+  border: 1px solid rgba(55, 65, 81, 0.6) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  font-weight: 500 !important;
+  white-space: nowrap !important;
+  font-family: inherit !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+.view-image-btn:hover {
+  background: rgba(55, 65, 81, 0.9) !important;
+  border-color: var(--color-accent) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2) !important;
+}
+
+.view-image-btn:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 1px 4px rgba(245, 158, 11, 0.1) !important;
+}

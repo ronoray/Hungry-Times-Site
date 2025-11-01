@@ -1,8 +1,44 @@
-// site/src/pages/Menu.jsx
+// =============================
+// File: site/src/pages/Menu.jsx
+// Fully regenerated with public-only "View Image" button + modal popup.
+// =============================
+
 import { useEffect, useMemo, useState, useRef } from "react";
 import "./Menu.css";
 
 const DESC_MAX = 160;
+
+function ImageModal({ open, url, name, onClose }) {
+  if (!open) return null;
+  const backdrop = {
+    position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 9999,
+  };
+  const body = {
+    position: "relative", zIndex: 10000, maxWidth: "90vw", maxHeight: "90vh",
+    margin: "5vh auto", background: "#0b0b0b", borderRadius: 16, padding: 12,
+    display: "flex", flexDirection: "column",
+  };
+  const head = { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, color: "#ddd" };
+  const img = { maxWidth: "86vw", maxHeight: "80vh", objectFit: "contain", borderRadius: 10 };
+  const closeBtn = { background: "#303030", color: "#eee", border: 0, borderRadius: 8, padding: "4px 10px", cursor: "pointer" };
+  const empty = { color: "#aaa", textAlign: "center", padding: "40px 20px" };
+
+  return (
+    <div style={backdrop} onClick={onClose}>
+      <div style={body} onClick={(e) => e.stopPropagation()}>
+        <div style={head}>
+          <div>{name || "Item image"}</div>
+          <button style={closeBtn} onClick={onClose}>Close</button>
+        </div>
+        {url ? (
+          <img src={url} alt={name || "Item image"} style={img} />
+        ) : (
+          <div style={empty}>No image available</div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function Menu() {
   const [data, setData] = useState(null);
@@ -13,6 +49,9 @@ export default function Menu() {
   const [expandedItems, setExpandedItems] = useState(new Set());
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // New: image modal
+  const [imgModal, setImgModal] = useState({ open: false, url: null, name: "" });
+
   const rightPaneRef = useRef(null);
 
   useEffect(() => {
@@ -20,8 +59,8 @@ export default function Menu() {
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch("https://hungrytimes.in/api/public/menu", { 
-          headers: { "Cache-Control": "no-cache" }
+        const res = await fetch("https://hungrytimes.in/api/public/menu", {
+          headers: { "Cache-Control": "no-cache" },
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
@@ -38,18 +77,20 @@ export default function Menu() {
         if (alive) setLoading(false);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const tops = data?.topCategories || [];
   const subs = useMemo(() => {
-    const t = tops.find(x => x.id === activeTop);
+    const t = tops.find((x) => x.id === activeTop);
     return t?.subcategories || [];
   }, [tops, activeTop]);
 
   const itemsBySub = useMemo(() => {
     const map = new Map();
-    subs.forEach(sc => map.set(sc.id, sc.items || []));
+    subs.forEach((sc) => map.set(sc.id, sc.items || []));
     return map;
   }, [subs]);
 
@@ -60,7 +101,7 @@ export default function Menu() {
   };
 
   const toggleExpand = (itemId) => {
-    setExpandedItems(prev => {
+    setExpandedItems((prev) => {
       const next = new Set(prev);
       if (next.has(itemId)) next.delete(itemId);
       else next.add(itemId);
@@ -84,11 +125,19 @@ export default function Menu() {
   }
 
   if (err) {
-    return <div className="menu-error"><p>😔 Failed to load menu. {err}</p></div>;
+    return (
+      <div className="menu-error">
+        <p>😔 Failed to load menu. {err}</p>
+      </div>
+    );
   }
 
   if (!data || tops.length === 0) {
-    return <div className="menu-empty"><p>🍽️ No menu available yet. Check back soon!</p></div>;
+    return (
+      <div className="menu-empty">
+        <p>🍽️ No menu available yet. Check back soon!</p>
+      </div>
+    );
   }
 
   return (
@@ -104,12 +153,24 @@ export default function Menu() {
               </div>
             </div>
             <div className="hero-image-wrapper">
-              <img src="/images/menu/menu-hero-2.jpg" alt="Hungry Times" className="hero-image" loading="eager" />
+              <img
+                src="/images/menu/menu-hero-2.jpg"
+                alt="Hungry Times"
+                className="hero-image"
+                loading="eager"
+              />
               <div className="hero-content-overlay">
                 <div className="hero-cta">
                   <p className="cta-text">Ready to order?</p>
                   <a href="tel:+918420822919" className="cta-button">📞 Call 8420822919</a>
-                  <a href="https://wa.me/918420822919" target="_blank" rel="noopener noreferrer" className="cta-button cta-button-whatsapp">💬 WhatsApp</a>
+                  <a
+                    href="https://wa.me/918420822919"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="cta-button cta-button-whatsapp"
+                  >
+                    💬 WhatsApp
+                  </a>
                 </div>
               </div>
             </div>
@@ -117,23 +178,35 @@ export default function Menu() {
         </div>
 
         {/* Mobile Hamburger */}
-        <button className="mobile-menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
-          <span></span><span></span><span></span>
+        <button
+          className="mobile-menu-toggle"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+        >
+          <span></span>
+          <span></span>
+          <span></span>
         </button>
 
         {/* Overlay */}
-        {sidebarOpen && <div className="mobile-overlay" onClick={() => setSidebarOpen(false)} />}
+        {sidebarOpen && (
+          <div className="mobile-overlay" onClick={() => setSidebarOpen(false)} />
+        )}
 
         {/* Content */}
         <div className="menu-container">
           <div className="menu-layout">
-            <aside className={`categories-sidebar ${sidebarOpen ? 'open' : ''}`}>
+            <aside className={`categories-sidebar ${sidebarOpen ? "open" : ""}`}>
               <div className="sidebar-sticky">
                 <h3 className="sidebar-heading">Categories</h3>
                 <nav className="sidebar-category-list">
-                  {tops.map(tc => (
-                    <button key={tc.id} className={`sidebar-category-btn ${tc.id === activeTop ? 'active' : ''}`}
-                      onClick={() => handleCategoryClick(tc.id, (tc.subcategories?.[0]?.id) ?? null)}>
+                  {tops.map((tc) => (
+                    <button
+                      key={tc.id}
+                      className={`sidebar-category-btn ${tc.id === activeTop ? "active" : ""}`}
+                      onClick={() =>
+                        handleCategoryClick(tc.id, tc.subcategories?.[0]?.id ?? null)
+                      }
+                    >
                       {tc.name}
                     </button>
                   ))}
@@ -141,24 +214,32 @@ export default function Menu() {
               </div>
             </aside>
 
-            <div className="menu-main" onClick={() => sidebarOpen && setSidebarOpen(false)}>
+            <div
+              className="menu-main"
+              onClick={() => sidebarOpen && setSidebarOpen(false)}
+            >
               <nav className="subcategory-bar">
                 <div className="subcategory-scroll">
-                  {subs.map(sc => (
-                    <button key={sc.id} className={`subcategory-btn ${sc.id === activeSub ? 'active' : ''}`}
-                      onClick={() => scrollToSub(sc.id)}>{sc.name}</button>
+                  {subs.map((sc) => (
+                    <button
+                      key={sc.id}
+                      className={`subcategory-btn ${sc.id === activeSub ? "active" : ""}`}
+                      onClick={() => scrollToSub(sc.id)}
+                    >
+                      {sc.name}
+                    </button>
                   ))}
                 </div>
               </nav>
 
               <section className="menu-content" ref={rightPaneRef}>
-                {subs.map(sc => (
+                {subs.map((sc) => (
                   <div key={sc.id} data-sub={sc.id} className="menu-section">
                     <h2 className="section-title">{sc.name}</h2>
                     <div className="items-grid">
-                      {(itemsBySub.get(sc.id) || []).map(it => {
-                        const hasVariants = hasVariantsOrAddons(it, 'variant');
-                        const hasAddons = hasVariantsOrAddons(it, 'addon');
+                      {(itemsBySub.get(sc.id) || []).map((it) => {
+                        const hasVariants = hasVariantsOrAddons(it, "variant");
+                        const hasAddons = hasVariantsOrAddons(it, "addon");
                         const isExpanded = expandedItems.has(it.id);
                         const showExpandBtn = hasVariants || hasAddons;
 
@@ -166,12 +247,29 @@ export default function Menu() {
                           <article key={it.id} className="menu-item-card">
                             <div className="item-header">
                               <h3 className="item-name">{it.name}</h3>
-                              <span className="item-price">₹{Number(it.basePrice || 0).toFixed(0)}</span>
+                              <span className="item-price">
+                                ₹{Number(it.basePrice || 0).toFixed(0)}
+                              </span>
                             </div>
-                            {it.description && <p className="item-description">{String(it.description).slice(0, DESC_MAX)}</p>}
+                            {it.description && (
+                              <p className="item-description">
+                                {String(it.description).slice(0, DESC_MAX)}
+                              </p>
+                            )}
+
+                            {/* Public View Image button (only if imageUrl present) */}
+                            {it.imageUrl ? (
+                              <button
+                                className="view-image-btn"
+                                onClick={() => setImgModal({ open: true, url: it.imageUrl, name: it.name })}
+                              >
+                                View Image
+                              </button>
+                            ) : null}
+
                             {showExpandBtn && (
                               <button className="expand-btn" onClick={() => toggleExpand(it.id)}>
-                                {isExpanded ? '− Hide Options' : '+ View Options'}
+                                {isExpanded ? "− Hide Options" : "+ View Options"}
                               </button>
                             )}
                             {isExpanded && (
@@ -191,31 +289,47 @@ export default function Menu() {
           </div>
         </div>
       </div>
+
+      {/* Global Image Modal */}
+      <ImageModal
+        open={imgModal.open}
+        url={imgModal.url}
+        name={imgModal.name}
+        onClose={() => setImgModal({ open: false, url: null, name: "" })}
+      />
     </div>
   );
 }
 
 function hasVariantsOrAddons(it, type) {
-  const families = (it.families || []).filter(f => f.type === type);
-  if (families.length > 0) return families.some(fam => (fam.options || []).length > 0);
-  if (type === 'variant') return (it.variants || []).length > 0;
-  if (type === 'addon') return (it.addonGroups || []).length > 0;
+  const families = (it.families || []).filter((f) => f.type === type);
+  if (families.length > 0)
+    return families.some((fam) => (fam.options || []).length > 0);
+  if (type === "variant") return (it.variants || []).length > 0;
+  if (type === "addon") return (it.addonGroups || []).length > 0;
   return false;
 }
 
 function renderVariants(it) {
-  const famVariants = (it.families || []).filter(f => f.type === "variant");
-  const blocks = famVariants.length ? famVariants : (it.variants?.length ? [{ name: "Variants", options: it.variants }] : []);
+  const famVariants = (it.families || []).filter((f) => f.type === "variant");
+  const blocks = famVariants.length
+    ? famVariants
+    : it.variants?.length
+    ? [{ name: "Variants", options: it.variants }]
+    : [];
   if (!blocks.length) return null;
-  
+
   return (
     <div className="variants-section">
       {blocks.map((blk, i) => (
         <div key={i}>
           <div className="section-label">{blk.name || "Variants"}</div>
           <div className="options-row">
-            {(blk.options || []).map(opt => (
-              <span key={opt.id} className="option-chip">{opt.name}{formatPriceDelta(opt.priceDelta)}</span>
+            {(blk.options || []).map((opt) => (
+              <span key={opt.id} className="option-chip">
+                {opt.name}
+                {formatPriceDelta(opt.priceDelta)}
+              </span>
             ))}
           </div>
         </div>
@@ -225,18 +339,25 @@ function renderVariants(it) {
 }
 
 function renderAddons(it) {
-  const famAddons = (it.families || []).filter(f => f.type === "addon");
-  const blocks = famAddons.length ? famAddons : (it.addonGroups?.length ? it.addonGroups : []);
+  const famAddons = (it.families || []).filter((f) => f.type === "addon");
+  const blocks = famAddons.length
+    ? famAddons
+    : it.addonGroups?.length
+    ? it.addonGroups
+    : [];
   if (!blocks.length) return null;
-  
+
   return (
     <div className="addons-section">
       {blocks.map((blk, i) => (
         <div key={i}>
           <div className="section-label">{blk.name || "Add-ons"}</div>
           <div className="options-row">
-            {(blk.options || []).map(opt => (
-              <span key={opt.id} className="option-chip">{opt.name}{formatPriceDelta(opt.priceDelta)}</span>
+            {(blk.options || []).map((opt) => (
+              <span key={opt.id} className="option-chip">
+                {opt.name}
+                {formatPriceDelta(opt.priceDelta)}
+              </span>
             ))}
           </div>
         </div>
@@ -249,5 +370,9 @@ function formatPriceDelta(v) {
   const n = Number(v || 0);
   if (!n) return null;
   const sign = n >= 0 ? "+" : "";
-  return <span className="option-price-delta">{sign}₹{Math.abs(n).toFixed(0)}</span>;
+  return (
+    <span className="option-price-delta">
+      {sign}₹{Math.abs(n).toFixed(0)}
+    </span>
+  );
 }
