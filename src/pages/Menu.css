@@ -274,7 +274,7 @@
   overflow-x: auto !important;
   scrollbar-width: thin !important;
   scrollbar-color: var(--color-accent) transparent !important;
-  padding-bottom: 0.25rem !important;
+  padding: 0.5rem 0.25rem !important;
   -webkit-overflow-scrolling: touch !important;
 }
 
@@ -629,6 +629,18 @@
     margin-top: 0 !important;
     margin-bottom: 1.5rem !important;
     position: static !important;
+  }
+
+  /* Make subcategories wrap on mobile - show all 5 categories */
+  .subcategory-scroll {
+    flex-wrap: wrap !important;
+    overflow-x: visible !important;
+    padding: 0.5rem !important;
+  }
+
+  .subcategory-btn {
+    font-size: 0.8125rem !important;
+    padding: 0.5rem 1rem !important;
   }
 
   .items-grid {
