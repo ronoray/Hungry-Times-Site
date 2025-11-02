@@ -798,6 +798,20 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  /* CRITICAL FIXES FOR MOBILE SELECTION/HIGHLIGHT */
+  outline: none !important; 
+  user-select: none !important; /* Prevents text selection */
+  -webkit-tap-highlight-color: transparent !important; /* <-- THIS IS KEY FOR MOBILE TAP HIGHLIGHT */
+  cursor: default !important; /* Ensure the cursor isn't a pointer */
+}
+
+  /* Ensure no visual change on card activation/focus */
+ .recommended-item-card:focus,
+ .recommended-item-card:active {
+  outline: none !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important; /* Keep original shadow */
+  background: linear-gradient(145deg, rgba(31, 41, 55, 0.95), rgba(17, 24, 39, 0.95)) !important; /* Keep original background */
+  transform: none !important; /* Prevent movement on tap */
 }
 
 .recommended-item-card::before {
