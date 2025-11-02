@@ -948,3 +948,20 @@
 .menu-item-card .item-header {
   padding-right: 2rem; /* Make room for star badge */
 }
+
+/* Keep price visible when RECOMMENDED badge is present */
+.recommended-item-card .item-header {
+  /* reserve space for the badge so price never sits under it */
+  padding-right: 7rem !important; /* ≈112px; adjust if you change badge size */
+}
+
+/* Slightly smaller badge / a bit more room on narrow phones */
+@media (max-width: 480px) {
+  .recommended-item-card .item-header {
+    padding-right: 8rem !important;
+  }
+  .star-badge {
+    font-size: 0.6rem !important;
+    padding: 0.25rem 0.55rem !important;
+  }
+}
