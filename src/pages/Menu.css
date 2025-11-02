@@ -1007,3 +1007,18 @@
 .recommended-items-grid    { display: block !important; column-count: 2; column-gap: 1.25rem; }
 @media (min-width: 1280px) { .recommended-items-grid { column-count: 3; } }
 .recommended-item-card     { padding: 1rem !important; border-radius: 12px !important; }
+
+/* Keep price clear of the RECOMMENDED badge on desktop */
+.recommended-item-card .item-header {
+  display: grid !important;
+  grid-template-columns: 1fr auto 8rem; /* name | price | reserve for badge */
+  align-items: center !important;
+  column-gap: 0.5rem !important;
+}
+
+/* On narrow phones, reserve a bit more because of tighter layout */
+@media (max-width: 480px) {
+  .recommended-item-card .item-header {
+    grid-template-columns: 1fr auto 9rem !important;
+  }
+}
