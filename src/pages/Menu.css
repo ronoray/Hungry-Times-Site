@@ -364,7 +364,7 @@
 .item-header {
   display: flex !important;
   justify-content: space-between !important;
-  align-items: baseline !important;
+  align-items: center !important; /* 🌟 NEW FIX: Use 'center' for vertical alignment */
   gap: 1rem !important;
   margin-bottom: 0.75rem !important;
 }
@@ -742,7 +742,7 @@
   right: 0;
   height: 4px;
   background: linear-gradient(90deg, #fbbf24, #f59e0b, #fbbf24);
-  animation: shimmer 3s infinite;
+  animation: shimmer 3s linear infinite;
 }
 
 @keyframes shimmer {
@@ -785,11 +785,14 @@
   gap: 1.5rem;
 }
 
-/* Recommended Item Card - Special Styling */
+/* Recommended Item Card */
 .recommended-item-card {
   background: linear-gradient(145deg, rgba(31, 41, 55, 0.95), rgba(17, 24, 39, 0.95));
   border-radius: 20px;
-  padding: 1.75rem;
+  /* CRITICAL CHANGE: Increase top and right padding to clear the badge */
+  padding: 1rem 1rem 1rem 1rem !important; /* Original padding */
+  padding-top: 2.5rem !important; /* <--- NEW: Push content down */
+  padding-right: 1.5rem !important; /* <--- NEW: Give horizontal space */
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   border: 2px solid #fbbf24;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -812,8 +815,8 @@
 }
 
 .recommended-item-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 20px 40px rgba(251, 191, 36, 0.2);
+  transform: translateY(-4px) scale(1.01); /* Adjusted hover for compact cards */
+  box-shadow: 0 10px 20px rgba(251, 191, 36, 0.2);
 }
 
 .recommended-item-card:hover::before {
@@ -823,9 +826,10 @@
 /* Recommended Badge */
 .recommended-badge {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 10px; /* <--- NEW: Move slightly down */
+  right: 12px; /* <--- NEW: Move slightly left/in */
   z-index: 10;
+  pointer-events: none; /* Do not block clicks */
 }
 
 .star-badge {
@@ -834,19 +838,21 @@
   gap: 0.25rem;
   background: linear-gradient(135deg, #fbbf24, #f59e0b);
   color: #1a1a2e;
-  font-size: 0.7rem;
+  font-size: 0.6rem !important; /* COMPACT BADGE: 0.6rem */
   font-weight: 700;
-  padding: 0.4rem 0.8rem;
-  border-radius: 20px;
+  padding: 0.25rem 0.5rem !important; /* COMPACT BADGE: 0.25rem 0.5rem */
+  border-radius: 999px !important; /* COMPACT BADGE: fully round */
   letter-spacing: 0.5px;
-  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+  box-shadow: none !important; /* COMPACT BADGE: no shadow */
 }
 
 /* Larger Price for Recommended Items */
 .item-price-large {
-  font-size: 1.5rem !important;
-  color: #fbbf24 !important;
+  font-size: 1.15rem !important; /* COMPACT PRICE: 1.15rem */
+  color: #f59e0b !important; /* Use softer accent color */
   font-weight: 700 !important;
+  flex: 0 0 auto !important; /* Key fix: Prevents wrapping */
+  white-space: nowrap !important; /* Key fix: Keeps on one line */
 }
 
 /* Star Badge for Regular Items */
@@ -862,6 +868,27 @@
 @keyframes twinkle {
   0%, 100% { opacity: 1; transform: rotate(0deg); }
   50% { opacity: 0.7; transform: rotate(-10deg); }
+}
+
+/* Key Fix: One-row header for Recommended Cards (Name | Price) */
+.recommended-item-card .item-header {
+  display: flex !important;
+  align-items: center !important; /* Align vertically for clean look */
+  justify-content: space-between !important;
+  gap: 0.5rem !important;
+  margin: 0 0 0.5rem 0 !important;
+  padding-right: 0 !important; /* <--- CRITICAL FIX: REMOVE CONFLICTING PADDING */
+}
+
+.recommended-item-card .item-name {
+  flex: 1 1 auto !important; /* Allows name to take up space */
+  min-width: 0 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
 }
 
 /* ============================================
@@ -895,7 +922,8 @@
   }
 
   .recommended-item-card {
-    padding: 1.25rem;
+    padding: 1rem !important; /* Base mobile padding */
+    padding-top: 2.5rem !important; /* CRITICAL: Ensure badge clearance on mobile too */
     border-radius: 16px;
   }
 
@@ -948,77 +976,4 @@
 /* Adjust existing item cards to accommodate star badge */
 .menu-item-card .item-header {
   padding-right: 2rem; /* Make room for star badge */
-}
-
-/* Keep price visible when RECOMMENDED badge is present */
-.recommended-item-card .item-header {
-  /* reserve space for the badge so price never sits under it */
-  padding-right: 7rem !important; /* ≈112px; adjust if you change badge size */
-}
-
-/* Slightly smaller badge / a bit more room on narrow phones */
-@media (max-width: 480px) {
-  .recommended-item-card .item-header {
-    padding-right: 8rem !important;
-  }
-  .star-badge {
-    font-size: 0.6rem !important;
-    padding: 0.25rem 0.55rem !important;
-  }
-}
-
-/* ---------- Compact, tightly-packed cards ---------- */
-.menu-item-card,
-.recommended-item-card {
-  padding: 1rem !important;
-  border-radius: 12px !important;
-  box-shadow: none !important;
-}
-
-/* Tighter header + typography */
-.item-header { align-items: center !important; gap: 0.5rem !important; margin-bottom: 0.5rem !important; }
-.item-name   { font-size: 1rem !important; font-weight: 600 !important; }
-.item-price  { font-size: 1.1rem !important; }
-.item-description { font-size: 0.9rem !important; margin-bottom: 0.75rem !important; }
-
-/* ---------- Masonry packing on desktop ---------- */
-/* Convert grids to CSS columns so cards flow tightly with variable heights */
-@media (min-width: 1024px) {
-  .items-grid {
-    display: block !important;            /* override current grid */
-    column-count: 3;                      /* desktop: 3 columns */
-    column-gap: 1.25rem;
-  }
-  .menu-item-card,
-  .recommended-item-card {
-    display: inline-block !important;
-    width: 100% !important;
-    break-inside: avoid;                  /* prevent column breaks inside a card */
-    margin: 0 0 1.25rem !important;       /* vertical gap between cards */
-  }
-}
-/* Widescreen: 4 columns */
-@media (min-width: 1440px) {
-  .items-grid { column-count: 4; }
-}
-
-/* Recommended section trims so it doesn’t look bulky */
-.recommended-section       { padding: 1rem !important; margin-bottom: 1.5rem !important; border-radius: 16px !important; }
-.recommended-items-grid    { display: block !important; column-count: 2; column-gap: 1.25rem; }
-@media (min-width: 1280px) { .recommended-items-grid { column-count: 3; } }
-.recommended-item-card     { padding: 1rem !important; border-radius: 12px !important; }
-
-/* Keep price clear of the RECOMMENDED badge on desktop */
-.recommended-item-card .item-header {
-  display: grid !important;
-  grid-template-columns: 1fr auto 8rem; /* name | price | reserve for badge */
-  align-items: center !important;
-  column-gap: 0.5rem !important;
-}
-
-/* On narrow phones, reserve a bit more because of tighter layout */
-@media (max-width: 480px) {
-  .recommended-item-card .item-header {
-    grid-template-columns: 1fr auto 9rem !important;
-  }
 }
