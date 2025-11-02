@@ -966,3 +966,44 @@
     padding: 0.25rem 0.55rem !important;
   }
 }
+
+/* ---------- Compact, tightly-packed cards ---------- */
+.menu-item-card,
+.recommended-item-card {
+  padding: 1rem !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+}
+
+/* Tighter header + typography */
+.item-header { align-items: center !important; gap: 0.5rem !important; margin-bottom: 0.5rem !important; }
+.item-name   { font-size: 1rem !important; font-weight: 600 !important; }
+.item-price  { font-size: 1.1rem !important; }
+.item-description { font-size: 0.9rem !important; margin-bottom: 0.75rem !important; }
+
+/* ---------- Masonry packing on desktop ---------- */
+/* Convert grids to CSS columns so cards flow tightly with variable heights */
+@media (min-width: 1024px) {
+  .items-grid {
+    display: block !important;            /* override current grid */
+    column-count: 3;                      /* desktop: 3 columns */
+    column-gap: 1.25rem;
+  }
+  .menu-item-card,
+  .recommended-item-card {
+    display: inline-block !important;
+    width: 100% !important;
+    break-inside: avoid;                  /* prevent column breaks inside a card */
+    margin: 0 0 1.25rem !important;       /* vertical gap between cards */
+  }
+}
+/* Widescreen: 4 columns */
+@media (min-width: 1440px) {
+  .items-grid { column-count: 4; }
+}
+
+/* Recommended section trims so it doesn’t look bulky */
+.recommended-section       { padding: 1rem !important; margin-bottom: 1.5rem !important; border-radius: 16px !important; }
+.recommended-items-grid    { display: block !important; column-count: 2; column-gap: 1.25rem; }
+@media (min-width: 1280px) { .recommended-items-grid { column-count: 3; } }
+.recommended-item-card     { padding: 1rem !important; border-radius: 12px !important; }
