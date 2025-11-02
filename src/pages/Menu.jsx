@@ -94,6 +94,21 @@ export default function Menu() {
     return map;
   }, [subs]);
 
+  // Extract all recommended items across all categories
+  const recommendedItems = useMemo(() => {
+    const items = [];
+    tops.forEach((tc) => {
+      tc.subcategories?.forEach((sc) => {
+        sc.items?.forEach((item) => {
+          if (item.isRecommended) {
+            items.push(item);
+          }
+        });
+      });
+    });
+    return items;
+  }, [tops]);
+
   const scrollToSub = (subId) => {
     setActiveSub(subId);
     const el = rightPaneRef.current?.querySelector(`[data-sub="${subId}"]`);
@@ -233,6 +248,66 @@ export default function Menu() {
               </nav>
 
               <section className="menu-content" ref={rightPaneRef}>
+                {/* Recommended Section - Always at the top */}
+                {recommendedItems.length > 0 && (
+                  <div className="recommended-section">
+                    <div className="recommended-header">
+                      <span className="star-icon">⭐</span>
+                      <h2 className="recommended-title">Chef's Recommendations</h2>
+                      <span className="star-icon">⭐</span>
+                    </div>
+                    <div className="recommended-items-grid">
+                      {recommendedItems.map((it) => {
+                        const hasVariants = hasVariantsOrAddons(it, "variant");
+                        const hasAddons = hasVariantsOrAddons(it, "addon");
+                        const isExpanded = expandedItems.has(it.id);
+                        const showExpandBtn = hasVariants || hasAddons;
+
+                        return (
+                          <article key={it.id} className="recommended-item-card">
+                            <div className="recommended-badge">
+                              <span className="star-badge">⭐ RECOMMENDED</span>
+                            </div>
+                            <div className="item-header">
+                              <h3 className="item-name">{it.name}</h3>
+                              <span className="item-price item-price-large">
+                                ₹{Number(it.basePrice || 0).toFixed(0)}
+                              </span>
+                            </div>
+                            {it.description && (
+                              <p className="item-description">
+                                {String(it.description).slice(0, DESC_MAX)}
+                              </p>
+                            )}
+
+                            {it.imageUrl ? (
+                              <button
+                                className="view-image-btn"
+                                onClick={() => setImgModal({ open: true, url: it.imageUrl, name: it.name })}
+                              >
+                                View Image
+                              </button>
+                            ) : null}
+
+                            {showExpandBtn && (
+                              <button className="expand-btn" onClick={() => toggleExpand(it.id)}>
+                                {isExpanded ? "∸ Hide Options" : "+ View Options"}
+                              </button>
+                            )}
+                            {isExpanded && (
+                              <div className="options-container">
+                                {renderVariants(it)}
+                                {renderAddons(it)}
+                              </div>
+                            )}
+                          </article>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Regular Category Sections */}
                 {subs.map((sc) => (
                   <div key={sc.id} data-sub={sc.id} className="menu-section">
                     <h2 className="section-title">{sc.name}</h2>
@@ -245,6 +320,9 @@ export default function Menu() {
 
                         return (
                           <article key={it.id} className="menu-item-card">
+                            {it.isRecommended && (
+                              <div className="item-star-badge">⭐</div>
+                            )}
                             <div className="item-header">
                               <h3 className="item-name">{it.name}</h3>
                               <span className="item-price">
