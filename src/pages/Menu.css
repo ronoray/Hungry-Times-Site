@@ -991,3 +991,30 @@
 .menu-item-card .item-header {
   padding-right: 2rem; /* Make room for star badge */
 }
+
+/* ============================================
+   CRITICAL TOUCH DEVICE FIX (Aggressive Active State Removal)
+   ============================================ */
+@media (hover: none) and (pointer: coarse) {
+  /* Target devices that use touch as primary input (most phones/tablets) */
+  
+  .recommended-item-card {
+    /* Ensure no hover effect is mistakenly applied */
+    transform: none !important;
+  }
+  
+  .recommended-item-card:hover {
+    /* Completely kill the hover effect on touch screens */
+    transform: none !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important; 
+  }
+
+  /* Override the default :active state */
+  .recommended-item-card:active {
+    transform: none !important;
+    background: linear-gradient(145deg, rgba(31, 41, 55, 0.95), rgba(17, 24, 39, 0.95)) !important; 
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+    /* Also ensure border color stays the same if it changes on active */
+    border-color: #fbbf24 !important;
+  }
+}
