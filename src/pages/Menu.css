@@ -388,6 +388,7 @@
   color: var(--color-text-dim) !important;
   line-height: 1.6 !important;
   margin-bottom: 1rem !important;
+  font-style: italic !important;
 }
 
 .expand-btn {
