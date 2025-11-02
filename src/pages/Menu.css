@@ -717,3 +717,234 @@
   transform: translateY(0) !important;
   box-shadow: 0 1px 4px rgba(245, 158, 11, 0.1) !important;
 }
+/* ============================================
+   RECOMMENDED SECTION STYLES
+   ============================================ */
+
+/* Recommended Section Container */
+.recommended-section {
+  margin-bottom: 3rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 24px;
+  border: 2px solid #fbbf24;
+  box-shadow: 0 8px 32px rgba(251, 191, 36, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.recommended-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #fbbf24, #f59e0b, #fbbf24);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Recommended Header */
+.recommended-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.star-icon {
+  font-size: 2rem;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.recommended-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #fbbf24;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+  letter-spacing: 0.5px;
+}
+
+/* Recommended Items Grid - Larger Cards */
+.recommended-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Recommended Item Card - Special Styling */
+.recommended-item-card {
+  background: linear-gradient(145deg, rgba(31, 41, 55, 0.95), rgba(17, 24, 39, 0.95));
+  border-radius: 20px;
+  padding: 1.75rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  border: 2px solid #fbbf24;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.recommended-item-card::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, #fbbf24, #f59e0b, #fbbf24);
+  border-radius: 20px;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.recommended-item-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(251, 191, 36, 0.2);
+}
+
+.recommended-item-card:hover::before {
+  opacity: 0.5;
+}
+
+/* Recommended Badge */
+.recommended-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+}
+
+.star-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #1a1a2e;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+}
+
+/* Larger Price for Recommended Items */
+.item-price-large {
+  font-size: 1.5rem !important;
+  color: #fbbf24 !important;
+  font-weight: 700 !important;
+}
+
+/* Star Badge for Regular Items */
+.item-star-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 1.25rem;
+  z-index: 10;
+  animation: twinkle 1.5s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 1; transform: rotate(0deg); }
+  50% { opacity: 0.7; transform: rotate(-10deg); }
+}
+
+/* ============================================
+   MOBILE RESPONSIVE STYLES
+   ============================================ */
+
+/* Mobile: Stack recommended items vertically */
+@media (max-width: 640px) {
+  .recommended-section {
+    padding: 1.5rem 1rem;
+    margin-bottom: 2rem;
+    border-radius: 16px;
+  }
+
+  .recommended-header {
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .star-icon {
+    font-size: 1.5rem;
+  }
+
+  .recommended-title {
+    font-size: 1.5rem;
+  }
+
+  .recommended-items-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .recommended-item-card {
+    padding: 1.25rem;
+    border-radius: 16px;
+  }
+
+  .star-badge {
+    font-size: 0.65rem;
+    padding: 0.3rem 0.6rem;
+  }
+
+  .item-price-large {
+    font-size: 1.25rem !important;
+  }
+
+  .item-star-badge {
+    font-size: 1rem;
+    top: 6px;
+    right: 6px;
+  }
+}
+
+/* Tablet: 2 columns for recommended items */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .recommended-items-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .recommended-title {
+    font-size: 1.75rem;
+  }
+}
+
+/* Large screens: 3 columns for recommended items */
+@media (min-width: 1025px) {
+  .recommended-items-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Extra large screens: 4 columns */
+@media (min-width: 1536px) {
+  .recommended-items-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Ensure menu-item-card has relative positioning for star badge */
+.menu-item-card {
+  position: relative;
+}
+
+/* Adjust existing item cards to accommodate star badge */
+.menu-item-card .item-header {
+  padding-right: 2rem; /* Make room for star badge */
+}
