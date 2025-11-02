@@ -264,7 +264,14 @@ export default function Menu() {
                         const showExpandBtn = hasVariants || hasAddons;
 
                         return (
-                          <article key={it.id} className="recommended-item-card">
+                          <article 
+                            key={it.id} 
+                            className="recommended-item-card" 
+                            tabIndex="-1" 
+                            // CRITICAL FIX: Add touch handlers to suppress mobile tap/hold selection
+                            onTouchStart={(e) => e.stopPropagation()}
+                            onTouchEnd={(e) => e.stopPropagation()}
+                          >
                             <div className="recommended-badge">
                               <span className="star-badge">⭐ RECOMMENDED</span>
                             </div>
