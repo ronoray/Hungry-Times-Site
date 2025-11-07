@@ -1,34 +1,43 @@
 // =============================
 // File: site/src/pages/Menu.jsx
-// Fully regenerated with public-only "View Image" button + modal popup.
+// Redesigned with: compact descriptions, prominent View Image button, better mobile layout
 // =============================
 
 import { useEffect, useMemo, useState, useRef } from "react";
 import "./Menu.css";
 
-const DESC_MAX = 160;
+// CRITICAL: Reduced description length for more compact cards
+const DESC_MAX_RECOMMENDED = 80; // Short for recommended items
+const DESC_MAX_REGULAR = 120; // Slightly longer for regular items
 
 function ImageModal({ open, url, name, onClose }) {
   if (!open) return null;
   const backdrop = {
-    position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 9999,
+    position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 9999,
+    display: "flex", alignItems: "center", justifyContent: "center",
   };
   const body = {
     position: "relative", zIndex: 10000, maxWidth: "90vw", maxHeight: "90vh",
-    margin: "5vh auto", background: "#0b0b0b", borderRadius: 16, padding: 12,
+    background: "#0b0b0b", borderRadius: 16, padding: 16,
     display: "flex", flexDirection: "column",
   };
-  const head = { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, color: "#ddd" };
-  const img = { maxWidth: "86vw", maxHeight: "80vh", objectFit: "contain", borderRadius: 10 };
-  const closeBtn = { background: "#303030", color: "#eee", border: 0, borderRadius: 8, padding: "4px 10px", cursor: "pointer" };
+  const head = { 
+    display: "flex", justifyContent: "space-between", alignItems: "center", 
+    marginBottom: 12, color: "#fff", paddingBottom: 8, borderBottom: "1px solid #333"
+  };
+  const img = { maxWidth: "86vw", maxHeight: "78vh", objectFit: "contain", borderRadius: 8 };
+  const closeBtn = { 
+    background: "#f59e0b", color: "#000", border: 0, borderRadius: 8, 
+    padding: "8px 16px", cursor: "pointer", fontWeight: 600, fontSize: "0.95rem"
+  };
   const empty = { color: "#aaa", textAlign: "center", padding: "40px 20px" };
 
   return (
     <div style={backdrop} onClick={onClose}>
       <div style={body} onClick={(e) => e.stopPropagation()}>
         <div style={head}>
-          <div>{name || "Item image"}</div>
-          <button style={closeBtn} onClick={onClose}>Close</button>
+          <div style={{ fontWeight: 600, fontSize: "1.1rem" }}>{name || "Item Image"}</div>
+          <button style={closeBtn} onClick={onClose}>✕ Close</button>
         </div>
         {url ? (
           <img src={url} alt={name || "Item image"} style={img} />
@@ -49,7 +58,7 @@ export default function Menu() {
   const [expandedItems, setExpandedItems] = useState(new Set());
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // New: image modal
+  // Image modal
   const [imgModal, setImgModal] = useState({ open: false, url: null, name: "" });
 
   const rightPaneRef = useRef(null);
@@ -218,9 +227,7 @@ export default function Menu() {
                     <button
                       key={tc.id}
                       className={`sidebar-category-btn ${tc.id === activeTop ? "active" : ""}`}
-                      onClick={() =>
-                        handleCategoryClick(tc.id, tc.subcategories?.[0]?.id ?? null)
-                      }
+                      onClick={() => handleCategoryClick(tc.id, tc.subcategories?.[0]?.id)}
                     >
                       {tc.name}
                     </button>
@@ -229,12 +236,9 @@ export default function Menu() {
               </div>
             </aside>
 
-            <div
-              className="menu-main"
-              onClick={() => sidebarOpen && setSidebarOpen(false)}
-            >
-              <section className="menu-content" ref={rightPaneRef}>
-                {/* Recommended Section - Always at the top */}
+            <div className="menu-main" ref={rightPaneRef}>
+              <section>
+                {/* Recommended Section */}
                 {recommendedItems.length > 0 && (
                   <div className="recommended-section">
                     <div className="recommended-header">
@@ -253,40 +257,46 @@ export default function Menu() {
                           <article 
                             key={it.id} 
                             className="recommended-item-card" 
-                            tabIndex="-1" 
-                            // CRITICAL FIX: Add touch handlers to suppress mobile tap/hold selection
-                            onTouchStart={(e) => e.stopPropagation()}
-                            onTouchEnd={(e) => e.stopPropagation()}
                           >
                             <div className="recommended-badge">
                               <span className="star-badge">⭐ RECOMMENDED</span>
                             </div>
+                            
                             <div className="item-header">
                               <h3 className="item-name">{it.name}</h3>
                               <span className="item-price item-price-large">
                                 ₹{Number(it.basePrice || 0).toFixed(0)}
                               </span>
                             </div>
+
                             {it.description && (
                               <p className="item-description">
-                                {String(it.description).slice(0, DESC_MAX)}
+                                {String(it.description).slice(0, DESC_MAX_RECOMMENDED)}
+                                {String(it.description).length > DESC_MAX_RECOMMENDED && "..."}
                               </p>
                             )}
 
-                            {it.imageUrl ? (
-                              <button
-                                className="view-image-btn"
-                                onClick={() => setImgModal({ open: true, url: it.imageUrl, name: it.name })}
-                              >
-                                View Image
-                              </button>
-                            ) : null}
+                            {/* Action buttons row */}
+                            <div className="item-actions">
+                              {it.imageUrl && (
+                                <button
+                                  className="view-image-btn"
+                                  onClick={() => setImgModal({ open: true, url: it.imageUrl, name: it.name })}
+                                >
+                                  🖼️ View Image
+                                </button>
+                              )}
+                              
+                              {showExpandBtn && (
+                                <button 
+                                  className="expand-btn" 
+                                  onClick={() => toggleExpand(it.id)}
+                                >
+                                  {isExpanded ? "∸ Hide Options" : "+ View Options"}
+                                </button>
+                              )}
+                            </div>
 
-                            {showExpandBtn && (
-                              <button className="expand-btn" onClick={() => toggleExpand(it.id)}>
-                                {isExpanded ? "∸ Hide Options" : "+ View Options"}
-                              </button>
-                            )}
                             {isExpanded && (
                               <div className="options-container">
                                 {renderVariants(it)}
@@ -331,33 +341,42 @@ export default function Menu() {
                             {it.isRecommended && (
                               <div className="item-star-badge">⭐</div>
                             )}
+                            
                             <div className="item-header">
                               <h3 className="item-name">{it.name}</h3>
                               <span className="item-price">
                                 ₹{Number(it.basePrice || 0).toFixed(0)}
                               </span>
                             </div>
+
                             {it.description && (
                               <p className="item-description">
-                                {String(it.description).slice(0, DESC_MAX)}
+                                {String(it.description).slice(0, DESC_MAX_REGULAR)}
+                                {String(it.description).length > DESC_MAX_REGULAR && "..."}
                               </p>
                             )}
 
-                            {/* Public View Image button (only if imageUrl present) */}
-                            {it.imageUrl ? (
-                              <button
-                                className="view-image-btn"
-                                onClick={() => setImgModal({ open: true, url: it.imageUrl, name: it.name })}
-                              >
-                                View Image
-                              </button>
-                            ) : null}
+                            {/* Action buttons row */}
+                            <div className="item-actions">
+                              {it.imageUrl && (
+                                <button
+                                  className="view-image-btn"
+                                  onClick={() => setImgModal({ open: true, url: it.imageUrl, name: it.name })}
+                                >
+                                  🖼️ View Image
+                                </button>
+                              )}
 
-                            {showExpandBtn && (
-                              <button className="expand-btn" onClick={() => toggleExpand(it.id)}>
-                                {isExpanded ? "− Hide Options" : "+ View Options"}
-                              </button>
-                            )}
+                              {showExpandBtn && (
+                                <button 
+                                  className="expand-btn" 
+                                  onClick={() => toggleExpand(it.id)}
+                                >
+                                  {isExpanded ? "− Hide Options" : "+ View Options"}
+                                </button>
+                              )}
+                            </div>
+
                             {isExpanded && (
                               <div className="options-container">
                                 {renderVariants(it)}
