@@ -233,20 +233,6 @@ export default function Menu() {
               className="menu-main"
               onClick={() => sidebarOpen && setSidebarOpen(false)}
             >
-              <nav className="subcategory-bar">
-                <div className="subcategory-scroll">
-                  {subs.map((sc) => (
-                    <button
-                      key={sc.id}
-                      className={`subcategory-btn ${sc.id === activeSub ? "active" : ""}`}
-                      onClick={() => scrollToSub(sc.id)}
-                    >
-                      {sc.name}
-                    </button>
-                  ))}
-                </div>
-              </nav>
-
               <section className="menu-content" ref={rightPaneRef}>
                 {/* Recommended Section - Always at the top */}
                 {recommendedItems.length > 0 && (
@@ -313,6 +299,21 @@ export default function Menu() {
                     </div>
                   </div>
                 )}
+
+                {/* Subcategory Navigation - Placed after recommended section */}
+                <nav className="subcategory-bar">
+                  <div className="subcategory-scroll">
+                    {subs.map((sc) => (
+                      <button
+                        key={sc.id}
+                        className={`subcategory-btn ${sc.id === activeSub ? "active" : ""}`}
+                        onClick={() => scrollToSub(sc.id)}
+                      >
+                        {sc.name}
+                      </button>
+                    ))}
+                  </div>
+                </nav>
 
                 {/* Regular Category Sections */}
                 {subs.map((sc) => (
