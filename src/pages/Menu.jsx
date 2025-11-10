@@ -198,6 +198,7 @@ export default function Menu() {
     const imageUrl =
       it.imageUrl ||
       it.image ||
+      it.image_url ||
       it.image_path ||
       it.imagePath ||
       it.menuImageUrl ||
