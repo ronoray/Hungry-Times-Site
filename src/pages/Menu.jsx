@@ -1,6 +1,5 @@
 // =============================
-// File: site/src/pages/Menu.jsx
-// Redesigned with: compact descriptions, prominent View Image button, better mobile layout
+// File: site/src/pages/Menu.jsx - COMPLETELY FIXED
 // =============================
 
 import { useEffect, useMemo, useState, useRef } from "react";
@@ -9,6 +8,46 @@ import "./Menu.css";
 // CRITICAL: Reduced description length for more compact cards
 const DESC_MAX_RECOMMENDED = 80; // Short for recommended items
 const DESC_MAX_REGULAR = 120; // Slightly longer for regular items
+
+// --- New Component for Full Description ---
+function DescriptionModal({ open, title, description, onClose }) {
+  if (!open) return null;
+  const backdrop = {
+    position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 9999,
+    display: "flex", alignItems: "center", justifyContent: "center",
+  };
+  const body = {
+    position: "relative", zIndex: 10000, maxWidth: "90vw", maxHeight: "90vh",
+    background: "#1e1e1e", borderRadius: 16, padding: 20,
+    display: "flex", flexDirection: "column",
+    color: "#fff",
+  };
+  const head = { 
+    display: "flex", justifyContent: "space-between", alignItems: "center", 
+    marginBottom: 12, paddingBottom: 8, borderBottom: "1px solid #333"
+  };
+  const closeBtn = { 
+    background: "#f59e0b", color: "#000", border: 0, borderRadius: 8, 
+    padding: "6px 12px", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem"
+  };
+  const descText = { 
+    maxHeight: "75vh", overflowY: "auto", fontSize: "0.95rem", lineHeight: "1.5",
+    color: "rgba(255, 255, 255, 0.8)", paddingRight: "8px",
+  };
+
+  return (
+    <div style={backdrop} onClick={onClose}>
+      <div style={body} onClick={(e) => e.stopPropagation()}>
+        <div style={head}>
+          <div style={{ fontWeight: 700, fontSize: "1.2rem", color: "#f59e0b" }}>{title}</div>
+          <button style={closeBtn} onClick={onClose}>✕ Close</button>
+        </div>
+        <p style={descText}>{description}</p>
+      </div>
+    </div>
+  );
+}
+// ----------------------------------------
 
 function ImageModal({ open, url, name, onClose }) {
   if (!open) return null;
@@ -49,6 +88,7 @@ function ImageModal({ open, url, name, onClose }) {
   );
 }
 
+// --- Menu Component Start ---
 export default function Menu() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -58,8 +98,10 @@ export default function Menu() {
   const [expandedItems, setExpandedItems] = useState(new Set());
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Image modal
+  // Image modal state
   const [imgModal, setImgModal] = useState({ open: false, url: null, name: "" });
+  // New Description modal state
+  const [descModal, setDescModal] = useState({ open: false, title: "", description: "" });
 
   const rightPaneRef = useRef(null);
 
@@ -138,6 +180,91 @@ export default function Menu() {
     setActiveSub(firstSubId);
     setSidebarOpen(false);
   };
+  
+  // --- New Helper Component for Item Card Rendering ---
+  const MenuItemCard = ({ it, isRecommendedCard = false }) => {
+    const hasVariants = hasVariantsOrAddons(it, "variant");
+    const hasAddons = hasVariantsOrAddons(it, "addon");
+    const isExpanded = expandedItems.has(it.id);
+    const showExpandBtn = hasVariants || hasAddons;
+
+    const DESC_MAX = isRecommendedCard ? DESC_MAX_RECOMMENDED : DESC_MAX_REGULAR;
+    const fullDescription = String(it.description || "");
+    const isTruncated = fullDescription.length > DESC_MAX;
+
+    return (
+      <article 
+        key={it.id} 
+        className={isRecommendedCard ? "recommended-item-card" : "menu-item-card"}
+      >
+        {isRecommendedCard ? (
+          <div className="recommended-badge">
+            <span className="star-badge">⭐ RECOMMENDED</span>
+          </div>
+        ) : (
+          it.isRecommended && <div className="item-star-badge">⭐</div>
+        )}
+        
+        <div className="item-header">
+          {/* CRITICAL FIX: Add a div around the name to push the badge away on mobile (CSS handles spacing) */}
+          <div className="item-name-wrapper">
+            <h3 className="item-name">{it.name}</h3>
+          </div>
+          <span className={`item-price ${isRecommendedCard ? "item-price-large" : ""}`}>
+            ₹{Number(it.basePrice || 0).toFixed(0)}
+          </span>
+        </div>
+
+        {it.description && (
+          <p className="item-description">
+            {fullDescription.slice(0, DESC_MAX)}
+            {isTruncated && "..."}
+          </p>
+        )}
+
+        {/* Action buttons row */}
+        <div className="item-actions">
+          {/* Show 'Read Description' if truncated */}
+          {isTruncated && (
+            <button
+              className="read-desc-btn"
+              onClick={() => setDescModal({ open: true, title: it.name, description: fullDescription })}
+            >
+              📖 Read Full Description
+            </button>
+          )}
+
+          {/* CRITICAL FIX: Check for imageUrl on the item itself and enable in recommended section */}
+          {it.imageUrl && (
+            <button
+              className="view-image-btn"
+              onClick={() => setImgModal({ open: true, url: it.imageUrl, name: it.name })}
+            >
+              🖼️ View Image
+            </button>
+          )}
+          
+          {showExpandBtn && (
+            <button 
+              className="expand-btn" 
+              onClick={() => toggleExpand(it.id)}
+            >
+              {isExpanded ? (isRecommendedCard ? "∸ Hide Options" : "− Hide Options") : "+ View Options"}
+            </button>
+          )}
+        </div>
+
+        {isExpanded && (
+          <div className="options-container">
+            {renderVariants(it)}
+            {renderAddons(it)}
+          </div>
+        )}
+      </article>
+    );
+  };
+  // --------------------------------------------------------
+
 
   if (loading) {
     return (
@@ -168,6 +295,7 @@ export default function Menu() {
     <div className="menu-page-wrapper">
       <div className="menu-page">
         {/* Hero */}
+        {/* ... (Hero content remains the same) ... */}
         <div className="menu-hero">
           <div className="hero-grid">
             <div className="hero-image-wrapper hero-black-bg">
@@ -200,6 +328,7 @@ export default function Menu() {
             </div>
           </div>
         </div>
+
 
         {/* Mobile Hamburger */}
         <button
@@ -247,65 +376,9 @@ export default function Menu() {
                       <span className="star-icon">⭐</span>
                     </div>
                     <div className="recommended-items-grid">
-                      {recommendedItems.map((it) => {
-                        const hasVariants = hasVariantsOrAddons(it, "variant");
-                        const hasAddons = hasVariantsOrAddons(it, "addon");
-                        const isExpanded = expandedItems.has(it.id);
-                        const showExpandBtn = hasVariants || hasAddons;
-
-                        return (
-                          <article 
-                            key={it.id} 
-                            className="recommended-item-card" 
-                          >
-                            <div className="recommended-badge">
-                              <span className="star-badge">⭐ RECOMMENDED</span>
-                            </div>
-                            
-                            <div className="item-header">
-                              <h3 className="item-name">{it.name}</h3>
-                              <span className="item-price item-price-large">
-                                ₹{Number(it.basePrice || 0).toFixed(0)}
-                              </span>
-                            </div>
-
-                            {it.description && (
-                              <p className="item-description">
-                                {String(it.description).slice(0, DESC_MAX_RECOMMENDED)}
-                                {String(it.description).length > DESC_MAX_RECOMMENDED && "..."}
-                              </p>
-                            )}
-
-                            {/* Action buttons row */}
-                            <div className="item-actions">
-                              {it.imageUrl && (
-                                <button
-                                  className="view-image-btn"
-                                  onClick={() => setImgModal({ open: true, url: it.imageUrl, name: it.name })}
-                                >
-                                  🖼️ View Image
-                                </button>
-                              )}
-                              
-                              {showExpandBtn && (
-                                <button 
-                                  className="expand-btn" 
-                                  onClick={() => toggleExpand(it.id)}
-                                >
-                                  {isExpanded ? "∸ Hide Options" : "+ View Options"}
-                                </button>
-                              )}
-                            </div>
-
-                            {isExpanded && (
-                              <div className="options-container">
-                                {renderVariants(it)}
-                                {renderAddons(it)}
-                              </div>
-                            )}
-                          </article>
-                        );
-                      })}
+                      {recommendedItems.map((it) => (
+                        <MenuItemCard key={it.id} it={it} isRecommendedCard={true} />
+                      ))}
                     </div>
                   </div>
                 )}
@@ -330,62 +403,9 @@ export default function Menu() {
                   <div key={sc.id} data-sub={sc.id} className="menu-section">
                     <h2 className="section-title">{sc.name}</h2>
                     <div className="items-grid">
-                      {(itemsBySub.get(sc.id) || []).map((it) => {
-                        const hasVariants = hasVariantsOrAddons(it, "variant");
-                        const hasAddons = hasVariantsOrAddons(it, "addon");
-                        const isExpanded = expandedItems.has(it.id);
-                        const showExpandBtn = hasVariants || hasAddons;
-
-                        return (
-                          <article key={it.id} className="menu-item-card">
-                            {it.isRecommended && (
-                              <div className="item-star-badge">⭐</div>
-                            )}
-                            
-                            <div className="item-header">
-                              <h3 className="item-name">{it.name}</h3>
-                              <span className="item-price">
-                                ₹{Number(it.basePrice || 0).toFixed(0)}
-                              </span>
-                            </div>
-
-                            {it.description && (
-                              <p className="item-description">
-                                {String(it.description).slice(0, DESC_MAX_REGULAR)}
-                                {String(it.description).length > DESC_MAX_REGULAR && "..."}
-                              </p>
-                            )}
-
-                            {/* Action buttons row */}
-                            <div className="item-actions">
-                              {it.imageUrl && (
-                                <button
-                                  className="view-image-btn"
-                                  onClick={() => setImgModal({ open: true, url: it.imageUrl, name: it.name })}
-                                >
-                                  🖼️ View Image
-                                </button>
-                              )}
-
-                              {showExpandBtn && (
-                                <button 
-                                  className="expand-btn" 
-                                  onClick={() => toggleExpand(it.id)}
-                                >
-                                  {isExpanded ? "− Hide Options" : "+ View Options"}
-                                </button>
-                              )}
-                            </div>
-
-                            {isExpanded && (
-                              <div className="options-container">
-                                {renderVariants(it)}
-                                {renderAddons(it)}
-                              </div>
-                            )}
-                          </article>
-                        );
-                      })}
+                      {(itemsBySub.get(sc.id) || []).map((it) => (
+                        <MenuItemCard key={it.id} it={it} isRecommendedCard={false} />
+                      ))}
                     </div>
                   </div>
                 ))}
@@ -402,9 +422,19 @@ export default function Menu() {
         name={imgModal.name}
         onClose={() => setImgModal({ open: false, url: null, name: "" })}
       />
+
+      {/* Global Description Modal */}
+      <DescriptionModal
+        open={descModal.open}
+        title={descModal.title}
+        description={descModal.description}
+        onClose={() => setDescModal({ open: false, title: "", description: "" })}
+      />
     </div>
   );
 }
+
+// ... (renderVariants, renderAddons, hasVariantsOrAddons, formatPriceDelta functions follow) ...
 
 function hasVariantsOrAddons(it, type) {
   const families = (it.families || []).filter((f) => f.type === type);
