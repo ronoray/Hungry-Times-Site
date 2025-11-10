@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import "./Menu.css";
 
 // CRITICAL: Reduced description length for more compact cards
-const DESC_MAX_RECOMMENDED = 80; // Short for recommended items
+const DESC_MAX_RECOMMENDED = 60; // Short for recommended items
 const DESC_MAX_REGULAR = 120; // Slightly longer for regular items
 
 // --- New Component for Full Description ---
@@ -282,18 +282,15 @@ export default function Menu() {
             </button>
           )}
 
-          {showExpandBtn && (
+          {/* Don't show options toggle in the compact recommended cards */}
+          {showExpandBtn && !isRecommendedCard && (
             <button className="expand-btn" onClick={() => toggleExpand(it.id)}>
-              {isExpanded
-                ? isRecommendedCard
-                  ? "∸ Hide Options"
-                  : "− Hide Options"
-                : "+ View Options"}
+              {isExpanded ? "− Hide Options" : "+ View Options"}
             </button>
           )}
         </div>
 
-        {isExpanded && (
+        {isExpanded && !isRecommendedCard && (
           <div className="options-container">
             {renderVariants(it)}
             {renderAddons(it)}
