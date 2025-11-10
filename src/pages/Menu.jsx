@@ -1,5 +1,5 @@
 // =============================
-// File: site/src/pages/Menu.jsx - COMPLETELY FIXED
+// File: site/src/pages/Menu.jsx - FINAL RE-VERIFIED FIX
 // =============================
 
 import { useEffect, useMemo, useState, useRef } from "react";
@@ -96,6 +96,7 @@ export default function Menu() {
   const [activeTop, setActiveTop] = useState(null);
   const [activeSub, setActiveSub] = useState(null);
   const [expandedItems, setExpandedItems] = useState(new Set());
+  // Mobile sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Image modal state
@@ -178,6 +179,7 @@ export default function Menu() {
   const handleCategoryClick = (tcId, firstSubId) => {
     setActiveTop(tcId);
     setActiveSub(firstSubId);
+    // CRITICAL: Close sidebar on category click if open
     setSidebarOpen(false);
   };
   
@@ -192,9 +194,18 @@ export default function Menu() {
     const fullDescription = String(it.description || "");
     const isTruncated = fullDescription.length > DESC_MAX;
 
+    // NEW: more robust image URL detection
+    const imageUrl =
+      it.imageUrl ||
+      it.image ||
+      it.image_path ||
+      it.imagePath ||
+      it.menuImageUrl ||
+      null;
+
     return (
-      <article 
-        key={it.id} 
+      <article
+        key={it.id}
         className={isRecommendedCard ? "recommended-item-card" : "menu-item-card"}
       >
         {isRecommendedCard ? (
@@ -204,52 +215,80 @@ export default function Menu() {
         ) : (
           it.isRecommended && <div className="item-star-badge">⭐</div>
         )}
-        
+
         <div className="item-header">
-          {/* CRITICAL FIX: Add a div around the name to push the badge away on mobile (CSS handles spacing) */}
+          {/* wrapper to avoid overlap with the badge */}
           <div className="item-name-wrapper">
             <h3 className="item-name">{it.name}</h3>
           </div>
-          <span className={`item-price ${isRecommendedCard ? "item-price-large" : ""}`}>
+          <span
+            className={`item-price ${
+              isRecommendedCard ? "item-price-large" : ""
+            }`}
+          >
             ₹{Number(it.basePrice || 0).toFixed(0)}
           </span>
         </div>
 
         {it.description && (
-          <p className="item-description">
+          <p
+            className="item-description"
+            onClick={
+              isTruncated
+                ? () =>
+                    setDescModal({
+                      open: true,
+                      title: it.name,
+                      description: fullDescription,
+                    })
+                : undefined
+            }
+            style={isTruncated ? { cursor: "pointer" } : undefined}
+          >
             {fullDescription.slice(0, DESC_MAX)}
-            {isTruncated && "..."}
+            {isTruncated && (
+              <span className="read-more-inline">… Read more</span>
+            )}
           </p>
         )}
 
         {/* Action buttons row */}
         <div className="item-actions">
-          {/* Show 'Read Description' if truncated */}
+          {/* Small secondary button for full description */}
           {isTruncated && (
             <button
               className="read-desc-btn"
-              onClick={() => setDescModal({ open: true, title: it.name, description: fullDescription })}
+              onClick={() =>
+                setDescModal({
+                  open: true,
+                  title: it.name,
+                  description: fullDescription,
+                })
+              }
             >
-              📖 Read Full Description
+              📖 Read full description
             </button>
           )}
 
-          {/* CRITICAL FIX: Check for imageUrl on the item itself and enable in recommended section */}
-          {it.imageUrl && (
+          {/* Use the robust imageUrl computed above */}
+          {imageUrl && (
             <button
               className="view-image-btn"
-              onClick={() => setImgModal({ open: true, url: it.imageUrl, name: it.name })}
+              onClick={() =>
+                setImgModal({ open: true, url: imageUrl, name: it.name })
+              }
             >
               🖼️ View Image
             </button>
           )}
-          
+
           {showExpandBtn && (
-            <button 
-              className="expand-btn" 
-              onClick={() => toggleExpand(it.id)}
-            >
-              {isExpanded ? (isRecommendedCard ? "∸ Hide Options" : "− Hide Options") : "+ View Options"}
+            <button className="expand-btn" onClick={() => toggleExpand(it.id)}>
+              {isExpanded
+                ? isRecommendedCard
+                  ? "∸ Hide Options"
+                  : "− Hide Options"
+                : "+ View Options"}
             </button>
           )}
         </div>
@@ -341,6 +380,7 @@ export default function Menu() {
         </button>
 
         {/* Overlay */}
+        {/* Only show overlay if sidebar is open */}
         {sidebarOpen && (
           <div className="mobile-overlay" onClick={() => setSidebarOpen(false)} />
         )}
@@ -348,6 +388,7 @@ export default function Menu() {
         {/* Content */}
         <div className="menu-container">
           <div className="menu-layout">
+            {/* Sidebar receives the 'open' class based on state */}
             <aside className={`categories-sidebar ${sidebarOpen ? "open" : ""}`}>
               <div className="sidebar-sticky">
                 <h3 className="sidebar-heading">Categories</h3>
@@ -434,7 +475,7 @@ export default function Menu() {
   );
 }
 
-// ... (renderVariants, renderAddons, hasVariantsOrAddons, formatPriceDelta functions follow) ...
+// ... (renderVariants, renderAddons, hasVariantsOrAddons, formatPriceDelta functions remain the same) ...
 
 function hasVariantsOrAddons(it, type) {
   const families = (it.families || []).filter((f) => f.type === type);
