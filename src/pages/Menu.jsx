@@ -253,43 +253,26 @@ export default function Menu() {
           </p>
         )}
 
-        {/* Action buttons row */}
-        <div className="item-actions">
-          {/* Small secondary button for full description */}
-          {isTruncated && (
-            <button
-              className="read-desc-btn"
-              onClick={() =>
-                setDescModal({
-                  open: true,
-                  title: it.name,
-                  description: fullDescription,
-                })
-              }
-            >
-              📖 Read full description
-            </button>
-          )}
+                {/* Action buttons row */}
+                  <div className="item-actions">
+                    {imageUrl && (
+                      <button
+                        className="view-image-btn"
+                        onClick={() =>
+                          setImgModal({ open: true, url: imageUrl, name: it.name })
+                        }
+                      >
+                        🖼️ View Image
+                      </button>
+                    )}
 
-          {/* Use the robust imageUrl computed above */}
-          {imageUrl && (
-            <button
-              className="view-image-btn"
-              onClick={() =>
-                setImgModal({ open: true, url: imageUrl, name: it.name })
-              }
-            >
-              🖼️ View Image
-            </button>
-          )}
-
-          {/* Don't show options toggle in the compact recommended cards */}
-          {showExpandBtn && !isRecommendedCard && (
-            <button className="expand-btn" onClick={() => toggleExpand(it.id)}>
-              {isExpanded ? "− Hide Options" : "+ View Options"}
-            </button>
-          )}
-        </div>
+                    {/* Don't show options toggle in the compact recommended cards */}
+                    {showExpandBtn && !isRecommendedCard && (
+                      <button className="expand-btn" onClick={() => toggleExpand(it.id)}>
+                        {isExpanded ? "− Hide Options" : "+ View Options"}
+                      </button>
+                    )}
+                  </div>
 
         {isExpanded && !isRecommendedCard && (
           <div className="options-container">
