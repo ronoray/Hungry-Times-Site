@@ -154,16 +154,16 @@
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  padding: 0.65rem 1.4rem !important;   /* smaller pill */
+  padding: 0.65rem 1.4rem !important;
   background: linear-gradient(135deg, #f59e0b, #d97706) !important;
   color: #000000 !important;
-  font-size: 1rem !important;          /* slightly smaller text */
+  font-size: 1rem !important;
   font-weight: 700 !important;
   border-radius: 999px !important;
   text-decoration: none !important;
   transition: all 0.3s ease !important;
   box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4) !important;
-  min-width: 190px !important;         /* narrower */
+  min-width: 190px !important;
   cursor: pointer !important;
 }
 
@@ -385,7 +385,7 @@
 /* Reserve space so the star / badge doesn't overlap the name */
 .item-name-wrapper {
   position: relative;
-  padding-right: 2.5rem; /* enough room for the badge/star on mobile */
+  padding-right: 2.5rem; /* default: room for badge/star */
 }
 
 /* Description */
@@ -396,9 +396,7 @@
   margin-bottom: 1rem !important;
 }
 
-/* ============================================
-   ACTION BUTTONS CONTAINER - NEW DESIGN
-   ============================================ */
+/* ACTION BUTTONS CONTAINER */
 .item-actions {
   display: flex !important;
   gap: 0.75rem !important;
@@ -406,7 +404,7 @@
   margin-top: 1rem !important;
 }
 
-/* View Image Button - PROMINENT DESIGN */
+/* View Image Button */
 .view-image-btn {
   flex: 1 !important;
   min-width: 140px !important;
@@ -467,7 +465,7 @@
   text-decoration: underline;
 }
 
-/* Secondary button for full description */
+/* Secondary button for full description (kept for future, unused now) */
 .read-desc-btn {
   flex: 1 !important;
   min-width: 140px !important;
@@ -487,14 +485,6 @@
   background: rgba(255, 255, 255, 0.08) !important;
   border-color: var(--color-accent) !important;
   color: var(--color-text) !important;
-}
-
-/* Mobile: stack nicely */
-@media (max-width: 768px) {
-  .read-desc-btn {
-    width: 100% !important;
-    min-width: unset !important;
-  }
 }
 
 /* Options Container */
@@ -597,14 +587,14 @@
   letter-spacing: 0.5px;
 }
 
-/* Recommended Items Grid - Compact Cards */
+/* Recommended Items Grid */
 .recommended-items-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1.25rem;
 }
 
-/* Recommended Item Card - COMPACT VERSION */
+/* Recommended Item Card */
 .recommended-item-card {
   background: linear-gradient(145deg, rgba(31, 41, 55, 0.95), rgba(17, 24, 39, 0.95));
   border-radius: 16px;
@@ -624,7 +614,7 @@
   box-shadow: 0 12px 32px rgba(80, 200, 120, 0.15);
 }
 
-/* Recommended Badge - COMPACT */
+/* Recommended Badge */
 .recommended-badge {
   position: absolute;
   top: 8px;
@@ -647,13 +637,18 @@
   box-shadow: 0 2px 8px rgba(80, 200, 120, 0.3);
 }
 
-/* Recommended Card - Item Header */
+/* Recommended Card Header */
 .recommended-item-card .item-header {
   display: flex;
-  align-items: flex-start; /* top-align name + price */
+  align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
   margin-bottom: 0.5rem;
+}
+
+/* IMPORTANT: override padding so names don't become vertical */
+.recommended-item-card .item-name-wrapper {
+  padding-right: 0;
 }
 
 .recommended-item-card .item-name {
@@ -672,7 +667,7 @@
   flex-shrink: 0;
 }
 
-/* Recommended Card - Description (Truncated) */
+/* Recommended Card Description (Truncated) */
 .recommended-item-card .item-description {
   font-size: 0.8125rem;
   color: rgba(255, 255, 255, 0.6);
@@ -747,20 +742,36 @@
     display: block !important;
   }
 
-    .hero-grid {
+  .hero-grid {
     grid-template-columns: 1fr !important;
-    max-height: 260px !important;  /* was 300 – reduces hero height */
+    max-height: 230px !important; /* shorter hero */
+  }
+
+  .hero-content-overlay {
+    padding: 1.25rem !important;
   }
 
   .hero-cta {
-    gap: 0.5rem !important;        /* tighter vertical spacing */
+    gap: 0.5rem !important;
+  }
+
+  .hero-title {
+    font-size: 1.8rem !important;
+  }
+
+  .hero-subtitle {
+    font-size: 0.95rem !important;
+  }
+
+  .cta-text {
+    font-size: 1.05rem !important;
   }
 
   .cta-button {
     font-size: 0.9rem !important;
     padding: 0.55rem 1.1rem !important;
     min-width: 0 !important;
-    width: auto !important;        /* no huge full-width pill */
+    width: auto !important;
   }
 
   .menu-container {
@@ -822,12 +833,11 @@
     font-size: 1.25rem;
   }
 
-  /* CRITICAL: Mobile grid - 2 columns, very compact */
+  /* Mobile: full-width cards so names don’t go word-by-word */
   .recommended-items-grid {
-    /* Full-width cards so names don't break word-by-word */
     grid-template-columns: 1fr;
     gap: 0.75rem;
- }
+  }
 
   .recommended-item-card {
     padding: 0.75rem;
@@ -872,11 +882,12 @@
     font-size: 0.8125rem;
   }
 
-  /* Extra: recommended cards don't need the big secondary button on tiny screens */
+  /* Extra: recommended cards don't need the secondary button on tiny screens */
   .recommended-item-card .read-desc-btn {
     display: none !important;
   }
 }
+
 /* Tablet adjustments */
 @media (min-width: 769px) and (max-width: 1024px) {
   .menu-layout {
