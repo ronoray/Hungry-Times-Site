@@ -1,85 +1,177 @@
-// =============================
-// File: site/src/pages/Menu.jsx - FINAL RE-VERIFIED FIX
-// =============================
+// File: site/src/pages/Menu.jsx
 
 import { useEffect, useMemo, useState, useRef } from "react";
 import "./Menu.css";
+import API_BASE from "../config/api";
 
-// CRITICAL: Reduced description length for more compact cards
-const DESC_MAX_RECOMMENDED = 60; // Short for recommended items
-const DESC_MAX_REGULAR = 120; // Slightly longer for regular items
+// Description length limits
+const DESC_MAX_RECOMMENDED = 60;  // compact cards
+const DESC_MAX_REGULAR = 120;     // regular items
 
-// --- New Component for Full Description ---
+// ========================
+// Description Modal
+// ========================
 function DescriptionModal({ open, title, description, onClose }) {
   if (!open) return null;
+
   const backdrop = {
-    position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 9999,
-    display: "flex", alignItems: "center", justifyContent: "center",
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.85)",
+    zIndex: 9999,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   };
+
   const body = {
-    position: "relative", zIndex: 10000, maxWidth: "90vw", maxHeight: "90vh",
-    background: "#1e1e1e", borderRadius: 16, padding: 20,
-    display: "flex", flexDirection: "column",
+    position: "relative",
+    zIndex: 10000,
+    maxWidth: "90vw",
+    maxHeight: "90vh",
+    background: "#1e1e1e",
+    borderRadius: 16,
+    padding: 20,
+    display: "flex",
+    flexDirection: "column",
     color: "#fff",
   };
-  const head = { 
-    display: "flex", justifyContent: "space-between", alignItems: "center", 
-    marginBottom: 12, paddingBottom: 8, borderBottom: "1px solid #333"
+
+  const head = {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottom: "1px solid #333",
   };
-  const closeBtn = { 
-    background: "#f59e0b", color: "#000", border: 0, borderRadius: 8, 
-    padding: "6px 12px", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem"
+
+  const closeBtn = {
+    background: "#f59e0b",
+    color: "#000",
+    border: 0,
+    borderRadius: 8,
+    padding: "6px 12px",
+    cursor: "pointer",
+    fontWeight: 600,
+    fontSize: "0.875rem",
   };
-  const descText = { 
-    maxHeight: "75vh", overflowY: "auto", fontSize: "0.95rem", lineHeight: "1.5",
-    color: "rgba(255, 255, 255, 0.8)", paddingRight: "8px",
+
+  const descText = {
+    maxHeight: "75vh",
+    overflowY: "auto",
+    fontSize: "0.95rem",
+    lineHeight: "1.5",
+    color: "rgba(255,255,255,0.8)",
+    paddingRight: "8px",
   };
 
   return (
     <div style={backdrop} onClick={onClose}>
       <div style={body} onClick={(e) => e.stopPropagation()}>
         <div style={head}>
-          <div style={{ fontWeight: 700, fontSize: "1.2rem", color: "#f59e0b" }}>{title}</div>
-          <button style={closeBtn} onClick={onClose}>✕ Close</button>
+          <div
+            style={{
+              fontWeight: 700,
+              fontSize: "1.2rem",
+              color: "#f59e0b",
+            }}
+          >
+            {title}
+          </div>
+          <button style={closeBtn} onClick={onClose}>
+            ✕ Close
+          </button>
         </div>
         <p style={descText}>{description}</p>
       </div>
     </div>
   );
 }
-// ----------------------------------------
 
-function ImageModal({ open, url, name, onClose }) {
+// ========================
+// Image Modal
+// ========================
+function ImageModal({ open, urls = [], name, onClose }) {
   if (!open) return null;
+
+  const [idx, setIdx] = useState(0);
+  useEffect(() => { setIdx(0); }, [open, urls?.length]);
+
   const backdrop = {
-    position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 9999,
-    display: "flex", alignItems: "center", justifyContent: "center",
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.85)",
+    zIndex: 9999,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   };
+
   const body = {
-    position: "relative", zIndex: 10000, maxWidth: "90vw", maxHeight: "90vh",
-    background: "#0b0b0b", borderRadius: 16, padding: 16,
-    display: "flex", flexDirection: "column",
+    position: "relative",
+    zIndex: 10000,
+    maxWidth: "90vw",
+    maxHeight: "90vh",
+    background: "#0b0b0b",
+    borderRadius: 16,
+    padding: 16,
+    display: "flex",
+    flexDirection: "column",
   };
-  const head = { 
-    display: "flex", justifyContent: "space-between", alignItems: "center", 
-    marginBottom: 12, color: "#fff", paddingBottom: 8, borderBottom: "1px solid #333"
+
+  const head = {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+    color: "#fff",
+    paddingBottom: 8,
+    borderBottom: "1px solid #333",
   };
-  const img = { maxWidth: "86vw", maxHeight: "78vh", objectFit: "contain", borderRadius: 8 };
-  const closeBtn = { 
-    background: "#f59e0b", color: "#000", border: 0, borderRadius: 8, 
-    padding: "8px 16px", cursor: "pointer", fontWeight: 600, fontSize: "0.95rem"
+
+  const img = {
+    maxWidth: "86vw",
+    maxHeight: "78vh",
+    objectFit: "contain",
+    borderRadius: 8,
   };
-  const empty = { color: "#aaa", textAlign: "center", padding: "40px 20px" };
+
+  const closeBtn = {
+    background: "#f59e0b",
+    color: "#000",
+    border: 0,
+    borderRadius: 8,
+    padding: "8px 16px",
+    cursor: "pointer",
+    fontWeight: 600,
+    fontSize: "0.95rem",
+  };
+
+  const empty = {
+    color: "#aaa",
+    textAlign: "center",
+    padding: "40px 20px",
+  };
 
   return (
     <div style={backdrop} onClick={onClose}>
       <div style={body} onClick={(e) => e.stopPropagation()}>
         <div style={head}>
-          <div style={{ fontWeight: 600, fontSize: "1.1rem" }}>{name || "Item Image"}</div>
-          <button style={closeBtn} onClick={onClose}>✕ Close</button>
+          <div style={{ fontWeight: 600, fontSize: "1.1rem" }}>
+            {name || "Item Image"}
+          </div>
+          <button style={closeBtn} onClick={onClose}>
+            ✕ Close
+          </button>
         </div>
-        {url ? (
-          <img src={url} alt={name || "Item image"} style={img} />
+        {urls && urls[idx] ? (
+          <img
+            src={urls[idx]}
+            alt={name || "Item image"}
+            style={img}
+            onError={() => setIdx((i) => i + 1)}
+          />
         ) : (
           <div style={empty}>No image available</div>
         )}
@@ -88,36 +180,52 @@ function ImageModal({ open, url, name, onClose }) {
   );
 }
 
-// --- Menu Component Start ---
+// ========================
+// Main Menu Component
+// ========================
 export default function Menu() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
+
   const [activeTop, setActiveTop] = useState(null);
   const [activeSub, setActiveSub] = useState(null);
   const [expandedItems, setExpandedItems] = useState(new Set());
+
   // Mobile sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Image modal state
-  const [imgModal, setImgModal] = useState({ open: false, url: null, name: "" });
-  // New Description modal state
-  const [descModal, setDescModal] = useState({ open: false, title: "", description: "" });
+  // Modals
+  const [imgModal, setImgModal] = useState({
+    open: false,
+    url: null,
+    name: "",
+  });
+  const [descModal, setDescModal] = useState({
+    open: false,
+    title: "",
+    description: "",
+  });
 
   const rightPaneRef = useRef(null);
 
+  // Fetch menu data
   useEffect(() => {
     let alive = true;
+
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch("https://hungrytimes.in/api/public/menu", {
-          headers: { "Cache-Control": "no-cache" },
-        });
+          const res = await fetch(`${API_BASE}/api/public/menu`, {
+            headers: { "Cache-Control": "no-cache" },
+          });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
         const json = await res.json();
         if (!alive) return;
+
         setData(json);
+
         const t0 = json?.topCategories?.[0]?.id ?? null;
         const s0 = json?.topCategories?.[0]?.subcategories?.[0]?.id ?? null;
         setActiveTop(t0);
@@ -129,12 +237,14 @@ export default function Menu() {
         if (alive) setLoading(false);
       }
     })();
+
     return () => {
       alive = false;
     };
   }, []);
 
   const tops = data?.topCategories || [];
+
   const subs = useMemo(() => {
     const t = tops.find((x) => x.id === activeTop);
     return t?.subcategories || [];
@@ -146,15 +256,13 @@ export default function Menu() {
     return map;
   }, [subs]);
 
-  // Extract all recommended items across all categories
+  // Collect all recommended items
   const recommendedItems = useMemo(() => {
     const items = [];
     tops.forEach((tc) => {
       tc.subcategories?.forEach((sc) => {
         sc.items?.forEach((item) => {
-          if (item.isRecommended) {
-            items.push(item);
-          }
+          if (item.isRecommended) items.push(item);
         });
       });
     });
@@ -179,30 +287,27 @@ export default function Menu() {
   const handleCategoryClick = (tcId, firstSubId) => {
     setActiveTop(tcId);
     setActiveSub(firstSubId);
-    // CRITICAL: Close sidebar on category click if open
-    setSidebarOpen(false);
+    setSidebarOpen(false); // close on mobile
   };
-  
-  // --- New Helper Component for Item Card Rendering ---
+
+  // ========================
+  // Card component
+  // ========================
   const MenuItemCard = ({ it, isRecommendedCard = false }) => {
     const hasVariants = hasVariantsOrAddons(it, "variant");
     const hasAddons = hasVariantsOrAddons(it, "addon");
     const isExpanded = expandedItems.has(it.id);
     const showExpandBtn = hasVariants || hasAddons;
 
-    const DESC_MAX = isRecommendedCard ? DESC_MAX_RECOMMENDED : DESC_MAX_REGULAR;
+    const DESC_MAX = isRecommendedCard
+      ? DESC_MAX_RECOMMENDED
+      : DESC_MAX_REGULAR;
+
     const fullDescription = String(it.description || "");
     const isTruncated = fullDescription.length > DESC_MAX;
 
-    // NEW: more robust image URL detection
-    const imageUrl =
-      it.imageUrl ||
-      it.image ||
-      it.image_url ||
-      it.image_path ||
-      it.imagePath ||
-      it.menuImageUrl ||
-      null;
+    // Use ONLY the API-provided imageUrl (already normalized on the server)
+    const imageUrl = it.imageUrl || null;
 
     return (
       <article
@@ -218,7 +323,6 @@ export default function Menu() {
         )}
 
         <div className="item-header">
-          {/* wrapper to avoid overlap with the badge */}
           <div className="item-name-wrapper">
             <h3 className="item-name">{it.name}</h3>
           </div>
@@ -253,26 +357,33 @@ export default function Menu() {
           </p>
         )}
 
-                {/* Action buttons row */}
-                  <div className="item-actions">
-                    {imageUrl && (
-                      <button
-                        className="view-image-btn"
-                        onClick={() =>
-                          setImgModal({ open: true, url: imageUrl, name: it.name })
-                        }
-                      >
-                        🖼️ View Image
-                      </button>
-                    )}
+        <div className="item-actions">
+          {imageUrl && (
+            <button
+              className="view-image-btn"
+              onClick={() =>
+                setImgModal({
+                  open: true,
+                  // If server returns absolute URL, use as-is; if server returns a root path, keep it.
+                  urls: [imageUrl],
+                  name: it.name,
+                })
+              }
+            >
+              🖼️ View Image
+            </button>
+          )}
 
-                    {/* Don't show options toggle in the compact recommended cards */}
-                    {showExpandBtn && !isRecommendedCard && (
-                      <button className="expand-btn" onClick={() => toggleExpand(it.id)}>
-                        {isExpanded ? "− Hide Options" : "+ View Options"}
-                      </button>
-                    )}
-                  </div>
+          {/* No options toggle on compact recommended cards */}
+          {showExpandBtn && !isRecommendedCard && (
+            <button
+              className="expand-btn"
+              onClick={() => toggleExpand(it.id)}
+            >
+              {isExpanded ? "− Hide Options" : "+ View Options"}
+            </button>
+          )}
+        </div>
 
         {isExpanded && !isRecommendedCard && (
           <div className="options-container">
@@ -283,13 +394,14 @@ export default function Menu() {
       </article>
     );
   };
-  // --------------------------------------------------------
 
-
+  // ========================
+  // Loading / Error / Empty
+  // ========================
   if (loading) {
     return (
       <div className="menu-loading">
-        <div className="spinner"></div>
+        <div className="spinner" />
         <p>Loading our delicious menu...</p>
       </div>
     );
@@ -311,17 +423,21 @@ export default function Menu() {
     );
   }
 
+  // ========================
+  // Main Render
+  // ========================
   return (
     <div className="menu-page-wrapper">
       <div className="menu-page">
         {/* Hero */}
-        {/* ... (Hero content remains the same) ... */}
         <div className="menu-hero">
           <div className="hero-grid">
             <div className="hero-image-wrapper hero-black-bg">
               <div className="hero-content-overlay">
                 <h1 className="hero-title">Our Menu</h1>
-                <p className="hero-subtitle">Crafted with passion, served with love</p>
+                <p className="hero-subtitle">
+                  Crafted with passion, served with love
+                </p>
               </div>
             </div>
             <div className="hero-image-wrapper">
@@ -334,7 +450,9 @@ export default function Menu() {
               <div className="hero-content-overlay">
                 <div className="hero-cta">
                   <p className="cta-text">Ready to order?</p>
-                  <a href="tel:+918420822919" className="cta-button">📞 Call 8420822919</a>
+                  <a href="tel:+918420822919" className="cta-button">
+                    📞 Call 8420822919
+                  </a>
                   <a
                     href="https://wa.me/918420822919"
                     target="_blank"
@@ -349,27 +467,25 @@ export default function Menu() {
           </div>
         </div>
 
-
         {/* Mobile Hamburger */}
         <button
           className="mobile-menu-toggle"
           onClick={() => setSidebarOpen(!sidebarOpen)}
         >
-          <span></span>
-          <span></span>
-          <span></span>
+          <span />
+          <span />
+          <span />
         </button>
 
-        {/* Overlay */}
-        {/* Only show overlay if sidebar is open */}
+        {/* Overlay (only when sidebar open) */}
         {sidebarOpen && (
           <div className="mobile-overlay" onClick={() => setSidebarOpen(false)} />
         )}
 
-        {/* Content */}
+        {/* Main layout */}
         <div className="menu-container">
           <div className="menu-layout">
-            {/* Sidebar receives the 'open' class based on state */}
+            {/* Sidebar */}
             <aside className={`categories-sidebar ${sidebarOpen ? "open" : ""}`}>
               <div className="sidebar-sticky">
                 <h3 className="sidebar-heading">Categories</h3>
@@ -377,8 +493,12 @@ export default function Menu() {
                   {tops.map((tc) => (
                     <button
                       key={tc.id}
-                      className={`sidebar-category-btn ${tc.id === activeTop ? "active" : ""}`}
-                      onClick={() => handleCategoryClick(tc.id, tc.subcategories?.[0]?.id)}
+                      className={`sidebar-category-btn ${
+                        tc.id === activeTop ? "active" : ""
+                      }`}
+                      onClick={() =>
+                        handleCategoryClick(tc.id, tc.subcategories?.[0]?.id)
+                      }
                     >
                       {tc.name}
                     </button>
@@ -387,6 +507,7 @@ export default function Menu() {
               </div>
             </aside>
 
+            {/* Right Pane */}
             <div className="menu-main" ref={rightPaneRef}>
               <section>
                 {/* Recommended Section */}
@@ -394,24 +515,32 @@ export default function Menu() {
                   <div className="recommended-section">
                     <div className="recommended-header">
                       <span className="star-icon">⭐</span>
-                      <h2 className="recommended-title">Chef's Recommendations</h2>
+                      <h2 className="recommended-title">
+                        Chef&apos;s Recommendations
+                      </h2>
                       <span className="star-icon">⭐</span>
                     </div>
                     <div className="recommended-items-grid">
                       {recommendedItems.map((it) => (
-                        <MenuItemCard key={it.id} it={it} isRecommendedCard={true} />
+                        <MenuItemCard
+                          key={it.id}
+                          it={it}
+                          isRecommendedCard={true}
+                        />
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* Subcategory Navigation - Placed after recommended section */}
+                {/* Subcategory Navigation */}
                 <nav className="subcategory-bar">
                   <div className="subcategory-scroll">
                     {subs.map((sc) => (
                       <button
                         key={sc.id}
-                        className={`subcategory-btn ${sc.id === activeSub ? "active" : ""}`}
+                        className={`subcategory-btn ${
+                          sc.id === activeSub ? "active" : ""
+                        }`}
                         onClick={() => scrollToSub(sc.id)}
                       >
                         {sc.name}
@@ -420,13 +549,17 @@ export default function Menu() {
                   </div>
                 </nav>
 
-                {/* Regular Category Sections */}
+                {/* Regular sections */}
                 {subs.map((sc) => (
                   <div key={sc.id} data-sub={sc.id} className="menu-section">
                     <h2 className="section-title">{sc.name}</h2>
                     <div className="items-grid">
                       {(itemsBySub.get(sc.id) || []).map((it) => (
-                        <MenuItemCard key={it.id} it={it} isRecommendedCard={false} />
+                        <MenuItemCard
+                          key={it.id}
+                          it={it}
+                          isRecommendedCard={false}
+                        />
                       ))}
                     </div>
                   </div>
@@ -440,9 +573,9 @@ export default function Menu() {
       {/* Global Image Modal */}
       <ImageModal
         open={imgModal.open}
-        url={imgModal.url}
+        urls={imgModal.urls || []}
         name={imgModal.name}
-        onClose={() => setImgModal({ open: false, url: null, name: "" })}
+        onClose={() => setImgModal({ open: false, urls: [], name: "" })}
       />
 
       {/* Global Description Modal */}
@@ -450,18 +583,22 @@ export default function Menu() {
         open={descModal.open}
         title={descModal.title}
         description={descModal.description}
-        onClose={() => setDescModal({ open: false, title: "", description: "" })}
+        onClose={() =>
+          setDescModal({ open: false, title: "", description: "" })
+        }
       />
     </div>
   );
 }
 
-// ... (renderVariants, renderAddons, hasVariantsOrAddons, formatPriceDelta functions remain the same) ...
-
+// ========================
+// Helpers for variants/addons
+// ========================
 function hasVariantsOrAddons(it, type) {
   const families = (it.families || []).filter((f) => f.type === type);
-  if (families.length > 0)
+  if (families.length > 0) {
     return families.some((fam) => (fam.options || []).length > 0);
+  }
   if (type === "variant") return (it.variants || []).length > 0;
   if (type === "addon") return (it.addonGroups || []).length > 0;
   return false;
@@ -474,6 +611,7 @@ function renderVariants(it) {
     : it.variants?.length
     ? [{ name: "Variants", options: it.variants }]
     : [];
+
   if (!blocks.length) return null;
 
   return (
@@ -502,6 +640,7 @@ function renderAddons(it) {
     : it.addonGroups?.length
     ? it.addonGroups
     : [];
+
   if (!blocks.length) return null;
 
   return (

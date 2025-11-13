@@ -20,6 +20,7 @@
   all: unset;
   box-sizing: border-box !important;
   display: inline-block !important;
+  cursor: pointer !important;
 }
 
 .menu-page * {
@@ -394,6 +395,7 @@
   color: var(--color-text-muted) !important;
   line-height: 1.5 !important;
   margin-bottom: 1rem !important;
+  font-style: italic !important;
 }
 
 /* ACTION BUTTONS CONTAINER */
