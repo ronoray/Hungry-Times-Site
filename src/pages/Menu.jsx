@@ -287,7 +287,17 @@ export default function Menu() {
   const handleCategoryClick = (tcId, firstSubId) => {
     setActiveTop(tcId);
     setActiveSub(firstSubId);
-    setSidebarOpen(false); // close on mobile
+    setSidebarOpen(false); // close sidebar on mobile
+    
+    // Scroll to the subcategory after state updates
+    setTimeout(() => {
+      if (firstSubId) {
+        const el = rightPaneRef.current?.querySelector(`[data-sub="${firstSubId}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }
+    }, 100); // Small delay to ensure state has updated
   };
 
   // ========================
