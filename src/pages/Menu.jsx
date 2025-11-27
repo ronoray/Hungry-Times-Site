@@ -216,7 +216,7 @@ export default function Menu() {
     (async () => {
       try {
         setLoading(true);
-          const res = await fetch(`${API_BASE}/api/public/menu`, {
+          const res = await fetch(`${API_BASE}/public/menu`, {
             headers: { "Cache-Control": "no-cache" },
           });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
