@@ -1,10 +1,12 @@
-// customer-portal/src/pages/Gallery.jsx - PRODUCTION READY
+// customer-portal/src/pages/Gallery.jsx - ENVIRONMENT AWARE
 import { useState, useEffect } from 'react'
 import Section from '../components/Section'
-import API_BASE from '../config/api'
 
-// Get the backend server URL (without /api path) for images
-const BACKEND_URL = import.meta.env.VITE_API_BASE?.replace('/api', '') || 'https://ops.hungrytimes.in'
+// Use environment variables that work in both dev and production
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'
+const CDN_BASE = import.meta.env.VITE_CDN_BASE || 'http://localhost:5000'
+
+console.log('🔧 Gallery Config:', { API_BASE, CDN_BASE, mode: import.meta.env.MODE })
 
 export default function Gallery() {
   const [images, setImages] = useState([])
@@ -21,24 +23,37 @@ export default function Gallery() {
       setLoading(true)
       setError(null)
       
-      // API_BASE already includes /api from api.js
+      console.log('📡 Fetching gallery from:', `${API_BASE}/public/gallery`)
+      
       const response = await fetch(`${API_BASE}/public/gallery`)
       
       if (!response.ok) {
-        throw new Error('Failed to load gallery images')
+        throw new Error(`Failed to load gallery images (${response.status})`)
       }
       
       const data = await response.json()
+      console.log('✅ Gallery data received:', data)
       
-      // Fix image URLs - convert relative paths to absolute URLs
-      const processedImages = (data.images || []).map(img => ({
-        ...img,
-        url: img.url.startsWith('http') ? img.url : `${BACKEND_URL}${img.url}`
-      }))
+      // Process image URLs based on environment
+      const processedImages = (data.images || []).map(img => {
+        let url = img.url
+        
+        // If URL is relative, make it absolute
+        if (!url.startsWith('http')) {
+          url = `${CDN_BASE}${url}`
+        }
+        
+        console.log(`🖼️ Image: ${img.dish_name} → ${url}`)
+        
+        return {
+          ...img,
+          url
+        }
+      })
       
       setImages(processedImages)
     } catch (err) {
-      console.error('Gallery fetch error:', err)
+      console.error('❌ Gallery fetch error:', err)
       setError(err.message)
     } finally {
       setLoading(false)
@@ -75,7 +90,8 @@ export default function Gallery() {
             </svg>
           </div>
           <h3 className="font-semibold mb-2">Unable to Load Gallery</h3>
-          <p className="text-neutral-400 mb-4">{error}</p>
+          <p className="text-neutral-400 mb-2">{error}</p>
+          <p className="text-xs text-neutral-500 mb-4">API: {API_BASE}</p>
           <button 
             onClick={fetchGalleryImages}
             className="btn btn-primary"
@@ -124,6 +140,10 @@ export default function Gallery() {
                   alt={image.dish_name || 'Gallery image'}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                   loading="lazy"
+                  onError={(e) => {
+                    console.error('❌ Failed to load image:', image.url)
+                    e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%23333" width="400" height="400"/%3E%3Ctext fill="%23666" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EImage not found%3C/text%3E%3C/svg%3E'
+                  }}
                 />
                 
                 {/* Overlay on hover */}
