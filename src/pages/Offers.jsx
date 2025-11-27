@@ -1,8 +1,7 @@
 // src/pages/Offers.jsx
 import React, { useState } from 'react';
 import './Offers.css';
-
-const API_BASE = '/api';
+import API_BASE from '../config/api';
 
 export default function Offers() {
   const [customerPhone, setCustomerPhone] = useState('');
@@ -37,7 +36,8 @@ export default function Offers() {
     setVerifyResult({ show: false, type: '', message: '' });
 
     try {
-      const response = await fetch(`${API_BASE}/referral/validate`, {
+      // If your endpoint is public under /api/public, change to `${API_BASE}/api/public/referral/validate`
+      const response = await fetch(`${API_BASE}/api/referral/validate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -48,7 +48,11 @@ export default function Offers() {
         })
       });
 
-      const data = await response.json();
+      // prevent JSON parse crash on 4xx/5xx
+      let data = null;
+      if (response.headers.get('content-type')?.includes('application/json')) {
+        data = await response.json().catch(() => null);
+      }
 
       if (response.ok && data) {
         if (data.valid) {
@@ -179,10 +183,10 @@ export default function Offers() {
           });
         }
       } else {
-        setVerifyResult({ 
-          show: true, 
-          type: 'error', 
-          message: data.message || data.error || 'Failed to verify code.' 
+        setVerifyResult({
+          show: true,
+          type: 'error',
+          message: (data && (data.message || data.error)) || 'Failed to verify code.',
         });
       }
     } catch (error) {

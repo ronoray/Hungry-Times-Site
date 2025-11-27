@@ -1,9 +1,8 @@
-// context/AuthContext.jsx
+// context/AuthContext.jsx - COMPLETE CUSTOMER AUTH FLOW
 import { createContext, useContext, useState, useEffect } from 'react';
+import API_BASE from '../config/api'; // adjust relative path if needed
 
 const AuthContext = createContext(null);
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
 
 export function AuthProvider({ children }) {
   const [customer, setCustomer] = useState(null);
@@ -31,17 +30,28 @@ export function AuthProvider({ children }) {
         const data = await res.json();
         setCustomer(data.customer);
       } else {
-        // Invalid token
-        logout();
+        const error = await res.json();
+        // If token expired, clear it
+        if (error.code === 'TOKEN_EXPIRED') {
+          logout();
+        }
       }
     } catch (err) {
       console.error('Failed to fetch customer:', err);
-      logout();
     } finally {
       setLoading(false);
     }
   };
 
+  const login = (customer, token) => {
+    localStorage.setItem('customerToken', token);
+    setToken(token);
+    setCustomer(customer);
+  };
+
+  // ============================================
+  // STEP 1: SEND OTP
+  // ============================================
   const sendOTP = async (phone) => {
     const res = await fetch(`${API_BASE}/api/customer/auth/send-otp`, {
       method: 'POST',
@@ -57,48 +67,167 @@ export function AuthProvider({ children }) {
     return await res.json();
   };
 
-  const verifyOTP = async (phone, otp, name) => {
+  // ============================================
+  // STEP 2: VERIFY OTP
+  // ============================================
+  const verifyOTP = async (phone, otp) => {
+    console.log('🔐 AuthContext: Verifying OTP', { phone, otp });
+    
     const res = await fetch(`${API_BASE}/api/customer/auth/verify-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, otp, name })
+      body: JSON.stringify({ phone, otp })
     });
+
+    console.log('📡 AuthContext: Response status:', res.status);
 
     if (!res.ok) {
       const error = await res.json();
+      console.error('❌ AuthContext: Error response:', error);
       throw new Error(error.error || 'Failed to verify OTP');
     }
 
     const data = await res.json();
+    console.log('📦 AuthContext: Response data:', data);
     
-    // Store token
-    localStorage.setItem('customerToken', data.token);
-    setToken(data.token);
-    setCustomer(data.customer);
-
-    return data;
+    // Store temporary token for profile completion
+    const result = {
+      tempToken: data.tempToken,
+      customer: data.customer,
+      isNewUser: data.customer.isNewUser
+    };
+    
+    console.log('✨ AuthContext: Returning result:', result);
+    return result;
   };
 
-  const updateProfile = async (updates) => {
-    const res = await fetch(`${API_BASE}/api/customer/auth/profile`, {
-      method: 'PUT',
+  // ============================================
+  // STEP 3: SET USERNAME & PASSWORD
+  // ============================================
+  const setCredentials = async (tempToken, username, password) => {
+    const res = await fetch(`${API_BASE}/api/customer/auth/set-credentials`, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${tempToken}`
       },
-      body: JSON.stringify(updates)
+      body: JSON.stringify({ username, password })
     });
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.error || 'Failed to update profile');
+      throw new Error(error.error || 'Failed to set credentials');
+    }
+
+    return await res.json();
+  };
+
+  // ============================================
+  // STEP 4: COMPLETE PROFILE (Name + Email)
+  // ============================================
+  const completeProfile = async (tempToken, name, email) => {
+    const res = await fetch(`${API_BASE}/api/customer/auth/complete-profile`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${tempToken}`
+      },
+      body: JSON.stringify({ name, email })
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to complete profile');
+    }
+
+    return await res.json();
+  };
+
+  // ============================================
+  // STEP 5: SET ADDRESS & COMPLETE REGISTRATION
+  // ============================================
+  const setAddress = async (tempToken, address, latitude, longitude) => {
+    const res = await fetch(`${API_BASE}/api/customer/auth/set-address`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${tempToken}`
+      },
+      body: JSON.stringify({ address, latitude, longitude })
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to set address');
     }
 
     const data = await res.json();
-    setCustomer(data.customer);
+    
+    // Registration complete - store final token
+    login(data.customer, data.token);
+    
     return data;
   };
 
+  // ============================================
+  // USERNAME/PASSWORD LOGIN (Returning customers)
+  // ============================================
+  const loginWithPassword = async (username, password) => {
+    const res = await fetch(`${API_BASE}/api/customer/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Login failed');
+    }
+
+    const data = await res.json();
+    login(data.customer, data.token);
+    return data;
+  };
+
+  // ============================================
+  // FORGOT PASSWORD - SEND OTP
+  // ============================================
+  const sendForgotPasswordOTP = async (phone) => {
+    const res = await fetch(`${API_BASE}/api/customer/auth/forgot-password/send-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone })
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to send OTP');
+    }
+
+    return await res.json();
+  };
+
+  // ============================================
+  // FORGOT PASSWORD - RESET PASSWORD
+  // ============================================
+  const resetPassword = async (phone, otp, newPassword) => {
+    const res = await fetch(`${API_BASE}/api/customer/auth/forgot-password/reset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, otp, newPassword })
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to reset password');
+    }
+
+    return await res.json();
+  };
+
+  // ============================================
+  // LOGOUT
+  // ============================================
   const logout = async () => {
     if (token) {
       try {
@@ -122,11 +251,22 @@ export function AuthProvider({ children }) {
     customer,
     loading,
     isAuthenticated: !!customer,
+    token,
+    
+    // Registration flow
     sendOTP,
     verifyOTP,
-    updateProfile,
+    setCredentials,
+    completeProfile,
+    setAddress,
+    
+    // Login flows
+    loginWithPassword,
+    sendForgotPasswordOTP,
+    resetPassword,
+    
+    // Logout
     logout,
-    token
   };
 
   return (

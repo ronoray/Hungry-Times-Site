@@ -1,17 +1,18 @@
-import Section from '../components/Section'
-
+import { useEffect } from 'react'
 
 export default function Testimonials() {
-return (
-<Section title="Testimonials">
-<div className="space-y-4">
-{[1,2].map(i => (
-<blockquote key={i} className="card p-6">
-<p className="italic text-neutral-300">“Amazing food. Cozy vibes.”</p>
-<footer className="mt-2 text-sm text-neutral-400">— Customer {i}</footer>
-</blockquote>
-))}
-</div>
-</Section>
-)
+  useEffect(() => {
+    // Redirect to ops site's public testimonials page
+    window.location.href = 'https://ops.hungrytimes.in/public-testimonials'
+  }, [])
+
+  // Show loading state while redirecting
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-neutral-300">Redirecting to testimonials...</p>
+      </div>
+    </div>
+  )
 }
