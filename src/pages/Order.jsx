@@ -1,12 +1,18 @@
+// site/src/pages/Order.jsx
+// COMPLETE ORDER PAGE WITH PAYMENT MODE, OPERATING HOURS, AND FLAGGING
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import AuthModal from "../components/AuthModal";
+import UserMenu from "../components/UserMenu";
+import ServiceAreaCheck from "../components/ServiceAreaCheck";
+import { useLocationStore } from "../context/LocationContext";
+import API_BASE from "../config/api";
 
-// Restaurant location (Hungry Times, Kolkata) - UPDATE THESE WITH YOUR ACTUAL COORDINATES
-const RESTAURANT_LAT = 22.5726;
-const RESTAURANT_LNG = 88.3639;
-const MAX_DELIVERY_DISTANCE_KM = 3;
+// Restaurant location
+const RESTAURANT_LAT = parseFloat(import.meta.env.VITE_RESTAURANT_LAT || '22.5061956');
+const RESTAURANT_LNG = parseFloat(import.meta.env.VITE_RESTAURANT_LNG || '88.3673608');
+const MAX_DELIVERY_DISTANCE_KM = parseFloat(import.meta.env.VITE_MAX_DELIVERY_DISTANCE_KM || '3.5');
 
 function Money({ value }) { 
   return <span>₹ {Number(value || 0).toFixed(0)}</span>; 
@@ -18,7 +24,7 @@ function Required() {
 
 // Calculate distance using Haversine formula
 function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371; // Earth's radius in km
+  const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
   const a = 
@@ -29,644 +35,599 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-function ItemModal({ open, onClose, item }) {
-  const { addLine } = useCart();
-  const [qty, setQty] = useState(1);
-  const [legacyVariantId, setLegacyVariantId] = useState(null);
-  const [selectedAddons, setSelectedAddons] = useState(new Set());
-  const [lockedAddonIds, setLockedAddonIds] = useState(new Set());
-  const [familySelections, setFamilySelections] = useState({});
-  const [errors, setErrors] = useState({});
-
-  useEffect(() => {
-    if (!open) return;
-    setQty(1);
-    setLegacyVariantId(null);
-    setSelectedAddons(new Set());
-    setLockedAddonIds(new Set());
-    setFamilySelections({});
-    setErrors({});
-  }, [open, item?.id]);
-
-  const safeItem = item ?? { basePrice: 0, variants: [], addonGroups: [], families: [] };
-
-  useEffect(() => {
-    if (!open || !item) return;
-    const next = new Set();
-    const locked = new Set();
-
-    const consume = (opts = []) => {
-      for (const o of opts) {
-        if (o?.locked) {
-          next.add(o.id);
-          locked.add(o.id);
-        }
-      }
-    };
-
-    for (const g of (safeItem.addonGroups || [])) consume(g.options);
-    for (const f of (safeItem.families || [])) if (f.type === "addon") consume(f.options);
-
-    setSelectedAddons(next);
-    setLockedAddonIds(locked);
-  }, [open, item?.id]);
-
-  const legacyVariant = Array.isArray(safeItem.variants)
-    ? safeItem.variants.find(v => v.id === legacyVariantId) || null
-    : null;
-
-  const famOptionById = (fam, id) => (fam.options || []).find(o => o.id === id) || null;
-
-  const price = useMemo(() => {
-    let total = Number(safeItem.basePrice || 0);
-    if (legacyVariant) total += Number(legacyVariant.priceDelta || 0);
-
-    for (const f of (safeItem.families || [])) {
-      if (f.type !== "variant") continue;
-      const pickId = familySelections[f.id];
-      const opt = famOptionById(f, pickId);
-      if (opt) total += Number(opt.priceDelta || 0);
-    }
-
-    const allAddonOptions = [];
-    for (const g of (safeItem.addonGroups || [])) allAddonOptions.push(...(g.options || []));
-    for (const f of (safeItem.families || [])) if (f.type === "addon") allAddonOptions.push(...(f.options || []));
-
-    for (const o of allAddonOptions) if (selectedAddons.has(o.id)) total += Number(o.priceDelta || 0);
-
-    return total;
-  }, [safeItem, legacyVariant, familySelections, selectedAddons]);
-
-  if (!open || !item) return null;
-
-  const toggleAddon = (option, groupMeta = { required: 0, minSelect: 0, maxSelect: 0 }) => {
-    if (lockedAddonIds.has(option.id)) return;
-    const next = new Set(selectedAddons);
-    const checked = next.has(option.id);
-    const max = groupMeta.maxSelect || Infinity;
-    const min = groupMeta.minSelect || 0;
-
-    const allOptsInGroup = groupMeta._options || [];
-    const currentCount = allOptsInGroup.filter(o => next.has(o.id)).length;
-
-    if (!checked) {
-      if (currentCount >= max) return;
-      next.add(option.id);
-    } else {
-      if (groupMeta.required && currentCount <= min) return;
-      next.delete(option.id);
-    }
-    setSelectedAddons(next);
-  };
-
-  const handleAdd = () => {
-    const nextErrors = {};
-
-    for (const f of (safeItem.families || [])) {
-      if (f.type === "variant") {
-        if (!familySelections[f.id]) {
-          nextErrors[`fam:${f.id}`] = `Please select one option for ${f.name}.`;
-        }
-      }
-    }
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length) return;
-
-    const famVariantParts = (safeItem.families || [])
-      .filter(f => f.type === "variant")
-      .map(f => {
-        const pickId = familySelections[f.id];
-        const opt = famOptionById(f, pickId);
-        return opt ? { id: opt.id, name: `${f.name}: ${opt.name}`, price: Number(opt.priceDelta || 0) } : null;
-      }).filter(Boolean);
-
-    const allAddonOptions = [];
-    for (const g of (safeItem.addonGroups || [])) allAddonOptions.push(...(g.options || []));
-    for (const f of (safeItem.families || [])) if (f.type === "addon") allAddonOptions.push(...(f.options || []));
-
-    const chosenAddons = allAddonOptions
-      .filter(o => selectedAddons.has(o.id))
-      .map(o => ({ id: o.id, name: o.name, price: Number(o.priceDelta || 0) }));
-
-    const payload = {
-      itemId: safeItem.id,
-      name: safeItem.name,
-      qty,
-      basePrice: Number(safeItem.basePrice || 0),
-      variant: legacyVariant ? { id: legacyVariant.id, name: legacyVariant.name, priceDelta: Number(legacyVariant.priceDelta || 0) } : null,
-      variants: famVariantParts,
-      addons: chosenAddons,
-      total: price * qty
-    };
-
-    addLine({ key: `${safeItem.id}-${Date.now()}`, ...payload });
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-lg bg-neutral-900 border border-neutral-800 rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-start justify-between mb-6">
-          <h3 className="text-2xl font-bold text-white">{safeItem.name}</h3>
-          <button onClick={onClose} className="text-neutral-400 hover:text-white transition">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {Array.isArray(safeItem.variants) && safeItem.variants.length > 0 && (
-          <div className="mb-6">
-            <div className="font-semibold text-white mb-3">Choose a variant</div>
-            <div className="grid grid-cols-2 gap-3">
-              {safeItem.variants.map(v => (
-                <label key={v.id} className={`border-2 rounded-xl p-4 cursor-pointer transition ${legacyVariantId === v.id ? "border-rose-500 bg-rose-500/10" : "border-neutral-700 hover:border-neutral-600"}`}>
-                  <input type="radio" className="sr-only" name="legacyVariant" checked={legacyVariantId === v.id} onChange={() => setLegacyVariantId(v.id)} />
-                  <div className="text-white font-medium">{v.name}</div>
-                  {v.priceDelta ? <div className="text-amber-400 text-sm mt-1">+₹{v.priceDelta.toFixed(0)}</div> : null}
-                </label>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {(safeItem.families || []).map(f => (
-          <div key={f.id} className="mb-6">
-            <div className="font-semibold text-white mb-3">
-              {f.name} {f.type === "variant" && <Required />}
-            </div>
-
-            {f.type === "variant" && (
-              <>
-                <div className="grid grid-cols-2 gap-3">
-                  {(f.options || []).map(o => (
-                    <label key={o.id} className={`border-2 rounded-xl p-4 cursor-pointer transition ${familySelections[f.id] === o.id ? "border-rose-500 bg-rose-500/10" : "border-neutral-700 hover:border-neutral-600"}`}>
-                      <input type="radio" className="sr-only" name={`family-${f.id}`} checked={familySelections[f.id] === o.id} onChange={() => setFamilySelections(s => ({ ...s, [f.id]: o.id }))} />
-                      <div className="text-white font-medium">{o.name}</div>
-                      {o.priceDelta ? <div className="text-amber-400 text-sm mt-1">+₹{o.priceDelta.toFixed(0)}</div> : null}
-                    </label>
-                  ))}
-                </div>
-                {errors[`fam:${f.id}`] && <div className="text-red-400 text-sm mt-2">{errors[`fam:${f.id}`]}</div>}
-              </>
-            )}
-
-            {f.type === "addon" && (
-              <div className="grid grid-cols-2 gap-3">
-                {(f.options || []).map(o => {
-                  const checked = selectedAddons.has(o.id);
-                  const disabled = o.locked === true;
-                  const meta = { required: 0, minSelect: 0, maxSelect: 0, _options: f.options || [] };
-                  return (
-                    <label key={o.id} className={`border-2 rounded-xl p-4 cursor-pointer transition ${checked ? "border-rose-500 bg-rose-500/10" : "border-neutral-700 hover:border-neutral-600"} ${disabled ? "opacity-60" : ""}`}>
-                      <input type="checkbox" className="sr-only" checked={checked} disabled={disabled} onChange={() => toggleAddon(o, meta)} />
-                      <div className="text-white font-medium">{o.name}</div>
-                      {o.priceDelta ? <div className="text-amber-400 text-sm mt-1">+₹{o.priceDelta.toFixed(0)}</div> : null}
-                      {disabled && <div className="text-xs text-neutral-400 mt-1">(Mandatory)</div>}
-                    </label>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        ))}
-
-        {Array.isArray(safeItem.addonGroups) && safeItem.addonGroups.length > 0 && (
-          <div className="space-y-6">
-            {safeItem.addonGroups.map(g => {
-              const meta = { required: g.required, minSelect: g.minSelect, maxSelect: g.maxSelect, _options: g.options || [] };
-              return (
-                <div key={g.id}>
-                  <div className="font-semibold text-white">{g.name}</div>
-                  <div className="text-xs text-neutral-400 mb-3">{g.required ? "Required" : "Optional"} • {g.minSelect || 0}-{g.maxSelect || "∞"}</div>
-                  <div className="grid grid-cols-2 gap-3">
-                    {(g.options || []).map(o => {
-                      const checked = selectedAddons.has(o.id);
-                      const disabled = o.locked === true;
-                      return (
-                        <label key={o.id} className={`border-2 rounded-xl p-4 cursor-pointer transition ${checked ? "border-rose-500 bg-rose-500/10" : "border-neutral-700 hover:border-neutral-600"} ${disabled ? "opacity-60" : ""}`}>
-                          <input type="checkbox" className="sr-only" checked={checked} disabled={disabled} onChange={() => toggleAddon(o, meta)} />
-                          <div className="text-white font-medium">{o.name}</div>
-                          {o.priceDelta ? <div className="text-amber-400 text-sm mt-1">+₹{o.priceDelta.toFixed(0)}</div> : null}
-                          {disabled && <div className="text-xs text-neutral-400 mt-1">(Mandatory)</div>}
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        <div className="mt-8 pt-6 border-t border-neutral-800 flex items-center justify-between">
-          <div className="text-2xl font-bold text-white"><Money value={price * qty} /></div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-neutral-800 rounded-lg">
-              <button className="w-10 h-10 flex items-center justify-center text-white hover:bg-neutral-700 rounded-lg transition" onClick={() => setQty(q => Math.max(1, q - 1))}>−</button>
-              <div className="min-w-12 text-center text-white font-semibold">{qty}</div>
-              <button className="w-10 h-10 flex items-center justify-center text-white hover:bg-neutral-700 rounded-lg transition" onClick={() => setQty(q => q + 1)}>+</button>
-            </div>
-            <button className="px-6 py-3 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white font-semibold rounded-lg transition shadow-lg" onClick={handleAdd}>
-              Add to Cart
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function CheckoutModal({ open, onClose, cartLines, calcUnit, clearCart }) {
-  const { customer, isAuthenticated } = useAuth();
-  const [authModalOpen, setAuthModalOpen] = useState(false);
+export default function Order() {
+  const { customer, isAuthenticated, loading: authLoading } = useAuth();
+  const { lines, clearCart, calcUnit, removeLine, updateQty } = useCart();
   
-  const [deliveryAddress, setDeliveryAddress] = useState("");
-  const [landmark, setLandmark] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("Cash on Delivery");
-  const [note, setNote] = useState("");
+  // Auth modal
+  const [showAuthModal, setShowAuthModal] = useState(false);
   
+  // Menu data
+  const [menu, setMenu] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedItem, setSelectedItem] = useState(null);
+  
+  // Order state
+  const [deliveryType, setDeliveryType] = useState("delivery");
+  const [orderNotes, setOrderNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
+  const [orderSuccess, setOrderSuccess] = useState(false);
+  const [orderError, setOrderError] = useState("");
+  const [placedOrderId, setPlacedOrderId] = useState(null);
+  
+  // ✨ NEW: Payment mode popup
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPaymentMode, setSelectedPaymentMode] = useState(null);
+  
+  // ✨ NEW: Customer flagging
+  const [isFlagged, setIsFlagged] = useState(false);
+  const [flaggedReason, setFlaggedReason] = useState("");
+  
+  // ✨ NEW: Operating hours
+  const [operatingHours, setOperatingHours] = useState(null);
+  const [hoursWarning, setHoursWarning] = useState("");
+  
+  // Location state
+  const { savedAddress } = useLocationStore();
 
-  if (!open) return null;
+  // Load menu
+  useEffect(() => {
+    loadMenu();
+  }, []);
 
-  const subTotal = cartLines.reduce((sum, l) => sum + calcUnit(l) * l.qty, 0);
-  const taxPercent = 5;
-  const taxAmt = (subTotal * taxPercent) / 100;
-  const grandTotal = Math.round(subTotal + taxAmt);
+  const loadMenu = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/public/menu`);
+      if (!res.ok) throw new Error("Failed to load menu");
+      const data = await res.json();
+      setMenu(data.menu || []);
+    } catch (err) {
+      console.error("Menu load error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // ✨ NEW: Check if customer is flagged
+  useEffect(() => {
+    if (customer?.phone) {
+      checkIfFlagged();
+    }
+  }, [customer]);
+  
+  // ✨ NEW: Check operating hours
+  useEffect(() => {
+    checkOperatingHours();
+    // Check every minute
+    const interval = setInterval(checkOperatingHours, 60000);
+    return () => clearInterval(interval);
+  }, []);
+  
+  const checkIfFlagged = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/public/orders/check-flagged/${customer.phone}`);
+      if (response.ok) {
+        const data = await response.json();
+        setIsFlagged(data.is_flagged);
+        setFlaggedReason(data.flagged_reason || "");
+        
+        if (data.is_flagged) {
+          console.log("⚠️ Customer is flagged:", data.flagged_reason);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to check flagged status:", error);
+    }
+  };
+  
+  const checkOperatingHours = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/public/operating-hours`);
+      if (response.ok) {
+        const data = await response.json();
+        setOperatingHours(data);
+        
+        if (data.isBeforeOpening) {
+          setHoursWarning(`⏰ We open at ${data.openingTime}. Your order will be processed when we open.`);
+        } else if (data.isAfterClosing) {
+          setHoursWarning(`🔒 We're closed. Operating hours: ${data.openingTime} - ${data.closingTime} IST`);
+        } else {
+          setHoursWarning("");
+        }
+      }
+    } catch (error) {
+      console.error("Failed to check operating hours:", error);
+    }
+  };
 
-  const placeOrder = async () => {
+  // Cart total
+  const cartTotal = useMemo(() => {
+    return lines.reduce((sum, line) => sum + calcUnit(line) * line.qty, 0);
+  }, [lines, calcUnit]);
+
+  // Delivery fee
+  const deliveryFee = deliveryType === "delivery" ? 30 : 0;
+  const finalTotal = cartTotal + deliveryFee;
+
+  // Auth check before checkout
+  const handleProceedToCheckout = () => {
     if (!isAuthenticated) {
-      setAuthModalOpen(true);
+      setShowAuthModal(true);
       return;
     }
 
-    if (!deliveryAddress.trim()) {
-      setError("Please enter your delivery address");
+    if (!customer.name || !customer.email || !customer.address) {
+      alert("Please complete your profile before placing an order.");
+      setShowAuthModal(true);
       return;
     }
 
+    // Scroll to checkout
+    document.getElementById('checkout-section')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // ✨ NEW: Handle place order button click (show payment modal)
+  const handlePlaceOrderClick = () => {
+    // Check authentication
+    if (!isAuthenticated || !customer) {
+      setShowAuthModal(true);
+      return;
+    }
+    
+    // Check if cart is empty
+    if (lines.length === 0) {
+      setOrderError("Your cart is empty");
+      return;
+    }
+    
+    // Check profile completion
+    if (!customer.name || !customer.email || !customer.address) {
+      setOrderError("Please complete your profile");
+      setShowAuthModal(true);
+      return;
+    }
+    
+    // Check if closed
+    if (operatingHours?.isAfterClosing) {
+      setOrderError(`We're closed. We open at ${operatingHours.openingTime} tomorrow.`);
+      return;
+    }
+    
+    // Show payment mode selection modal
+    setShowPaymentModal(true);
+    setOrderError("");
+  };
+  
+  // ✨ NEW: Handle payment mode selection and submit order
+  const handlePaymentModeSelect = async (mode) => {
+    setSelectedPaymentMode(mode);
+    
+    // If customer is flagged and tries to use COD
+    if (isFlagged && mode === "COD") {
+      setOrderError(`Cash on Delivery is not available. ${flaggedReason}. Please choose UPI or Card payment.`);
+      return;
+    }
+    
+    // Close modal and submit order
+    setShowPaymentModal(false);
+    await submitOrder(mode);
+  };
+  
+  // ✨ UPDATED: Submit order with payment mode
+  const submitOrder = async (paymentMode) => {
     setSubmitting(true);
-    setError("");
+    setOrderError("");
     
     try {
-      const payload = {
-        items: cartLines.map(l => ({
-          itemId: l.itemId,
-          itemName: l.name,
-          quantity: l.qty,
-          basePrice: calcUnit(l),
-          variants: l.variants || [],
-          addons: l.addons || []
-        })),
-        discount: 0,
-        discountMode: "none",
-        discountValue: 0,
-        paymentMethod,
-        orderType: "delivery",
+      // Prepare order payload for new API
+      const orderPayload = {
         customer: {
+          id: customer.id,
           name: customer.name,
           phone: customer.phone,
-          note
+          email: customer.email,
+          address: customer.address,
+          latitude: customer.latitude || null,
+          longitude: customer.longitude || null
         },
-        deliveryAddress: `${deliveryAddress}${landmark ? `, Landmark: ${landmark}` : ''}`,
-        deliveryInstructions: note
+        lines: lines.map(line => ({
+          itemId: line.itemId || line.id,
+          name: line.itemName || line.name,
+          basePrice: line.basePrice,
+          qty: line.qty,
+          variant: line.variant || null,
+          addons: line.addons || []
+        })),
+        paymentMode: paymentMode,  // COD, UPI, or CARD
+        deliveryType: deliveryType,
+        notes: orderNotes
       };
-
-      const res = await fetch("http://127.0.0.1:5000/api/customer/orders", {
+      
+      // ✨ NEW API ENDPOINT
+      const response = await fetch(`${API_BASE}/api/public/orders`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(orderPayload)
       });
-
-      if (!res.ok) throw new Error(`Server responded ${res.status}`);
-      const { orderId, total } = await res.json();
-
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || error.error || "Failed to place order");
+      }
+      
+      const result = await response.json();
+      
+      // Success!
+      setPlacedOrderId(result.orderId);
+      setOrderSuccess(true);
       clearCart();
-      onClose();
-      alert(`Order #${orderId} placed successfully!\nTotal: ₹${total}\n\nWe'll call you shortly to confirm your order.`);
-    } catch (e) {
-      console.error(e);
-      setError("Could not place order. Please try again or call us directly.");
-    } finally {
+      setOrderNotes("");
+      
+      // Show warning if before opening
+      if (result.isBeforeOpening) {
+        setHoursWarning(result.message);
+      }
+      
+      // Scroll to top
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
+      
+    } catch (error) {
+      console.error("Order error:", error);
+      setOrderError(error.message);
       setSubmitting(false);
     }
   };
 
+  // Render loading state
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin h-12 w-12 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-neutral-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <>
-      <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-6" onClick={onClose}>
-        <div className="w-full md:max-w-2xl bg-neutral-900 border border-neutral-800 rounded-t-2xl md:rounded-2xl p-6 overflow-y-auto max-h-[90vh]" onClick={e => e.stopPropagation()}>
-          <div className="flex items-start justify-between mb-6">
-            <h3 className="text-2xl font-bold text-white">Checkout</h3>
-            <button onClick={onClose} className="text-neutral-400 hover:text-white transition">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    <div className="max-w-7xl mx-auto px-4 py-6">
+      
+      {/* HEADER WITH USER MENU */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold text-white">Menu</h1>
+        {isAuthenticated ? (
+          <UserMenu />
+        ) : (
+          <button
+            onClick={() => setShowAuthModal(true)}
+            className="px-4 py-2 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-colors"
+          >
+            Login / Register
+          </button>
+        )}
+      </div>
+
+      {/* ✨ NEW: Operating Hours Warning */}
+      {hoursWarning && (
+        <div className={`mb-6 p-4 rounded-lg border-l-4 ${
+          operatingHours?.isAfterClosing 
+            ? 'bg-red-900/30 border-red-500 text-red-300' 
+            : 'bg-yellow-900/30 border-yellow-500 text-yellow-300'
+        }`}>
+          <p className="font-semibold">{hoursWarning}</p>
+        </div>
+      )}
+
+      {/* ✨ NEW: Flagged Customer Warning */}
+      {isFlagged && (
+        <div className="mb-6 p-4 bg-orange-900/30 border-l-4 border-orange-500 rounded-lg">
+          <p className="text-orange-300 font-semibold">
+            ⚠️ {flaggedReason}. Prepayment required for future orders.
+          </p>
+        </div>
+      )}
+
+      {/* SERVICE AREA CHECK */}
+      {isAuthenticated && <ServiceAreaCheck />}
+
+      {/* ORDER SUCCESS MESSAGE */}
+      {orderSuccess && (
+        <div className="mb-6 p-6 bg-green-500/10 border-2 border-green-500/50 rounded-2xl">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-            </button>
-          </div>
-
-          {!isAuthenticated && (
-            <div className="mb-6 bg-amber-900/20 border border-amber-800 rounded-lg p-4 flex items-start gap-3">
-              <svg className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              <div>
-                <div className="font-medium text-amber-300">Login Required</div>
-                <div className="text-sm text-amber-200 mt-1">Please login to place your order</div>
-              </div>
             </div>
-          )}
-
-          {isAuthenticated && (
-            <div className="mb-6 bg-emerald-900/20 border border-emerald-800 rounded-lg p-4">
-              <div className="font-medium text-emerald-300 mb-2">Delivery Details</div>
-              <div className="text-sm text-emerald-200">
-                <div><strong>Name:</strong> {customer.name}</div>
-                <div><strong>Phone:</strong> {customer.phone}</div>
-              </div>
-            </div>
-          )}
-
-          <div className="grid gap-4 mb-6">
-            <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-2">
-                Delivery Address <Required />
-              </label>
-              <textarea 
-                className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-rose-500 transition min-h-24" 
-                value={deliveryAddress} 
-                onChange={e => setDeliveryAddress(e.target.value)} 
-                placeholder="Flat/House No, Building Name, Street, Area..."
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-2">Landmark (Optional)</label>
-              <input 
-                className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-rose-500 transition" 
-                value={landmark} 
-                onChange={e => setLandmark(e.target.value)} 
-                placeholder="e.g., Near Park Street Metro"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-2">Payment Method</label>
-              <select className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-rose-500 transition" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
-                <option>Cash on Delivery</option>
-                <option>UPI</option>
-                <option>Card</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-2">Special Instructions</label>
-              <textarea className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-rose-500 transition min-h-20" value={note} onChange={e => setNote(e.target.value)} placeholder="Any special requests..." />
-            </div>
-          </div>
-
-          <div className="border-t border-neutral-800 pt-6 mb-6">
-            <div className="font-semibold text-white mb-4">Order Summary</div>
-            <div className="space-y-3 mb-6">
-              {cartLines.map(l => (
-                <div key={l.key} className="flex items-start justify-between gap-4 bg-neutral-800/50 rounded-lg p-3">
-                  <div className="flex-1">
-                    <div className="font-medium text-white">{l.name} × {l.qty}</div>
-                    {l.variant && <div className="text-xs text-neutral-400 mt-1">{l.variant.name}</div>}
-                    {l.variants?.length > 0 && <div className="text-xs text-neutral-400 mt-1">{l.variants.map(v => v.name).join(", ")}</div>}
-                    {l.addons?.length > 0 && <div className="text-xs text-neutral-400 mt-1">Add-ons: {l.addons.map(a => a.name).join(", ")}</div>}
-                  </div>
-                  <div className="text-white font-semibold">₹{(calcUnit(l) * l.qty).toFixed(0)}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between text-neutral-300"><span>Subtotal</span><span>₹{subTotal.toFixed(0)}</span></div>
-              <div className="flex justify-between text-neutral-300"><span>GST ({taxPercent}%)</span><span>₹{taxAmt.toFixed(0)}</span></div>
-              <div className="flex justify-between text-lg font-bold text-white pt-2 border-t border-neutral-800"><span>Total</span><span>₹{grandTotal.toFixed(0)}</span></div>
-            </div>
-          </div>
-
-          {error && (
-            <div className="mb-4 bg-red-900/20 border border-red-800 rounded-lg p-3 flex items-start gap-2">
-              <svg className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-              <span className="text-sm text-red-300">{error}</span>
-            </div>
-          )}
-
-          <div className="flex gap-3 justify-end">
-            <button className="px-6 py-3 bg-neutral-800 hover:bg-neutral-700 text-white font-semibold rounded-lg transition" onClick={onClose}>Cancel</button>
-            <button 
-              className="px-6 py-3 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white font-semibold rounded-lg transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed" 
-              onClick={placeOrder} 
-              disabled={submitting || cartLines.length === 0}
-            >
-              {submitting ? (
-                <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Placing Order...
-                </span>
-              ) : (
-                'Place Order'
+            <div className="flex-1">
+              <h3 className="text-green-400 font-bold text-xl mb-2">Order Placed Successfully! 🎉</h3>
+              <p className="text-neutral-300 mb-2">
+                Order #{placedOrderId} - Thank you for your order! We've received it and will start preparing shortly.
+              </p>
+              {hoursWarning && operatingHours?.isBeforeOpening && (
+                <p className="text-yellow-400 text-sm mt-2">
+                  {hoursWarning}
+                </p>
               )}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <AuthModal 
-        open={authModalOpen} 
-        onClose={() => setAuthModalOpen(false)}
-        onSuccess={() => setAuthModalOpen(false)}
-      />
-    </>
-  );
-}
-
-export default function Order() {
-  const [data, setData] = useState(null);
-  const [activeTop, setActiveTop] = useState(null);
-  const [activeSub, setActiveSub] = useState(null);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const { lines, total, removeLine, updateQty, clearCart, calcUnit } = useCart();
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
-
-  useEffect(() => {
-    fetch("http://127.0.0.1:5000/api/public/menu").then(r => r.json()).then(setData).catch(console.error);
-  }, []);
-
-  const tops = Array.isArray(data?.topCategories) ? data.topCategories : [];
-  const currentTop = tops.find(t => t.id === activeTop) || null;
-  const subs = currentTop?.subcategories ?? [];
-  const currentSub = subs.find(s => s.id === activeSub) || null;
-  const items = currentSub?.items ?? [];
-
-  useEffect(() => { if (tops.length && !activeTop) setActiveTop(tops[0].id); }, [tops, activeTop]);
-  useEffect(() => { if (subs.length && !activeSub) setActiveSub(subs[0].id); }, [subs, activeSub]);
-
-  if (!data) return (
-    <div className="container-section py-12 flex items-center justify-center">
-      <div className="flex items-center gap-3 text-neutral-400">
-        <svg className="animate-spin h-6 w-6" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.
-          962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-        </svg>
-        Loading menu...
-      </div>
-    </div>
-  );
-
-  return (
-    <section className="container-section py-10 grid lg:grid-cols-[240px_1fr_380px] gap-6">
-      {/* LEFT: Main categories */}
-      <aside className="hidden lg:block sticky top-24 h-fit">
-        <div className="space-y-2">
-          {tops.map(t => {
-            const active = t.id === (currentTop?.id ?? null);
-            return (
-              <button
-                key={t.id}
-                className={`w-full text-left rounded-xl p-4 transition-all ${active 
-                  ? "bg-gradient-to-r from-rose-600 to-amber-600 text-white shadow-lg" 
-                  : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:border-rose-500 hover:text-white"}`}
-                onClick={() => { setActiveTop(t.id); setActiveSub(null); }}
-              >
-                <div className="font-semibold">{t.name}</div>
-              </button>
-            );
-          })}
-        </div>
-      </aside>
-
-      {/* CENTER: Sub-categories + items */}
-      <div>
-        <div className="flex gap-2 flex-wrap mb-6">
-          {subs.map(s => (
-            <button
-              key={s.id}
-              className={`px-4 py-2 rounded-lg font-medium transition-all ${s.id === (currentSub?.id ?? null) 
-                ? "bg-emerald-600 text-white shadow-md" 
-                : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:border-emerald-500 hover:text-white"}`}
-              onClick={() => setActiveSub(s.id)}
-            >
-              {s.name}
-            </button>
-          ))}
-          {subs.length === 0 && <div className="text-neutral-500">Choose a category to view items.</div>}
-        </div>
-
-        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
-          {items.map(it => (
-            <button
-              key={it.id}
-              className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 text-left hover:border-rose-500 hover:shadow-lg hover:shadow-rose-900/20 transition-all group"
-              onClick={() => setSelectedItem(it)}
-            >
-              <div className="font-semibold text-white text-lg group-hover:text-rose-400 transition">{it.name}</div>
-              {it.description && <div className="text-neutral-400 text-sm mt-2 line-clamp-2">{it.description}</div>}
-              <div className="mt-4 flex items-center justify-between">
-                <div className="text-amber-400 font-bold text-lg">₹{Number(it.basePrice || 0).toFixed(0)}</div>
-                <div className="text-rose-400 text-sm font-semibold group-hover:translate-x-1 transition">Add →</div>
-              </div>
-            </button>
-          ))}
-          {items.length === 0 && <div className="text-neutral-500 col-span-full text-center py-12">No items in this category.</div>}
-        </div>
-      </div>
-
-      {/* RIGHT: Modern Cart */}
-      <aside className="sticky top-24 h-fit">
-        <div className="bg-gradient-to-br from-neutral-900 to-neutral-950 border border-neutral-800 rounded-2xl shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-rose-900/30 to-amber-900/30 p-5 border-b border-neutral-800">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-rose-500 to-amber-500 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white">Your Cart</h3>
-                <p className="text-xs text-neutral-400">{lines.length} {lines.length === 1 ? 'item' : 'items'}</p>
-              </div>
+              <p className="text-sm text-neutral-400 mt-2">
+                Waiting for restaurant confirmation...
+              </p>
             </div>
           </div>
+        </div>
+      )}
 
-          <div className="p-4 max-h-[400px] overflow-y-auto">
-            {lines.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 mx-auto mb-4 bg-neutral-800 rounded-full flex items-center justify-center">
-                  <svg className="w-8 h-8 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                  </svg>
-                </div>
-                <p className="text-neutral-500 text-sm">Your cart is empty</p>
-                <p className="text-neutral-600 text-xs mt-1">Add items to get started</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {lines.map(line => (
-                  <div key={line.key} className="bg-neutral-800/50 rounded-lg p-3 group hover:bg-neutral-800 transition">
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <div className="flex-1">
-                        <div className="font-medium text-white text-sm">{line.name}</div>
-                        {line.variant && <div className="text-xs text-neutral-400 mt-0.5">{line.variant.name}</div>}
-                        {line.variants?.length > 0 && <div className="text-xs text-neutral-400 mt-0.5">{line.variants.map(v => v.name).join(", ")}</div>}
-                        {line.addons?.length > 0 && <div className="text-xs text-neutral-400 mt-0.5">{line.addons.map(a => a.name).join(", ")}</div>}
-                      </div>
-                      <button 
-                        className="text-neutral-500 hover:text-red-400 transition opacity-0 group-hover:opacity-100"
-                        onClick={() => removeLine(line.key)}
-                        title="Remove item"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="text-amber-400 font-semibold text-sm">₹{(calcUnit(line) * line.qty).toFixed(0)}</div>
-                      <div className="flex items-center gap-1 bg-neutral-900 rounded-lg">
-                        <button className="w-8 h-8 flex items-center justify-center text-white hover:bg-neutral-800 rounded-lg transition" onClick={() => updateQty(line.key, Math.max(1, line.qty - 1))}>−</button>
-                        <div className="min-w-8 text-center text-white font-medium text-sm">{line.qty}</div>
-                        <button className="w-8 h-8 flex items-center justify-center text-white hover:bg-neutral-800 rounded-lg transition" onClick={() => updateQty(line.key, line.qty + 1)}>+</button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+      {/* MENU GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {menu.map((item) => (
+          <div
+            key={item.id}
+            className="bg-neutral-800 rounded-xl overflow-hidden border border-neutral-700 hover:border-orange-500 transition-all cursor-pointer"
+            onClick={() => setSelectedItem(item)}
+          >
+            {item.image && (
+              <img
+                src={`${API_BASE}${item.image}`}
+                alt={item.name}
+                className="w-full h-48 object-cover"
+              />
             )}
-          </div>
-
-          {lines.length > 0 && (
-            <>
-              <div className="px-4 py-3 border-t border-neutral-800 bg-neutral-900/50">
-                <div className="flex items-center justify-between text-lg font-bold">
-                  <span className="text-neutral-300">Total</span>
-                  <span className="text-white">₹{Number(total || 0).toFixed(0)}</span>
-                </div>
-              </div>
-
-              <div className="p-4">
-                <button 
-                  className="w-full py-3 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white font-semibold rounded-lg transition shadow-lg shadow-rose-900/30"
-                  onClick={() => setCheckoutOpen(true)}
-                >
-                  Proceed to Checkout
+            <div className="p-4">
+              <h3 className="text-white font-semibold text-lg mb-2">{item.name}</h3>
+              {item.description && (
+                <p className="text-neutral-400 text-sm mb-3">{item.description}</p>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-orange-400 font-bold text-lg">
+                  <Money value={item.basePrice} />
+                </span>
+                <button className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-semibold">
+                  Add to Cart
                 </button>
               </div>
-            </>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* CART SECTION */}
+      {lines.length > 0 && (
+        <div className="mb-8">
+          <div className="bg-neutral-800 rounded-xl p-6 border border-neutral-700">
+            <h2 className="text-2xl font-bold text-white mb-4">Your Cart</h2>
+            
+            {lines.map((line, idx) => (
+              <div key={idx} className="flex items-center justify-between mb-4 pb-4 border-b border-neutral-700">
+                <div className="flex-1">
+                  <p className="text-white font-semibold">{line.itemName}</p>
+                  {line.variant && (
+                    <p className="text-sm text-neutral-400">{line.variant.name}</p>
+                  )}
+                  {line.addons && line.addons.length > 0 && (
+                    <p className="text-sm text-neutral-400">
+                      + {line.addons.map(a => a.name).join(", ")}
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => updateQty(idx, Math.max(1, line.qty - 1))}
+                      className="bg-neutral-700 hover:bg-neutral-600 px-3 py-1 rounded"
+                    >
+                      -
+                    </button>
+                    <span className="w-8 text-center text-white">{line.qty}</span>
+                    <button
+                      onClick={() => updateQty(idx, line.qty + 1)}
+                      className="bg-neutral-700 hover:bg-neutral-600 px-3 py-1 rounded"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <p className="w-20 text-right font-semibold text-white">
+                    <Money value={calcUnit(line) * line.qty} />
+                  </p>
+                  <button
+                    onClick={() => removeLine(idx)}
+                    className="text-red-400 hover:text-red-300 ml-2"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            ))}
+            
+            {/* Cart Totals */}
+            <div className="mt-4 space-y-2">
+              <div className="flex justify-between text-neutral-300">
+                <span>Subtotal:</span>
+                <Money value={cartTotal} />
+              </div>
+              <div className="flex justify-between text-neutral-300">
+                <span>Delivery Fee:</span>
+                <Money value={deliveryFee} />
+              </div>
+              <div className="flex justify-between text-xl font-bold text-orange-500 pt-2 border-t border-neutral-700">
+                <span>Total:</span>
+                <Money value={finalTotal} />
+              </div>
+            </div>
+
+            {/* Proceed to Checkout Button */}
+            <button
+              onClick={handleProceedToCheckout}
+              className="w-full mt-6 bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-lg transition-colors"
+            >
+              Proceed to Checkout
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* CHECKOUT SECTION */}
+      {lines.length > 0 && (
+        <div id="checkout-section" className="bg-neutral-800 rounded-xl p-6 border border-neutral-700">
+          <h2 className="text-2xl font-bold text-white mb-6">Checkout</h2>
+          
+          {/* Delivery Type */}
+          <div className="mb-6">
+            <label className="block font-semibold text-white mb-3">Delivery Type <Required /></label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setDeliveryType("delivery")}
+                className={`py-3 rounded-lg font-semibold transition-all ${
+                  deliveryType === "delivery"
+                    ? "bg-orange-500 text-white"
+                    : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
+                }`}
+              >
+                🚚 Delivery (₹30)
+              </button>
+              <button
+                onClick={() => setDeliveryType("pickup")}
+                className={`py-3 rounded-lg font-semibold transition-all ${
+                  deliveryType === "pickup"
+                    ? "bg-orange-500 text-white"
+                    : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
+                }`}
+              >
+                🏪 Pickup (Free)
+              </button>
+            </div>
+          </div>
+          
+          {/* Order Notes */}
+          <div className="mb-6">
+            <label className="block font-semibold text-white mb-2">Special Instructions</label>
+            <textarea
+              value={orderNotes}
+              onChange={(e) => setOrderNotes(e.target.value)}
+              placeholder="Any special requests? (e.g., extra spicy, no onions)"
+              className="w-full bg-neutral-700 text-white rounded-lg px-4 py-3 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              rows={3}
+            />
+          </div>
+          
+          {/* Error Message */}
+          {orderError && (
+            <div className="mb-4 p-4 bg-red-900/30 border border-red-500 rounded-lg text-red-300">
+              {orderError}
+            </div>
+          )}
+          
+          {/* Place Order Button */}
+          <button
+            onClick={handlePlaceOrderClick}
+            disabled={submitting || operatingHours?.isAfterClosing}
+            className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold py-4 rounded-lg transition-all text-lg"
+          >
+            {submitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                Placing Order...
+              </span>
+            ) : (
+              `Place Order - ₹${finalTotal}`
+            )}
+          </button>
+          
+          {operatingHours?.isAfterClosing && (
+            <p className="text-center text-red-400 mt-2 text-sm">
+              We're closed. Orders will be accepted when we reopen.
+            </p>
           )}
         </div>
-      </aside>
+      )}
 
-      <ItemModal open={!!selectedItem} onClose={() => setSelectedItem(null)} item={selectedItem} />
-      <CheckoutModal open={checkoutOpen} onClose={() => setCheckoutOpen(false)} cartLines={lines} calcUnit={calcUnit} clearCart={clearCart} />
-    </section>
+      {/* ✨ NEW: Payment Mode Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-neutral-800 rounded-lg p-6 max-w-md w-full border border-neutral-700">
+            <h3 className="text-2xl font-bold text-white mb-2">Choose Payment Mode</h3>
+            <p className="text-neutral-300 mb-6">
+              Select how you'll pay for your order:
+            </p>
+            
+            <div className="space-y-3">
+              {/* COD Option - Hidden if flagged */}
+              {!isFlagged && (
+                <button
+                  onClick={() => handlePaymentModeSelect("COD")}
+                  className="w-full bg-neutral-700 hover:bg-neutral-600 p-4 rounded-lg text-left transition-all group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="text-3xl">💵</div>
+                    <div className="flex-1">
+                      <p className="text-white font-semibold text-lg group-hover:text-orange-400 transition-colors">Cash on Delivery</p>
+                      <p className="text-sm text-neutral-400">Pay with cash when your order arrives</p>
+                    </div>
+                  </div>
+                </button>
+              )}
+              
+              {/* UPI Option */}
+              <button
+                onClick={() => handlePaymentModeSelect("UPI")}
+                className="w-full bg-neutral-700 hover:bg-neutral-600 p-4 rounded-lg text-left transition-all group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="text-3xl">📱</div>
+                  <div className="flex-1">
+                    <p className="text-white font-semibold text-lg group-hover:text-orange-400 transition-colors">UPI on Delivery</p>
+                    <p className="text-sm text-neutral-400">Scan QR code when order arrives</p>
+                  </div>
+                </div>
+              </button>
+              
+              {/* Card Option */}
+              <button
+                onClick={() => handlePaymentModeSelect("CARD")}
+                className="w-full bg-neutral-700 hover:bg-neutral-600 p-4 rounded-lg text-left transition-all group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="text-3xl">💳</div>
+                  <div className="flex-1">
+                    <p className="text-white font-semibold text-lg group-hover:text-orange-400 transition-colors">Card on Delivery</p>
+                    <p className="text-sm text-neutral-400">Pay with card machine on delivery</p>
+                  </div>
+                </div>
+              </button>
+            </div>
+            
+            {/* Flagged Warning */}
+            {isFlagged && (
+              <div className="mt-4 p-3 bg-orange-900/30 border border-orange-500 rounded-lg">
+                <p className="text-orange-300 text-sm">
+                  ⚠️ Cash on Delivery is not available. {flaggedReason}
+                </p>
+              </div>
+            )}
+            
+            {/* Cancel Button */}
+            <button
+              onClick={() => setShowPaymentModal(false)}
+              className="w-full mt-4 bg-neutral-600 hover:bg-neutral-500 text-white py-3 rounded-lg font-semibold transition-all"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <AuthModal onClose={() => setShowAuthModal(false)} />
+      )}
+
+      {/* Item Detail Modal (if you have one - keep your existing code) */}
+      {/* Add your existing selectedItem modal code here */}
+      
+    </div>
   );
 }

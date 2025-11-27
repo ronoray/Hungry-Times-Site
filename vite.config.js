@@ -7,13 +7,17 @@ export default defineConfig({
     host: true,
     port: 5174,
     proxy: {
-      // ✅ ADD THIS - Proxy all /api requests to your Express backend
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
-        secure: false
+        secure: false,
+        // optional: clearer errors if backend is down
+        configure: (proxy) => {
+          proxy.on('error', (err) => {
+            console.error('[VITE PROXY ERROR] /api → http://localhost:5000', err?.code || err?.message)
+          })
+        },
       },
-      // Keep your existing proxies
       '/public-testimonials': {
         target: 'https://ops.hungrytimes.in',
         changeOrigin: true,
@@ -26,6 +30,12 @@ export default defineConfig({
       }
     }
   },
+
+  // prebundle heroicons to avoid deps warnings
+  optimizeDeps: {
+    include: ['@heroicons/react/24/outline'],
+  },
+
   preview: {
     host: true,
     port: 4174

@@ -1,29 +1,30 @@
-// src/routes/Router.jsx
+// src/routes/Router.jsx (ESSENTIAL, KEEP THIS FILE)
 import { Routes, Route, Navigate } from 'react-router-dom'
-import UnderConstruction from '../pages/UnderConstruction'
 import Offers from '../pages/Offers'
-import Menu from '../pages/Menu'   // NEW
+import Order from '../pages/Order'
+import Profile from '../pages/Profile'
 
 export default function Router() {
   return (
     <Routes>
-      {/* Main under construction page */}
-      <Route path="/" element={<UnderConstruction />} />
+      {/* Set /menu as the default/index page */}
+      <Route path="/" element={<Navigate to="/menu" replace />} /> 
 
-      {/* Public Menu page */}
-      <Route path="/menu" element={<Menu />} />
+      {/* Public Menu/Order page */}
+      <Route path="/menu" element={<Order />} /> 
 
-      {/* Offers page - verify & list offers */}
+      {/* Offers page */}
       <Route path="/offers" element={<Offers />} />
 
-      {/* Public Testimonials - handled by nginx; fallback redirect if direct hit */}
-      <Route path="/public-testimonials" element={<Navigate to="/" replace />} />
+      {/* Customer profile page */}
+      <Route path="/profile" element={<Profile />} />
 
-      {/* Public Feedback - handled by nginx; fallback redirect if direct hit */}
+      {/* Public Testimonials/Feedback - redirects */}
+      <Route path="/public-testimonials" element={<Navigate to="/" replace />} />
       <Route path="/public-feedback" element={<Navigate to="/" replace />} />
 
-      {/* Catch all - redirect to under construction */}
-      <Route path="*" element={<UnderConstruction />} />
+      {/* Catch all - redirect to the main menu page */}
+      <Route path="*" element={<Navigate to="/menu" replace />} />
     </Routes>
   )
 }

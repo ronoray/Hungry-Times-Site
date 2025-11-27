@@ -1,45 +1,88 @@
 <!doctype html>
 <html lang="en" class="dark">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Hungry Times — Chinese‑Continental in Kolkata</title>
-<meta name="description" content="Hungry Times: Chinese‑Continental fusion in Kolkata. Order online, reserve a table, and explore our signature dishes." />
-<meta property="og:title" content="Hungry Times" />
-<meta property="og:description" content="Order Chinese‑Continental fusion. Kolkata’s cozy dining experience." />
-<meta property="og:type" content="website" />
-<meta property="og:url" content="https://hungrytimes.co.in" />
-<meta property="og:image" content="/og-image.jpg" />
-<!-- Favicons -->
-<link rel="icon" href="/favicon.ico" sizes="any">
-<link rel="icon" type="image/png" sizes="16x16" href="/icon-16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png">
-<link rel="icon" type="image/png" sizes="48x48" href="/icon-48.png">
-<link rel="icon" type="image/png" sizes="64x64" href="/icon-64.png">
-<link rel="icon" type="image/png" sizes="128x128" href="/icon-128.png">
-<link rel="icon" type="image/png" sizes="180x180" href="/icon-180.png">
-<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
-<link rel="icon" type="image/png" sizes="256x256" href="/icon-256.png">
-<link rel="icon" type="image/png" sizes="384x384" href="/icon-384.png">
-<link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
-<link rel="icon" type="image/png" sizes="1024x1024" href="/icon-1024.png">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hungry Times — Chinese-Continental in Kolkata</title>
+    <meta
+      name="description"
+      content="Hungry Times: Chinese-Continental fusion in Kolkata. Order online, reserve a table, and explore our signature dishes."
+    />
+    <meta property="og:title" content="Hungry Times" />
+    <meta
+      property="og:description"
+      content="Order Chinese-Continental fusion. Kolkata’s cozy dining experience."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://hungrytimes.co.in" />
+    <meta property="og:image" content="/og-image.jpg" />
 
-<!-- Apple touch -->
-<link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png">
+    <!-- ✅ favicon and icons -->
+    <link rel="icon" type="image/png" sizes="16x16" href="/icon-16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/icon-48.png" />
+    <link rel="icon" type="image/png" sizes="64x64" href="/icon-64.png" />
+    <link rel="icon" type="image/png" sizes="128x128" href="/icon-128.png" />
+    <link rel="icon" type="image/png" sizes="180x180" href="/icon-180.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="256x256" href="/icon-256.png" />
+    <link rel="icon" type="image/png" sizes="384x384" href="/icon-384.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+    <link rel="icon" type="image/png" sizes="1024x1024" href="/icon-1024.png" />
 
-<!-- Manifest for Android / Chrome -->
-<link rel="manifest" href="/site.webmanifest">
+    <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png" />
+    <link rel="manifest" href="/site.webmanifest" />
 
-<!-- Windows Tile -->
-<meta name="msapplication-config" content="/browserconfig.xml">
-<meta name="msapplication-TileColor" content="#0B0B0B">
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    <meta name="msapplication-TileColor" content="#0B0B0B" />
+    <meta name="theme-color" content="#0B0B0B" />
 
-<!-- Theme -->
-<meta name="theme-color" content="#0B0B0B">
+    <!-- ✅ Google Maps best-practice loading -->
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC1OsnZiTXao9VqePa8npp1CLVBTzCMXSM&libraries=places&loading=async"
+      async
+      defer
+    ></script>
 
-</head>
-<body class="bg-brand-gray text-brand-white selection:bg-brand-red selection:text-white">
-<div id="root"></div>
-<script type="module" src="/src/main.jsx"></script>
-</body>
+    <!-- ✅ Global styles for Google Places dropdown -->
+    <style>
+      /* Make the Google autocomplete dropdown appear above everything */
+      .pac-container {
+        z-index: 9999 !important;
+        background-color: #1f1f1f !important;
+        border: 1px solid #404040 !important;
+      }
+
+      .pac-item {
+        background-color: #1f1f1f !important;
+        color: #ffffff !important;
+        border-top: 1px solid #404040 !important;
+        padding: 8px !important;
+        cursor: pointer !important;
+      }
+
+      .pac-item:hover {
+        background-color: #2a2a2a !important;
+      }
+
+      .pac-item-query {
+        color: #ffffff !important;
+      }
+
+      .pac-matched {
+        color: #f97316 !important;
+        font-weight: 600 !important;
+      }
+    </style>
+  </head>
+
+  <body
+    class="bg-brand-gray text-brand-white selection:bg-brand-red selection:text-white"
+  >
+    <!-- ✅ React mounts here -->
+    <div id="root"></div>
+
+    <!-- ✅ React entrypoint -->
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>
