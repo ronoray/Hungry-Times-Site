@@ -223,7 +223,7 @@ export default function Contact() {
               Opening Hours
             </h3>
             <p className="text-neutral-400 text-sm">
-              Opening hours information coming soon. Please call us for current timings.
+              Opening hours 12 PM to 11 PM - Everyday.
             </p>
           </div>
         </div>
