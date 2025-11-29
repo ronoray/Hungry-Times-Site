@@ -737,7 +737,7 @@
 @media (max-width: 768px) {
   .mobile-menu-toggle {
     display: flex !important;
-    top: 3.25rem !important;
+    top: 5.5rem !important;
   }
 
   .mobile-overlay {
