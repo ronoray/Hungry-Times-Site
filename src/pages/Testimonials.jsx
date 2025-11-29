@@ -1,14 +1,17 @@
 // ============================================================================
 // FIXED: Customer Portal Testimonials.jsx
-// PURPOSE: Redirect to correct URL based on environment
+// PURPOSE: Open testimonials in new tab to avoid back button loop
 // FILE: site/src/pages/Testimonials.jsx (CUSTOMER PORTAL)
 // ============================================================================
 
 import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 export default function Testimonials() {
+  const navigate = useNavigate()
+
   useEffect(() => {
-    // Detect environment and redirect accordingly
+    // Detect environment
     const isDevelopment = window.location.hostname === 'localhost' || 
                           window.location.hostname === '127.0.0.1';
     
@@ -16,40 +19,17 @@ export default function Testimonials() {
       ? 'http://localhost:5173/public-testimonials'  // Dev: ops dev server
       : 'https://ops.hungrytimes.in/public-testimonials';  // Prod: ops subdomain
     
-    console.log('[Testimonials] Redirecting to:', redirectUrl);
-    window.location.href = redirectUrl;
-  }, [])
+    console.log('[Testimonials] Opening in new tab:', redirectUrl);
+    
+    // Open in new tab to avoid back button loop
+    window.open(redirectUrl, '_blank');
+    
+    // Navigate back to home immediately
+    navigate('/', { replace: true });
+  }, [navigate])
 
-  // Show loading state while redirecting
-  return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: '#0f0f0f'
-    }}>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{
-          width: '64px',
-          height: '64px',
-          border: '4px solid #f97316',
-          borderTopColor: 'transparent',
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite',
-          margin: '0 auto 16px'
-        }}></div>
-        <p style={{ color: '#d1d5db', fontSize: '16px' }}>
-          Redirecting to testimonials...
-        </p>
-      </div>
-      <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
-    </div>
-  )
+  // Return null since we're navigating away
+  return null;
 }
 
 // ============================================================================
