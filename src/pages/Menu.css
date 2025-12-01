@@ -908,3 +908,62 @@
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+/* ============================================
+   ADD TO CART BUTTON STYLES
+   ============================================ */
+.add-to-cart-btn {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.add-to-cart-btn:hover {
+  background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+.add-to-cart-btn:active {
+  transform: translateY(0);
+}
+
+.add-to-cart-btn.added {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.add-to-cart-btn.added:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.add-to-cart-btn .btn-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .add-to-cart-btn {
+    padding: 0.65rem 0.875rem;
+    font-size: 0.875rem;
+  }
+  
+  .add-to-cart-btn .btn-icon {
+    width: 16px;
+    height: 16px;
+  }
+}

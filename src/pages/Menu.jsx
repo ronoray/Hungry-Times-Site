@@ -2,6 +2,10 @@
 
 import { useEffect, useMemo, useState, useRef } from "react";
 import "./Menu.css";
+import { useCart } from "../context/CartContext";
+import { ShoppingCart, Plus, Check } from "lucide-react";
+import AddToCartModal from "../components/AddToCartModal";
+
 import API_BASE from "../config/api";
 
 // Description length limits
@@ -187,6 +191,10 @@ export default function Menu() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
+  const { addLine } = useCart();
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [showAddToCartModal, setShowAddToCartModal] = useState(false);
+  const [addedItems, setAddedItems] = useState(new Set());
 
   const [activeTop, setActiveTop] = useState(null);
   const [activeSub, setActiveSub] = useState(null);
@@ -206,6 +214,15 @@ export default function Menu() {
     title: "",
     description: "",
   });
+
+  const openAddToCart = (item) => {
+    setSelectedItem(item);
+    setShowAddToCartModal(true);
+  };
+  const closeAddToCart = () => {
+    setSelectedItem(null);
+    setShowAddToCartModal(false);
+  };
 
   const rightPaneRef = useRef(null);
 
@@ -394,6 +411,54 @@ export default function Menu() {
             </button>
           )}
         </div>
+
+        {/* Add to Cart Button */}
+        <button
+          onClick={() => {
+            const hasOptions = hasVariantsOrAddons(it, 'variant') || hasVariantsOrAddons(it, 'addon');
+            
+            if (hasOptions) {
+              // Open modal for items with variants/addons
+              setSelectedItem(it);
+              setShowAddToCartModal(true);
+            } else {
+              // Add directly for simple items
+              addLine({
+                itemId: it.id,
+                name: it.name,
+                basePrice: parseFloat(it.basePrice || 0),
+                variant: null,
+                addons: [],
+                qty: 1
+              });
+              
+              // Show success feedback
+              setAddedItems(prev => {
+                const next = new Set(prev);
+                next.add(it.id);
+                return next;
+              });
+              setTimeout(() => {
+                setAddedItems(prev => {
+                  const next = new Set(prev);
+                  next.delete(it.id);
+                  return next;
+                });
+              }, 2000);
+            }
+          }}
+          className={`add-to-cart-btn ${addedItems.has(it.id) ? 'added' : ''}`}
+        >
+          {addedItems.has(it.id) ? (
+            <>
+              <Check className="btn-icon" /> Added to Cart
+            </>
+          ) : (
+            <>
+              <ShoppingCart className="btn-icon" /> Add to Cart
+            </>
+          )}
+        </button>
 
         {isExpanded && !isRecommendedCard && (
           <div className="options-container">
@@ -597,6 +662,38 @@ export default function Menu() {
           setDescModal({ open: false, title: "", description: "" })
         }
       />
+
+      {/* Add to Cart Modal */}
+      {showAddToCartModal && selectedItem && (
+        <AddToCartModal
+          item={selectedItem}
+          isOpen={showAddToCartModal}
+          onClose={() => {
+            setShowAddToCartModal(false);
+            setSelectedItem(null);
+          }}
+          onAdd={(lineItem) => {
+            addLine(lineItem);
+            setShowAddToCartModal(false);
+            
+            // Show success
+            setAddedItems(prev => {
+              const next = new Set(prev);
+              next.add(selectedItem.id);
+              return next;
+            });
+            setTimeout(() => {
+              setAddedItems(prev => {
+                const next = new Set(prev);
+                next.delete(selectedItem.id);
+                return next;
+              });
+            }, 2000);
+            
+            setSelectedItem(null);
+          }}
+        />
+      )}
     </div>
   );
 }
