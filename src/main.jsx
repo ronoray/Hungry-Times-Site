@@ -17,6 +17,8 @@ import Contact from "./pages/Contact";
 import Careers from "./pages/Careers";
 import Offers from "./pages/Offers";
 import Testimonials from "./pages/Testimonials";
+import Order from "./pages/Order";
+import Profile from "./pages/Profile";
 
 const router = createBrowserRouter(
   [
@@ -30,6 +32,8 @@ const router = createBrowserRouter(
         // Public site pages
         { path: "menu", element: <Menu /> },
         { path: "home", element: <Home /> },
+        { path: "order", element: <Order /> },
+        { path: "profile", element: <Profile /> },
         { path: "gallery", element: <Gallery /> },
         { path: "testimonials", element: <Testimonials /> },
         { path: "feedback", element: <Feedback /> },
