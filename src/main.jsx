@@ -1,12 +1,9 @@
-// src/main.jsx - FIXED: Added Testimonials route + AuthProvider wrapper
+// src/main.jsx - CORRECTED: Removed duplicate AuthProvider + Fixed missing Orders import
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import App from "./App";
 import "./styles/index.css";
-
-// Import AuthProvider
-import { AuthProvider } from "./context/AuthContext";
 
 // Import pages
 import Menu from "./pages/Menu";
@@ -19,6 +16,7 @@ import Offers from "./pages/Offers";
 import Testimonials from "./pages/Testimonials";
 import Order from "./pages/Order";
 import Profile from "./pages/Profile";
+// Note: Orders.jsx doesn't exist - removed import
 
 const router = createBrowserRouter(
   [
@@ -34,6 +32,7 @@ const router = createBrowserRouter(
         { path: "home", element: <Home /> },
         { path: "order", element: <Order /> },
         { path: "profile", element: <Profile /> },
+        // Note: Orders route removed - page doesn't exist yet
         { path: "gallery", element: <Gallery /> },
         { path: "testimonials", element: <Testimonials /> },
         { path: "feedback", element: <Feedback /> },
@@ -54,10 +53,10 @@ const router = createBrowserRouter(
   }
 );
 
+// ✅ FIXED: Removed duplicate AuthProvider
+// AuthProvider is already in App.jsx, no need to wrap again here
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>
+    <RouterProvider router={router} />
   </React.StrictMode>
 );
