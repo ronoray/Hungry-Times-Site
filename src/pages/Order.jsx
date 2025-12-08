@@ -1,536 +1,246 @@
 // site/src/pages/Order.jsx
-// COMPLETE ORDER PAGE WITH RAZORPAY ONLINE PAYMENT INTEGRATION
-import { useEffect, useMemo, useState } from "react";
+// FIXED: Works with API_BASE that already includes /api
+import { useEffect, useState, useMemo } from "react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import AuthModal from "../components/AuthModal";
-import UserMenu from "../components/UserMenu";
-import ServiceAreaCheck from "../components/ServiceAreaCheck";
-import { useLocationStore } from "../context/LocationContext";
+import AddToCartModal from "../components/AddToCartModal";
 import API_BASE from "../config/api";
+import { ShoppingCart, Minus, Plus, X, ChevronRight } from "lucide-react";
 
-// Load Razorpay script
-const loadRazorpayScript = () => {
-  return new Promise((resolve) => {
-    if (window.Razorpay) {
-      resolve(true);
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-};
-
-// Restaurant location
-const RESTAURANT_LAT = parseFloat(import.meta.env.VITE_RESTAURANT_LAT || '22.5061956');
-const RESTAURANT_LNG = parseFloat(import.meta.env.VITE_RESTAURANT_LNG || '88.3673608');
-const MAX_DELIVERY_DISTANCE_KM = parseFloat(import.meta.env.VITE_MAX_DELIVERY_DISTANCE_KM || '3.5');
-
-function Money({ value }) { 
-  return <span>₹ {Number(value || 0).toFixed(0)}</span>; 
-}
-
-function Required() { 
-  return <span className="text-red-400">*</span>; 
-}
-
-// Calculate distance using Haversine formula
-function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
+function Money({ value }) {
+  return <span>₹{Number(value || 0).toFixed(0)}</span>;
 }
 
 export default function Order() {
-  const { customer, isAuthenticated, loading: authLoading } = useAuth();
-  const { lines, clearCart, calcUnit, removeLine, updateQty } = useCart();
-  
-  // Auth modal
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  
-  // Menu data
-  const [menu, setMenu] = useState([]);
+  const { customer, isAuthenticated } = useAuth();
+  const { lines, addLine, removeLine, updateQty, clearCart, calcUnit } = useCart();
+
+  // Menu state
+  const [menuData, setMenuData] = useState(null);
+  const [selectedMaster, setSelectedMaster] = useState(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Modal state
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  
-  // Order state
+  const [showAddToCartModal, setShowAddToCartModal] = useState(false);
+
+  // Cart visibility (mobile)
+  const [showCart, setShowCart] = useState(false);
+
+  // Checkout state
   const [deliveryType, setDeliveryType] = useState("delivery");
   const [orderNotes, setOrderNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [orderSuccess, setOrderSuccess] = useState(false);
-  const [orderError, setOrderError] = useState("");
-  const [placedOrderId, setPlacedOrderId] = useState(null);
-  
-  // Payment mode popup
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedPaymentMode, setSelectedPaymentMode] = useState(null);
-  
-  // Customer flagging
-  const [isFlagged, setIsFlagged] = useState(false);
-  const [flaggedReason, setFlaggedReason] = useState("");
-  
-  // Operating hours
-  const [operatingHours, setOperatingHours] = useState(null);
-  const [hoursWarning, setHoursWarning] = useState("");
-  
-  // Location state
-  const { savedAddress } = useLocationStore();
 
   // Load menu
   useEffect(() => {
     loadMenu();
   }, []);
 
+  // Auto-select first master and subcategory
+  useEffect(() => {
+    if (menuData && menuData.topCategories && menuData.topCategories.length > 0) {
+      if (!selectedMaster) {
+        const firstMaster = menuData.topCategories[0];
+        setSelectedMaster(firstMaster.id);
+        
+        if (firstMaster.subcategories && firstMaster.subcategories.length > 0) {
+          setSelectedSubcategory(firstMaster.subcategories[0].id);
+        }
+      }
+    }
+  }, [menuData, selectedMaster]);
+
   const loadMenu = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/public/menu`);
-      if (!res.ok) throw new Error("Failed to load menu");
+      setError(null);
+      
+      // FIX: API_BASE already includes /api, so just add /public/menu
+      const url = `${API_BASE}/public/menu`;
+      console.log('Loading menu from:', url);
+      
+      const res = await fetch(url);
+      
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+      
       const data = await res.json();
-      setMenu(data.menu || []);
+      console.log('Menu loaded successfully:', data);
+      setMenuData(data);
     } catch (err) {
-      console.error("Menu load error:", err);
+      console.error("Failed to load menu:", err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
-  
-  // Check if customer is flagged
-  useEffect(() => {
-    if (customer?.phone) {
-      checkIfFlagged();
-    }
-  }, [customer]);
-  
-  // Check operating hours
-  useEffect(() => {
-    checkOperatingHours();
-    // Check every minute
-    const interval = setInterval(checkOperatingHours, 60000);
-    return () => clearInterval(interval);
-  }, []);
-  
-  const checkIfFlagged = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/api/public/orders/check-flagged/${customer.phone}`);
-      if (response.ok) {
-        const data = await response.json();
-        setIsFlagged(data.is_flagged);
-        setFlaggedReason(data.flagged_reason || "");
-        
-        if (data.is_flagged) {
-          console.log("⚠️ Customer is flagged:", data.flagged_reason);
-        }
-      }
-    } catch (error) {
-      console.error("Failed to check flagged status:", error);
-    }
-  };
-  
-  const checkOperatingHours = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/api/public/operating-hours`);
-      if (response.ok) {
-        const data = await response.json();
-        setOperatingHours(data);
-        
-        if (data.isBeforeOpening) {
-          setHoursWarning(`⏰ We open at ${data.openingTime}. Your order will be processed when we open.`);
-        } else if (data.isAfterClosing) {
-          setHoursWarning(`🔒 We're closed. Operating hours: ${data.openingTime} - ${data.closingTime} IST`);
-        } else {
-          setHoursWarning("");
-        }
-      }
-    } catch (error) {
-      console.error("Failed to check operating hours:", error);
-    }
-  };
 
-  // Cart total
+  // Get current master category
+  const currentMaster = useMemo(() => {
+    if (!menuData || !selectedMaster) return null;
+    return menuData.topCategories?.find(m => m.id === selectedMaster);
+  }, [menuData, selectedMaster]);
+
+  // Get current subcategory
+  const currentSubcategory = useMemo(() => {
+    if (!currentMaster || !selectedSubcategory) return null;
+    return currentMaster.subcategories?.find(s => s.id === selectedSubcategory);
+  }, [currentMaster, selectedSubcategory]);
+
+  // Get current items
+  const currentItems = useMemo(() => {
+    return currentSubcategory?.items || [];
+  }, [currentSubcategory]);
+
+  // Calculate cart totals
   const cartTotal = useMemo(() => {
     return lines.reduce((sum, line) => sum + calcUnit(line) * line.qty, 0);
   }, [lines, calcUnit]);
 
-  // Delivery fee
   const deliveryFee = deliveryType === "delivery" ? 30 : 0;
   const finalTotal = cartTotal + deliveryFee;
+  const cartCount = lines.reduce((sum, line) => sum + line.qty, 0);
 
-  // Auth check before checkout
-  const handleProceedToCheckout = () => {
+  // Handle master category change
+  const handleMasterChange = (masterId) => {
+    setSelectedMaster(masterId);
+    const master = menuData.topCategories?.find(m => m.id === masterId);
+    if (master && master.subcategories && master.subcategories.length > 0) {
+      setSelectedSubcategory(master.subcategories[0].id);
+    } else {
+      setSelectedSubcategory(null);
+    }
+  };
+
+  // Handle item click
+  const handleItemClick = (item) => {
+    // Check if item has variants or addons
+    if (item.families && item.families.length > 0) {
+      setSelectedItem(item);
+      setShowAddToCartModal(true);
+    } else {
+      // Direct add to cart
+      addLine({
+        itemId: item.id,
+        name: item.name,
+        basePrice: item.basePrice,
+        variants: [],
+        addons: [],
+        qty: 1,
+      });
+    }
+  };
+
+  // Handle checkout
+  const handleCheckout = async () => {
     if (!isAuthenticated) {
       setShowAuthModal(true);
       return;
     }
 
-    if (!customer.name || !customer.email || !customer.address) {
-      alert("Please complete your profile before placing an order.");
-      setShowAuthModal(true);
-      return;
-    }
-
-    // Scroll to checkout
-    document.getElementById('checkout-section')?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  // ============================================================================
-  // HANDLE PLACE ORDER BUTTON CLICK
-  // ============================================================================
-  const handlePlaceOrderClick = () => {
-    // Check authentication
-    if (!isAuthenticated || !customer) {
-      setShowAuthModal(true);
-      return;
-    }
-    
-    // Check if cart is empty
     if (lines.length === 0) {
-      setOrderError("Your cart is empty");
+      alert("Your cart is empty!");
       return;
     }
-    
-    // Check profile completion
-    if (!customer.name || !customer.email || !customer.address) {
-      setOrderError("Please complete your profile");
-      setShowAuthModal(true);
-      return;
-    }
-    
-    // Check if closed
-    if (operatingHours?.isAfterClosing) {
-      setOrderError(`We're closed. We open at ${operatingHours.openingTime} tomorrow.`);
-      return;
-    }
-    
-    // Show payment mode selection modal
-    setShowPaymentModal(true);
-    setOrderError("");
-  };
-  
-  // ============================================================================
-  // HANDLE PAYMENT MODE SELECTION
-  // ============================================================================
-  const handlePaymentModeSelect = async (mode) => {
-    setSelectedPaymentMode(mode);
-    
-    // If customer is flagged and tries to use COD
-    if (isFlagged && mode === "COD") {
-      setOrderError(`Cash on Delivery is not available. ${flaggedReason}. Please choose Online Payment.`);
-      return;
-    }
-    
-    // Close modal
-    setShowPaymentModal(false);
-    
-    // If ONLINE payment, initiate Razorpay
-    if (mode === "ONLINE") {
-      await handleOnlinePayment();
-    } else {
-      // For COD, UPI on delivery, Card on delivery - submit order directly
-      await submitOrder(mode);
-    }
-  };
-  
-  // ============================================================================
-  // HANDLE ONLINE PAYMENT WITH RAZORPAY
-  // ============================================================================
-  const handleOnlinePayment = async () => {
+
     setSubmitting(true);
-    setOrderError("");
 
     try {
-      // Step 1: Load Razorpay script
-      const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
-        throw new Error("Failed to load Razorpay. Please try again.");
-      }
-
-      // Step 2: Create order in our database first
-      const orderPayload = {
-        customer: {
-          id: customer.id,
-          name: customer.name,
-          phone: customer.phone,
-          email: customer.email,
-          address: customer.address,
-          latitude: customer.latitude || null,
-          longitude: customer.longitude || null
-        },
-        lines: lines.map(line => ({
-          itemId: line.itemId || line.id,
-          name: line.itemName || line.name,
+      // ✅ FIXED: Send exact structure backend expects
+      const orderData = {
+        items: lines.map(line => ({
+          itemId: line.itemId,
+          itemName: line.name,           // ✅ Changed from 'name' to 'itemName'
           basePrice: line.basePrice,
-          qty: line.qty,
-          variant: line.variant || null,
+          quantity: line.qty,            // ✅ Changed from 'qty' to 'quantity'
+          variants: line.variants || [],
           addons: line.addons || []
         })),
-        paymentMode: "ONLINE",
-        deliveryType: deliveryType,
-        notes: orderNotes
+        customer: {                      // ✅ ADDED: Required by backend
+          name: customer.name || "Guest",
+          phone: customer.phone
+        },
+        paymentMethod: "Cash",           // ✅ ADDED: Required by backend
+        deliveryInstructions: orderNotes,// ✅ Changed from 'notes'
+        deliveryType,
+        subtotal: cartTotal,
+        deliveryFee,
+        total: finalTotal,
       };
 
-      const orderResponse = await fetch(`${API_BASE}/api/public/orders`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderPayload)
-      });
+      console.log("[ORDER] Sending request body:", orderData);
 
-      if (!orderResponse.ok) {
-        const error = await orderResponse.json();
-        throw new Error(error.error || "Failed to create order");
+      const token = localStorage.getItem("customerToken");
+      if (!token) {
+        alert("Please log in first");
+        setShowAuthModal(true);
+        return;
       }
 
-      const orderData = await orderResponse.json();
-      const dbOrderId = orderData.orderId;
-
-      console.log("✅ Order created in DB:", dbOrderId);
-
-      // Step 3: Create Razorpay order
-      const razorpayOrderResponse = await fetch(`${API_BASE}/api/razorpay/create-order`, {
+      // FIX: API_BASE already includes /api
+      const res = await fetch(`${API_BASE}/customer/orders`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: finalTotal,
-          currency: "INR",
-          receipt: `order_${dbOrderId}`
-        })
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(orderData),
       });
 
-      if (!razorpayOrderResponse.ok) {
-        throw new Error("Failed to create payment order");
+      // ✅ FIXED: Get actual error message from backend
+      const data = await res.json();
+      
+      if (!res.ok) {
+        console.error("[ORDER] Backend error response:", {
+          status: res.status,
+          error: data.error || data.message,
+          body: data
+        });
+        alert(`Error: ${data.error || data.message || "Failed to place order"}`);
+        return;
       }
 
-      const razorpayData = await razorpayOrderResponse.json();
-
-      console.log("✅ Razorpay order created:", razorpayData.orderId);
-
-      // Step 4: Open Razorpay checkout
-      const options = {
-        key: razorpayData.key,
-        amount: razorpayData.amount,
-        currency: razorpayData.currency,
-        name: "Hungry Times",
-        description: `Order #${dbOrderId}`,
-        order_id: razorpayData.orderId,
-        prefill: {
-          name: customer.name,
-          email: customer.email,
-          contact: customer.phone
-        },
-        theme: {
-          color: "#f59e0b"
-        },
-        handler: async function (response) {
-          // Payment successful - verify it
-          await verifyPayment(response, dbOrderId);
-        },
-        modal: {
-          ondismiss: function() {
-            console.log("⚠️ Payment cancelled by user");
-            setSubmitting(false);
-            setOrderError("Payment cancelled. Please try again.");
-          }
-        }
-      };
-
-      const razorpayInstance = new window.Razorpay(options);
-      razorpayInstance.open();
-
-    } catch (error) {
-      console.error("❌ Payment error:", error);
-      setOrderError(error.message || "Failed to process payment");
-      setSubmitting(false);
-    }
-  };
-
-  // ============================================================================
-  // VERIFY RAZORPAY PAYMENT
-  // ============================================================================
-  const verifyPayment = async (paymentResponse, dbOrderId) => {
-    try {
-      console.log("🔍 Verifying payment...", paymentResponse);
-
-      const verifyResponse = await fetch(`${API_BASE}/api/razorpay/verify-payment`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          razorpay_order_id: paymentResponse.razorpay_order_id,
-          razorpay_payment_id: paymentResponse.razorpay_payment_id,
-          razorpay_signature: paymentResponse.razorpay_signature,
-          dbOrderId: dbOrderId
-        })
-      });
-
-      if (!verifyResponse.ok) {
-        throw new Error("Payment verification failed");
-      }
-
-      const verifyData = await verifyResponse.json();
-
-      console.log("✅ Payment verified successfully!");
-
-      // Success!
-      setPlacedOrderId(dbOrderId);
-      setOrderSuccess(true);
+      console.log("[ORDER] Success response:", data);
       clearCart();
-      setOrderNotes("");
-      setSubmitting(false);
-
-      // Scroll to top
-      setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 100);
-
-    } catch (error) {
-      console.error("❌ Payment verification error:", error);
-      setOrderError("Payment verification failed. Please contact support.");
-      setSubmitting(false);
-    }
-  };
-
-  // ============================================================================
-  // SUBMIT ORDER (For COD, UPI on Delivery, Card on Delivery)
-  // ============================================================================
-  const submitOrder = async (paymentMode) => {
-    setSubmitting(true);
-    setOrderError("");
-    
-    try {
-      const orderPayload = {
-        customer: {
-          id: customer.id,
-          name: customer.name,
-          phone: customer.phone,
-          email: customer.email,
-          address: customer.address,
-          latitude: customer.latitude || null,
-          longitude: customer.longitude || null
-        },
-        lines: lines.map(line => ({
-          itemId: line.itemId || line.id,
-          name: line.itemName || line.name,
-          basePrice: line.basePrice,
-          qty: line.qty,
-          variant: line.variant || null,
-          addons: line.addons || []
-        })),
-        paymentMode: paymentMode,
-        deliveryType: deliveryType,
-        notes: orderNotes
-      };
+      alert(`✅ Order placed successfully!\nOrder ID: ${data.orderId}\nTotal: ₹${data.total}`);
       
-      const response = await fetch(`${API_BASE}/api/public/orders`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderPayload)
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || error.error || "Failed to place order");
-      }
-      
-      const result = await response.json();
-      
-      // Success!
-      setPlacedOrderId(result.orderId);
-      setOrderSuccess(true);
-      clearCart();
-      setOrderNotes("");
-      
-      // Show warning if before opening
-      if (result.isBeforeOpening) {
-        setHoursWarning(result.message);
-      }
-      
-      // Scroll to top
-      setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 100);
-      
-    } catch (error) {
-      console.error("Order error:", error);
-      setOrderError(error.message);
+    } catch (err) {
+      console.error("[ORDER] Request failed:", err);
+      alert(`Failed to place order: ${err.message}`);
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Render loading state
-  if (authLoading || loading) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin h-12 w-12 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-neutral-400">Loading...</p>
+          <div className="text-white text-xl">Loading menu...</div>
         </div>
       </div>
     );
   }
 
-  // Success screen
-  if (orderSuccess) {
+  if (error) {
     return (
       <div className="min-h-screen bg-neutral-900 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-neutral-800 rounded-2xl p-8 text-center border border-neutral-700">
-          <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          
-          <h2 className="text-2xl font-bold text-white mb-2">Order Placed Successfully!</h2>
-          <p className="text-neutral-300 mb-6">
-            Order #{placedOrderId}
-          </p>
-          
-          {hoursWarning && (
-            <div className="mb-6 p-4 bg-yellow-900/30 border border-yellow-500 rounded-lg">
-              <p className="text-yellow-300 text-sm">{hoursWarning}</p>
-            </div>
-          )}
-          
-          <div className="space-y-3">
-            <div className="p-4 bg-neutral-700 rounded-lg">
-              <p className="text-neutral-400 text-sm mb-1">Order Total</p>
-              <p className="text-2xl font-bold text-orange-500">
-                <Money value={finalTotal} />
-              </p>
-            </div>
-            
-            <div className="p-4 bg-neutral-700 rounded-lg text-left">
-              <p className="text-neutral-400 text-sm mb-2">Delivery Address</p>
-              <p className="text-white text-sm">{customer.address}</p>
-            </div>
-          </div>
-          
-          <div className="mt-8 space-y-3">
-            <button
-              onClick={() => {
-                setOrderSuccess(false);
-                setPlacedOrderId(null);
-              }}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg transition-colors"
-            >
-              Place Another Order
-            </button>
-            
-            <button
-              onClick={() => window.location.href = '/'}
-              className="w-full bg-neutral-700 hover:bg-neutral-600 text-white font-semibold py-3 rounded-lg transition-colors"
-            >
-              Back to Home
-            </button>
-          </div>
+        <div className="text-center max-w-md">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-white mb-2">Failed to Load Menu</h2>
+          <p className="text-neutral-400 mb-4">{error}</p>
+          <button
+            onClick={loadMenu}
+            className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg transition-colors"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
@@ -539,280 +249,352 @@ export default function Order() {
   return (
     <div className="min-h-screen bg-neutral-900 text-white">
       {/* Header */}
-      <div className="bg-neutral-800 border-b border-neutral-700">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-orange-500">Complete Your Order</h1>
-            {hoursWarning && (
-              <p className="text-sm text-yellow-400 mt-1">{hoursWarning}</p>
-            )}
+      <div className="bg-neutral-800 border-b border-neutral-700 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold text-orange-500">Order Now</h1>
+            
+            {/* Mobile Cart Toggle */}
+            <button
+              onClick={() => setShowCart(!showCart)}
+              className="md:hidden relative p-3 bg-orange-500 rounded-full hover:bg-orange-600 transition-colors"
+            >
+              <ShoppingCart className="w-6 h-6" />
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
+            </button>
           </div>
-          {isAuthenticated && <UserMenu />}
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Cart Items */}
-        {lines.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-2xl text-neutral-400 mb-4">Your cart is empty</p>
-            <a href="/menu" className="inline-block bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">
-              Browse Menu
-            </a>
-          </div>
-        ) : (
-          <div className="bg-neutral-800 rounded-xl p-6 border border-neutral-700 mb-6">
-            <h2 className="text-2xl font-bold mb-4">Your Cart</h2>
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          {/* LEFT: MENU SECTION (2/3 width on desktop) */}
+          <div className="md:col-span-2 space-y-4">
             
-            {lines.map((line, idx) => (
-              <div key={line.key || idx} className="border-b border-neutral-700 py-4 last:border-0">
-                <div className="flex justify-between items-start gap-4">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg text-white">{line.itemName || line.name}</h3>
-                    {line.variant && (
-                      <p className="text-sm text-neutral-400 mt-1">
-                        Variant: {line.variant.name} {line.variant.priceDelta > 0 && `(+₹${line.variant.priceDelta})`}
-                      </p>
-                    )}
-                    {line.addons && line.addons.length > 0 && (
-                      <p className="text-sm text-neutral-400 mt-1">
-                        Add-ons: {line.addons.map(a => `${a.name} (+₹${a.priceDelta})`).join(', ')}
-                      </p>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 bg-neutral-700 rounded">
-                      <button
-                        onClick={() => updateQty(line.key, line.qty - 1)}
-                        className="bg-neutral-700 hover:bg-neutral-600 px-3 py-1 rounded"
-                        disabled={line.qty <= 1}
-                      >
-                        −
-                      </button>
-                      <span className="w-8 text-center text-white">{line.qty}</span>
-                      <button
-                        onClick={() => updateQty(line.key, line.qty + 1)}
-                        className="bg-neutral-700 hover:bg-neutral-600 px-3 py-1 rounded"
-                      >
-                        +
-                      </button>
-                    </div>
-                    <p className="w-20 text-right font-semibold text-white">
-                      <Money value={calcUnit(line) * line.qty} />
-                    </p>
+            {/* Master Categories - Horizontal Scroll */}
+            <div className="bg-neutral-800 rounded-xl p-4 border border-neutral-700">
+              <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <span className="text-orange-500">▶</span> Categories
+              </h2>
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {menuData?.topCategories?.map((master) => (
+                  <button
+                    key={master.id}
+                    onClick={() => handleMasterChange(master.id)}
+                    className={`flex-shrink-0 px-4 py-2 rounded-lg font-medium transition-all ${
+                      selectedMaster === master.id
+                        ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg"
+                        : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
+                    }`}
+                  >
+                    {master.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Subcategories - Pills */}
+            {currentMaster && currentMaster.subcategories && currentMaster.subcategories.length > 0 && (
+              <div className="bg-neutral-800 rounded-xl p-4 border border-neutral-700">
+                <h3 className="text-sm font-semibold mb-3 text-neutral-400 flex items-center gap-2">
+                  <ChevronRight className="w-4 h-4" />
+                  {currentMaster.name} → Subcategories
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {currentMaster.subcategories.map((sub) => (
                     <button
-                      onClick={() => removeLine(line.key)}
-                      className="text-red-400 hover:text-red-300 ml-2"
+                      key={sub.id}
+                      onClick={() => setSelectedSubcategory(sub.id)}
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                        selectedSubcategory === sub.id
+                          ? "bg-orange-500 text-white"
+                          : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
+                      }`}
                     >
-                      ✕
+                      {sub.name}
                     </button>
-                  </div>
+                  ))}
                 </div>
               </div>
-            ))}
-            
-            {/* Cart Totals */}
-            <div className="mt-4 space-y-2">
-              <div className="flex justify-between text-neutral-300">
-                <span>Subtotal:</span>
-                <Money value={cartTotal} />
-              </div>
-              <div className="flex justify-between text-neutral-300">
-                <span>Delivery Fee:</span>
-                <Money value={deliveryFee} />
-              </div>
-              <div className="flex justify-between text-xl font-bold text-orange-500 pt-2 border-t border-neutral-700">
-                <span>Total:</span>
-                <Money value={finalTotal} />
-              </div>
-            </div>
-
-            {/* Proceed to Checkout Button */}
-            <button
-              onClick={handleProceedToCheckout}
-              className="w-full mt-6 bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-lg transition-colors"
-            >
-              Proceed to Checkout
-            </button>
-          </div>
-        )}
-
-        {/* CHECKOUT SECTION */}
-        {lines.length > 0 && (
-          <div id="checkout-section" className="bg-neutral-800 rounded-xl p-6 border border-neutral-700">
-            <h2 className="text-2xl font-bold text-white mb-6">Checkout</h2>
-            
-            {/* Delivery Type */}
-            <div className="mb-6">
-              <label className="block font-semibold text-white mb-3">Delivery Type <Required /></label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => setDeliveryType("delivery")}
-                  className={`py-3 rounded-lg font-semibold transition-all ${
-                    deliveryType === "delivery"
-                      ? "bg-orange-500 text-white"
-                      : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
-                  }`}
-                >
-                  🚚 Delivery (₹30)
-                </button>
-                <button
-                  onClick={() => setDeliveryType("pickup")}
-                  className={`py-3 rounded-lg font-semibold transition-all ${
-                    deliveryType === "pickup"
-                      ? "bg-orange-500 text-white"
-                      : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
-                  }`}
-                >
-                  🏪 Pickup (Free)
-                </button>
-              </div>
-            </div>
-            
-            {/* Order Notes */}
-            <div className="mb-6">
-              <label className="block font-semibold text-white mb-2">Special Instructions</label>
-              <textarea
-                value={orderNotes}
-                onChange={(e) => setOrderNotes(e.target.value)}
-                placeholder="Any special requests? (e.g., extra spicy, no onions)"
-                className="w-full bg-neutral-700 text-white rounded-lg px-4 py-3 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                rows={3}
-              />
-            </div>
-            
-            {/* Error Message */}
-            {orderError && (
-              <div className="mb-4 p-4 bg-red-900/30 border border-red-500 rounded-lg text-red-300">
-                {orderError}
-              </div>
             )}
-            
-            {/* Place Order Button */}
-            <button
-              onClick={handlePlaceOrderClick}
-              disabled={submitting || operatingHours?.isAfterClosing}
-              className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold py-4 rounded-lg transition-all text-lg"
-            >
-              {submitting ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
-                  Processing...
-                </span>
+
+            {/* Menu Items Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {currentItems.length === 0 ? (
+                <div className="col-span-2 text-center py-12">
+                  <div className="text-neutral-500 text-lg">No items in this category</div>
+                  <p className="text-neutral-600 text-sm mt-2">Try selecting a different category</p>
+                </div>
               ) : (
-                `Place Order - ₹${finalTotal}`
-              )}
-            </button>
-            
-            {operatingHours?.isAfterClosing && (
-              <p className="text-center text-red-400 mt-2 text-sm">
-                We're closed. Orders will be accepted when we reopen.
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* PAYMENT MODE MODAL */}
-        {showPaymentModal && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-neutral-800 rounded-lg p-6 max-w-md w-full border border-neutral-700">
-              <h3 className="text-2xl font-bold text-white mb-2">Choose Payment Mode</h3>
-              <p className="text-neutral-300 mb-6">
-                Select how you'll pay for your order:
-              </p>
-              
-              <div className="space-y-3">
-                {/* ONLINE Payment (Razorpay) */}
-                <button
-                  onClick={() => handlePaymentModeSelect("ONLINE")}
-                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 p-4 rounded-lg text-left transition-all group"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="text-3xl">💳</div>
-                    <div className="flex-1">
-                      <p className="text-white font-semibold text-lg">Pay Online Now</p>
-                      <p className="text-sm text-neutral-200">Credit/Debit Card, UPI, Net Banking</p>
-                    </div>
-                  </div>
-                </button>
-
-                {/* COD Option - Hidden if flagged */}
-                {!isFlagged && (
-                  <button
-                    onClick={() => handlePaymentModeSelect("COD")}
-                    className="w-full bg-neutral-700 hover:bg-neutral-600 p-4 rounded-lg text-left transition-all group"
+                currentItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="bg-neutral-800 rounded-xl border-2 border-neutral-700 overflow-hidden hover:border-orange-500 transition-all cursor-pointer group"
+                    onClick={() => handleItemClick(item)}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="text-3xl">💵</div>
-                      <div className="flex-1">
-                        <p className="text-white font-semibold text-lg group-hover:text-orange-400 transition-colors">Cash on Delivery</p>
-                        <p className="text-sm text-neutral-400">Pay with cash when order arrives</p>
+                    {/* Item Image */}
+                    {item.imageUrl && (
+                      <div className="aspect-video bg-neutral-700 overflow-hidden relative">
+                        <img
+                          src={item.imageUrl}
+                          alt={item.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                        {item.isRecommended && (
+                          <div className="absolute top-2 right-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                            ⭐ Recommended
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Item Info */}
+                    <div className="p-4">
+                      <h3 className="font-semibold text-white mb-1 group-hover:text-orange-400 transition-colors">
+                        {item.name}
+                      </h3>
+                      
+                      {item.description && (
+                        <p className="text-sm text-neutral-400 mb-3 line-clamp-2">
+                          {item.description}
+                        </p>
+                      )}
+
+                      <div className="flex justify-between items-center">
+                        <span className="text-orange-500 font-bold text-lg">
+                          <Money value={item.basePrice} />
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleItemClick(item);
+                          }}
+                          className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 rounded-lg font-medium text-sm transition-all shadow-lg"
+                        >
+                          Add +
+                        </button>
                       </div>
                     </div>
-                  </button>
-                )}
-                
-                {/* UPI Option */}
-                <button
-                  onClick={() => handlePaymentModeSelect("UPI")}
-                  className="w-full bg-neutral-700 hover:bg-neutral-600 p-4 rounded-lg text-left transition-all group"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="text-3xl">📱</div>
-                    <div className="flex-1">
-                      <p className="text-white font-semibold text-lg group-hover:text-orange-400 transition-colors">UPI on Delivery</p>
-                      <p className="text-sm text-neutral-400">Scan QR code when order arrives</p>
-                    </div>
                   </div>
-                </button>
-                
-                {/* Card Option */}
-                <button
-                  onClick={() => handlePaymentModeSelect("CARD")}
-                  className="w-full bg-neutral-700 hover:bg-neutral-600 p-4 rounded-lg text-left transition-all group"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="text-3xl">💳</div>
-                    <div className="flex-1">
-                      <p className="text-white font-semibold text-lg group-hover:text-orange-400 transition-colors">Card on Delivery</p>
-                      <p className="text-sm text-neutral-400">Pay with card machine on delivery</p>
-                    </div>
-                  </div>
-                </button>
-              </div>
-              
-              {/* Flagged Warning */}
-              {isFlagged && (
-                <div className="mt-4 p-3 bg-orange-900/30 border border-orange-500 rounded-lg">
-                  <p className="text-orange-300 text-sm">
-                    ⚠️ Cash on Delivery is not available. {flaggedReason}
-                  </p>
-                </div>
+                ))
               )}
-              
-              {/* Cancel Button */}
-              <button
-                onClick={() => {
-                  setShowPaymentModal(false);
-                  setOrderError("");
-                }}
-                className="w-full mt-4 bg-neutral-600 hover:bg-neutral-500 text-white py-3 rounded-lg font-semibold transition-all"
-              >
-                Cancel
-              </button>
             </div>
           </div>
-        )}
 
-        {/* Auth Modal */}
-        {showAuthModal && (
-          <AuthModal 
-            isOpen={showAuthModal}
-            onClose={() => setShowAuthModal(false)} 
-          />
-        )}
+          {/* RIGHT: CART & CHECKOUT SECTION (1/3 width on desktop) */}
+          <div className={`${showCart ? 'fixed inset-0 bg-black/80 z-50 md:relative md:bg-transparent' : 'hidden'} md:block`}>
+            <div className={`${showCart ? 'fixed right-0 top-0 bottom-0 w-80 bg-neutral-800 shadow-2xl overflow-y-auto' : ''} md:sticky md:top-24 md:h-fit space-y-4`}>
+              
+              {/* Mobile Close Button */}
+              {showCart && (
+                <button
+                  onClick={() => setShowCart(false)}
+                  className="md:hidden absolute top-4 right-4 p-2 bg-neutral-700 rounded-full hover:bg-neutral-600 z-10"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+
+              {/* Cart Items */}
+              <div className="bg-neutral-800 rounded-xl p-4 border border-neutral-700">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold flex items-center gap-2">
+                    <ShoppingCart className="w-5 h-5 text-orange-500" />
+                    Your Cart ({cartCount})
+                  </h2>
+                  {lines.length > 0 && (
+                    <button
+                      onClick={clearCart}
+                      className="text-red-400 hover:text-red-300 text-sm font-medium"
+                    >
+                      Clear All
+                    </button>
+                  )}
+                </div>
+
+                {lines.length === 0 ? (
+                  <div className="text-center py-8">
+                    <ShoppingCart className="w-12 h-12 text-neutral-600 mx-auto mb-3" />
+                    <p className="text-neutral-400 mb-1">Your cart is empty</p>
+                    <p className="text-sm text-neutral-500">Add items from the menu</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                    {lines.map((line) => (
+                      <div
+                        key={line.key}
+                        className="bg-neutral-700/50 rounded-lg p-3 space-y-2 border border-neutral-600"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <p className="font-medium text-white">{line.name}</p>
+                            
+                            {/* Variants */}
+                            {line.variants && line.variants.length > 0 && (
+                              <p className="text-xs text-orange-400">
+                                {line.variants.map(v => v.name).join(", ")}
+                              </p>
+                            )}
+                            
+                            {/* Addons */}
+                            {line.addons && line.addons.length > 0 && (
+                              <p className="text-xs text-neutral-400">
+                                + {line.addons.map(a => a.name).join(", ")}
+                              </p>
+                            )}
+                          </div>
+                          
+                          <button
+                            onClick={() => removeLine(line.key)}
+                            className="text-red-400 hover:text-red-300 ml-2"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                          {/* Quantity Controls */}
+                          <div className="flex items-center gap-2 bg-neutral-600 rounded-lg">
+                            <button
+                              onClick={() => updateQty(line.key, line.qty - 1)}
+                              className="p-1.5 hover:bg-neutral-500 rounded transition-colors"
+                            >
+                              <Minus className="w-4 h-4" />
+                            </button>
+                            <span className="w-8 text-center font-medium">{line.qty}</span>
+                            <button
+                              onClick={() => updateQty(line.key, line.qty + 1)}
+                              className="p-1.5 hover:bg-neutral-500 rounded transition-colors"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          {/* Line Total */}
+                          <span className="font-semibold text-orange-400">
+                            <Money value={calcUnit(line) * line.qty} />
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Cart Totals */}
+                {lines.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-neutral-600 space-y-2">
+                    <div className="flex justify-between text-neutral-300">
+                      <span>Subtotal:</span>
+                      <Money value={cartTotal} />
+                    </div>
+                    <div className="flex justify-between text-neutral-300">
+                      <span>Delivery Fee:</span>
+                      <Money value={deliveryFee} />
+                    </div>
+                    <div className="flex justify-between text-xl font-bold text-orange-500 pt-2 border-t border-neutral-600">
+                      <span>Total:</span>
+                      <Money value={finalTotal} />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Checkout Section */}
+              {lines.length > 0 && (
+                <div className="bg-neutral-800 rounded-xl p-4 border border-neutral-700 space-y-4">
+                  <h3 className="font-bold text-lg">Checkout</h3>
+
+                  {/* Delivery Type */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Delivery Type</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setDeliveryType("delivery")}
+                        className={`py-2 rounded-lg font-medium transition-all ${
+                          deliveryType === "delivery"
+                            ? "bg-gradient-to-r from-orange-500 to-red-500 text-white"
+                            : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
+                        }`}
+                      >
+                        🚚 Delivery
+                      </button>
+                      <button
+                        onClick={() => setDeliveryType("pickup")}
+                        className={`py-2 rounded-lg font-medium transition-all ${
+                          deliveryType === "pickup"
+                            ? "bg-gradient-to-r from-orange-500 to-red-500 text-white"
+                            : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
+                        }`}
+                      >
+                        🏪 Pickup
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Special Instructions */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Special Instructions</label>
+                    <textarea
+                      value={orderNotes}
+                      onChange={(e) => setOrderNotes(e.target.value)}
+                      placeholder="Any special requests?"
+                      className="w-full bg-neutral-700 text-white rounded-lg px-3 py-2 text-sm placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      rows={2}
+                    />
+                  </div>
+
+                  {/* Place Order Button */}
+                  <button
+                    onClick={handleCheckout}
+                    disabled={submitting}
+                    className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-neutral-600 disabled:to-neutral-600 disabled:cursor-not-allowed text-white font-bold py-4 rounded-lg transition-all shadow-lg text-lg"
+                  >
+                    {submitting ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                        Placing Order...
+                      </span>
+                    ) : isAuthenticated ? (
+                      `Place Order · ₹${finalTotal.toFixed(0)}`
+                    ) : (
+                      "Login to Order"
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Modals */}
+      <AddToCartModal
+        item={selectedItem}
+        isOpen={showAddToCartModal}
+        onClose={() => {
+          setShowAddToCartModal(false);
+          setSelectedItem(null);
+        }}
+        onAdd={(lineItem) => {
+          addLine(lineItem);
+          setShowAddToCartModal(false);
+          setSelectedItem(null);
+        }}
+      />
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={() => setShowAuthModal(false)}
+      />
     </div>
   );
 }

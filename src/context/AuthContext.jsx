@@ -20,7 +20,7 @@ export function AuthProvider({ children }) {
 
   const fetchCustomer = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/customer/auth/me`, {
+      const res = await fetch(`${API_BASE}/customer/auth/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -53,7 +53,7 @@ export function AuthProvider({ children }) {
   // STEP 1: SEND OTP
   // ============================================
   const sendOTP = async (phone) => {
-    const res = await fetch(`${API_BASE}/api/customer/auth/send-otp`, {
+    const res = await fetch(`${API_BASE}/customer/auth/send-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone })
@@ -73,7 +73,7 @@ export function AuthProvider({ children }) {
   const verifyOTP = async (phone, otp) => {
     console.log('🔐 AuthContext: Verifying OTP', { phone, otp });
     
-    const res = await fetch(`${API_BASE}/api/customer/auth/verify-otp`, {
+    const res = await fetch(`${API_BASE}/customer/auth/verify-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone, otp })
@@ -105,7 +105,7 @@ export function AuthProvider({ children }) {
   // STEP 3: SET USERNAME & PASSWORD
   // ============================================
   const setCredentials = async (tempToken, username, password) => {
-    const res = await fetch(`${API_BASE}/api/customer/auth/set-credentials`, {
+    const res = await fetch(`${API_BASE}/customer/auth/set-credentials`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -126,7 +126,7 @@ export function AuthProvider({ children }) {
   // STEP 4: COMPLETE PROFILE (Name + Email)
   // ============================================
   const completeProfile = async (tempToken, name, email) => {
-    const res = await fetch(`${API_BASE}/api/customer/auth/complete-profile`, {
+    const res = await fetch(`${API_BASE}/customer/auth/complete-profile`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -147,7 +147,7 @@ export function AuthProvider({ children }) {
   // STEP 5: SET ADDRESS & COMPLETE REGISTRATION
   // ============================================
   const setAddress = async (tempToken, address, latitude, longitude) => {
-    const res = await fetch(`${API_BASE}/api/customer/auth/set-address`, {
+    const res = await fetch(`${API_BASE}/customer/auth/set-address`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -173,7 +173,7 @@ export function AuthProvider({ children }) {
   // USERNAME/PASSWORD LOGIN (Returning customers)
   // ============================================
   const loginWithPassword = async (username, password) => {
-    const res = await fetch(`${API_BASE}/api/customer/auth/login`, {
+    const res = await fetch(`${API_BASE}/customer/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -193,7 +193,7 @@ export function AuthProvider({ children }) {
   // FORGOT PASSWORD - SEND OTP
   // ============================================
   const sendForgotPasswordOTP = async (phone) => {
-    const res = await fetch(`${API_BASE}/api/customer/auth/forgot-password/send-otp`, {
+    const res = await fetch(`${API_BASE}/customer/auth/forgot-password/send-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone })
@@ -211,7 +211,7 @@ export function AuthProvider({ children }) {
   // FORGOT PASSWORD - RESET PASSWORD
   // ============================================
   const resetPassword = async (phone, otp, newPassword) => {
-    const res = await fetch(`${API_BASE}/api/customer/auth/forgot-password/reset`, {
+    const res = await fetch(`${API_BASE}/customer/auth/forgot-password/reset`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone, otp, newPassword })
@@ -231,7 +231,7 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     if (token) {
       try {
-        await fetch(`${API_BASE}/api/customer/auth/logout`, {
+        await fetch(`${API_BASE}/customer/auth/logout`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`

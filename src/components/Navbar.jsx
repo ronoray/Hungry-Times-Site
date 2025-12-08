@@ -1,5 +1,5 @@
-// src/components/Navbar.jsx - WITH LOGIN BUTTON
-import { Link, NavLink } from 'react-router-dom';
+// src/components/Navbar.jsx - WITH SMART ORDER BUTTON
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { BRAND } from '../lib/constants';
 import { useAuth } from '../context/AuthContext';
@@ -22,7 +22,20 @@ export default function Navbar() {
   const { isAuthenticated } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const { lines } = useCart();
+  const navigate = useNavigate();
+  
   const cartCount = lines.reduce((sum, line) => sum + (line.qty || 1), 0);
+  const hasItems = lines.length > 0;
+
+  // Smart Order button handler
+  const handleOrderClick = (e) => {
+    e.preventDefault();
+    if (hasItems) {
+      navigate('/order');
+    } else {
+      navigate('/menu');
+    }
+  };
 
   return (
     <>
@@ -84,7 +97,6 @@ export default function Navbar() {
               </button>
             )}
             
-            {/* Order Now Button */}
             {/* Cart Badge */}
             {cartCount > 0 && (
               <Link
@@ -98,13 +110,13 @@ export default function Navbar() {
               </Link>
             )}
 
-            {/* Order Now Button */}
-            <Link
-              to="/order"
+            {/* Smart Order Now Button */}
+            <button
+              onClick={handleOrderClick}
               className="btn btn-primary text-sm"
             >
-              Order Now
-            </Link>
+              {hasItems ? `Order Now (${cartCount})` : "Browse Menu"}
+            </button>
           </div>
         </nav>
 
