@@ -41,6 +41,22 @@ export default function Order() {
     loadMenu();
   }, []);
 
+  // Auto-scroll to cart if items exist on mount or when navigating with items
+  useEffect(() => {
+    if (lines.length > 0) {
+      setTimeout(() => {
+        const cartElement = document.getElementById('cart-section');
+        if (cartElement) {
+          cartElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // On mobile, also show the cart overlay
+          if (window.innerWidth < 768) {
+            setShowCart(true);
+          }
+        }
+      }, 300);
+    }
+  }, [lines.length]);
+
   // Auto-select first master and subcategory
   useEffect(() => {
     if (menuData && menuData.topCategories && menuData.topCategories.length > 0) {
@@ -390,7 +406,7 @@ export default function Order() {
           </div>
 
           {/* RIGHT: CART & CHECKOUT SECTION (1/3 width on desktop) */}
-          <div className={`${showCart ? 'fixed inset-0 bg-black/80 z-50 md:relative md:bg-transparent' : 'hidden'} md:block`}>
+          <div id="cart-section" className={`${showCart ? 'fixed inset-0 bg-black/80 z-50 md:relative md:bg-transparent' : 'hidden'} md:block`}>
             <div className={`${showCart ? 'fixed right-0 top-0 bottom-0 w-80 bg-neutral-800 shadow-2xl overflow-y-auto' : ''} md:sticky md:top-24 md:h-fit space-y-4`}>
               
               {/* Mobile Close Button */}
