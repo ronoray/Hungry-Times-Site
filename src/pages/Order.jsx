@@ -1,12 +1,12 @@
-// site/src/pages/Order.jsx
-// FIXED: Works with API_BASE that already includes /api
+// site/src/pages/Order.jsx - WITH PAYMENT INTEGRATION
+// Added payment method selection to existing checkout
 import { useEffect, useState, useMemo } from "react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import AuthModal from "../components/AuthModal";
 import AddToCartModal from "../components/AddToCartModal";
 import API_BASE from "../config/api";
-import { ShoppingCart, Minus, Plus, X, ChevronRight } from "lucide-react";
+import { ShoppingCart, Minus, Plus, X, ChevronRight, Loader, AlertCircle } from "lucide-react";
 
 function Money({ value }) {
   return <span>₹{Number(value || 0).toFixed(0)}</span>;
@@ -36,9 +36,19 @@ export default function Order() {
   const [orderNotes, setOrderNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // 🆕 Payment state
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [paymentError, setPaymentError] = useState(null);
+  const [orderCreated, setOrderCreated] = useState(null);
+
   // Load menu
   useEffect(() => {
     loadMenu();
+    
+    // 🆕 Load Razorpay script
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    document.body.appendChild(script);
   }, []);
 
   // Auto-scroll to cart if items exist on mount or when navigating with items
@@ -75,7 +85,6 @@ export default function Order() {
     try {
       setError(null);
       
-      // FIX: API_BASE already includes /api, so just add /public/menu
       const url = `${API_BASE}/public/menu`;
       console.log('Loading menu from:', url);
       
@@ -135,12 +144,10 @@ export default function Order() {
 
   // Handle item click
   const handleItemClick = (item) => {
-    // Check if item has variants or addons
     if (item.families && item.families.length > 0) {
       setSelectedItem(item);
       setShowAddToCartModal(true);
     } else {
-      // Direct add to cart
       addLine({
         itemId: item.id,
         name: item.name,
@@ -152,7 +159,236 @@ export default function Order() {
     }
   };
 
-  // Handle checkout
+  // 🆕 Handle payment method selection
+  const handlePaymentMethod = async (paymentMethod) => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    if (lines.length === 0) {
+      setPaymentError("Your cart is empty!");
+      return;
+    }
+
+    setPaymentProcessing(true);
+    setPaymentError(null);
+
+    try {
+      // Step 1: Create order using your existing endpoint
+      const orderData = {
+        items: lines.map(line => ({
+          itemId: line.itemId,
+          itemName: line.name,
+          basePrice: line.basePrice,
+          quantity: line.qty,
+          variants: line.variants || [],
+          addons: line.addons || []
+        })),
+        customer: {
+          name: customer.name || "Guest",
+          phone: customer.phone
+        },
+        paymentMethod: paymentMethod === 'COD' ? 'Cash' : paymentMethod,
+        deliveryInstructions: orderNotes,
+        deliveryType,
+        subtotal: cartTotal,
+        deliveryFee,
+        total: finalTotal,
+      };
+
+      console.log("[PAYMENT] Creating order:", orderData);
+
+      const token = localStorage.getItem("customerToken");
+      if (!token) {
+        setPaymentError("Please log in first");
+        setShowAuthModal(true);
+        return;
+      }
+
+      const orderRes = await fetch(`${API_BASE}/customer/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      const orderDataRes = await orderRes.json();
+      
+      if (!orderRes.ok) {
+        throw new Error(orderDataRes.error || "Failed to create order");
+      }
+
+      const orderId = orderDataRes.orderId;
+      setOrderCreated(orderId);
+      console.log(`✅ Order created: #${orderId}`);
+
+      // Step 2: Process payment
+      if (paymentMethod === 'COD') {
+        // Cash on Delivery
+        await fetch(`${API_BASE}/payments/cod/confirm`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_id: orderId })
+        });
+
+        alert(`✅ Order #${orderId} placed successfully!\nPayment method: Cash on Delivery`);
+        clearCart();
+        setTimeout(() => {
+          window.location.href = `/order-confirmation/${orderId}`;
+        }, 2000);
+      } else if (paymentMethod === 'RAZORPAY') {
+        // Razorpay payment
+        await initiateRazorpay(orderId, finalTotal);
+      } else if (paymentMethod === 'GOOGLE_PAY') {
+        // Google Pay
+        await initiateGooglePay(orderId, finalTotal);
+      } else if (paymentMethod === 'PHONEPE') {
+        // PhonePe
+        await initiatePhonePe(orderId, finalTotal);
+      }
+    } catch (err) {
+      console.error('Payment error:', err);
+      setPaymentError(err.message);
+    } finally {
+      setPaymentProcessing(false);
+    }
+  };
+
+  // 🆕 Razorpay payment
+  const initiateRazorpay = async (orderId, amount) => {
+    try {
+      const razorpayKeyId = import.meta.env.VITE_RAZORPAY_KEY_ID;
+      
+      if (!razorpayKeyId) {
+        throw new Error('Razorpay not configured');
+      }
+
+      const initRes = await fetch(`${API_BASE}/payments/razorpay/init`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order_id: orderId,
+          amount: Math.round(amount * 100),
+        })
+      });
+
+      if (!initRes.ok) {
+        throw new Error('Failed to initialize Razorpay');
+      }
+
+      const { razorpayOrderId } = await initRes.json();
+
+      const options = {
+        key: razorpayKeyId,
+        amount: Math.round(amount * 100),
+        currency: 'INR',
+        name: 'Hungry Times',
+        description: `Order #${orderId}`,
+        order_id: razorpayOrderId,
+        handler: async (response) => {
+          await verifyRazorpayPayment(orderId, response);
+        },
+        prefill: {
+          name: customer?.name,
+          email: customer?.email,
+          contact: customer?.phone
+        },
+        notes: {
+          order_id: orderId
+        },
+        theme: { color: '#FF6B35' }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+
+      rzp.on('payment.failed', (response) => {
+        setPaymentError('Payment failed: ' + response.error.description);
+      });
+    } catch (err) {
+      console.error('Razorpay error:', err);
+      setPaymentError(err.message);
+    }
+  };
+
+  // 🆕 Verify Razorpay payment
+  const verifyRazorpayPayment = async (orderId, response) => {
+    try {
+      const verifyRes = await fetch(`${API_BASE}/payments/razorpay/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order_id: orderId,
+          razorpay_order_id: response.razorpay_order_id,
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_signature: response.razorpay_signature,
+          amount: finalTotal
+        })
+      });
+
+      if (!verifyRes.ok) {
+        throw new Error('Payment verification failed');
+      }
+
+      alert(`✅ Payment successful!\nOrder #${orderId} confirmed.`);
+      clearCart();
+      setTimeout(() => {
+        window.location.href = `/order-confirmation/${orderId}`;
+      }, 2000);
+    } catch (err) {
+      console.error('Verification error:', err);
+      setPaymentError(err.message);
+    }
+  };
+
+  // 🆕 Google Pay payment
+  const initiateGooglePay = async (orderId, amount) => {
+    try {
+      const initRes = await fetch(`${API_BASE}/payments/google-pay/init`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order_id: orderId,
+          amount: Math.round(amount * 100),
+        })
+      });
+
+      if (!initRes.ok) throw new Error('Failed to initialize Google Pay');
+
+      const { paymentUrl } = await initRes.json();
+      window.location.href = paymentUrl;
+    } catch (err) {
+      console.error('Google Pay error:', err);
+      setPaymentError(err.message);
+    }
+  };
+
+  // 🆕 PhonePe payment
+  const initiatePhonePe = async (orderId, amount) => {
+    try {
+      const initRes = await fetch(`${API_BASE}/payments/phonepe/init`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order_id: orderId,
+          amount: Math.round(amount * 100),
+        })
+      });
+
+      if (!initRes.ok) throw new Error('Failed to initialize PhonePe');
+
+      const { paymentUrl } = await initRes.json();
+      window.location.href = paymentUrl;
+    } catch (err) {
+      console.error('PhonePe error:', err);
+      setPaymentError(err.message);
+    }
+  };
+
+  // 🆕 Handle original checkout (without payment - kept for backward compatibility)
   const handleCheckout = async () => {
     if (!isAuthenticated) {
       setShowAuthModal(true);
@@ -167,22 +403,21 @@ export default function Order() {
     setSubmitting(true);
 
     try {
-      // ✅ FIXED: Send exact structure backend expects
       const orderData = {
         items: lines.map(line => ({
           itemId: line.itemId,
-          itemName: line.name,           // ✅ Changed from 'name' to 'itemName'
+          itemName: line.name,
           basePrice: line.basePrice,
-          quantity: line.qty,            // ✅ Changed from 'qty' to 'quantity'
+          quantity: line.qty,
           variants: line.variants || [],
           addons: line.addons || []
         })),
-        customer: {                      // ✅ ADDED: Required by backend
+        customer: {
           name: customer.name || "Guest",
           phone: customer.phone
         },
-        paymentMethod: "Cash",           // ✅ ADDED: Required by backend
-        deliveryInstructions: orderNotes,// ✅ Changed from 'notes'
+        paymentMethod: "Cash",
+        deliveryInstructions: orderNotes,
         deliveryType,
         subtotal: cartTotal,
         deliveryFee,
@@ -198,7 +433,6 @@ export default function Order() {
         return;
       }
 
-      // FIX: API_BASE already includes /api
       const res = await fetch(`${API_BASE}/customer/orders`, {
         method: "POST",
         headers: {
@@ -208,7 +442,6 @@ export default function Order() {
         body: JSON.stringify(orderData),
       });
 
-      // ✅ FIXED: Get actual error message from backend
       const data = await res.json();
       
       if (!res.ok) {
@@ -350,33 +583,21 @@ export default function Order() {
                 currentItems.map((item) => (
                   <div
                     key={item.id}
-                    className="bg-neutral-800 rounded-xl border-2 border-neutral-700 overflow-hidden hover:border-orange-500 transition-all cursor-pointer group"
+                    className="bg-neutral-800 border border-neutral-700 rounded-xl overflow-hidden hover:border-orange-500 transition-colors cursor-pointer group"
                     onClick={() => handleItemClick(item)}
                   >
-                    {/* Item Image */}
                     {item.imageUrl && (
-                      <div className="aspect-video bg-neutral-700 overflow-hidden relative">
+                      <div className="relative h-40 bg-neutral-700 overflow-hidden">
                         <img
                           src={item.imageUrl}
                           alt={item.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                          }}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         />
-                        {item.isRecommended && (
-                          <div className="absolute top-2 right-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                            ⭐ Recommended
-                          </div>
-                        )}
                       </div>
                     )}
 
-                    {/* Item Info */}
                     <div className="p-4">
-                      <h3 className="font-semibold text-white mb-1 group-hover:text-orange-400 transition-colors">
-                        {item.name}
-                      </h3>
+                      <h3 className="font-semibold text-white mb-1">{item.name}</h3>
                       
                       {item.description && (
                         <p className="text-sm text-neutral-400 mb-3 line-clamp-2">
@@ -453,14 +674,12 @@ export default function Order() {
                           <div className="flex-1">
                             <p className="font-medium text-white">{line.name}</p>
                             
-                            {/* Variants */}
                             {line.variants && line.variants.length > 0 && (
                               <p className="text-xs text-orange-400">
                                 {line.variants.map(v => v.name).join(", ")}
                               </p>
                             )}
                             
-                            {/* Addons */}
                             {line.addons && line.addons.length > 0 && (
                               <p className="text-xs text-neutral-400">
                                 + {line.addons.map(a => a.name).join(", ")}
@@ -477,7 +696,6 @@ export default function Order() {
                         </div>
 
                         <div className="flex justify-between items-center">
-                          {/* Quantity Controls */}
                           <div className="flex items-center gap-2 bg-neutral-600 rounded-lg">
                             <button
                               onClick={() => updateQty(line.key, line.qty - 1)}
@@ -494,7 +712,6 @@ export default function Order() {
                             </button>
                           </div>
 
-                          {/* Line Total */}
                           <span className="font-semibold text-orange-400">
                             <Money value={calcUnit(line) * line.qty} />
                           </span>
@@ -555,34 +772,76 @@ export default function Order() {
                     </div>
                   </div>
 
-                  {/* Special Instructions */}
+                  {/* Order Notes */}
                   <div>
                     <label className="block text-sm font-medium mb-2">Special Instructions</label>
                     <textarea
                       value={orderNotes}
                       onChange={(e) => setOrderNotes(e.target.value)}
                       placeholder="Any special requests?"
-                      className="w-full bg-neutral-700 text-white rounded-lg px-3 py-2 text-sm placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      rows={2}
+                      className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 text-white rounded-lg placeholder-neutral-500 focus:outline-none focus:border-orange-500 text-sm"
+                      rows={3}
                     />
                   </div>
 
-                  {/* Place Order Button */}
+                  {/* Payment Error Message */}
+                  {paymentError && (
+                    <div className="p-3 bg-red-500/10 border border-red-500 text-red-400 rounded-lg flex items-center gap-2 text-sm">
+                      <AlertCircle className="w-4 h-4" />
+                      {paymentError}
+                    </div>
+                  )}
+
+                  {/* 🆕 Payment Method Selection */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Payment Method</label>
+                    <div className="space-y-2">
+                      {/* Razorpay */}
+                      <button
+                        onClick={() => handlePaymentMethod('RAZORPAY')}
+                        disabled={paymentProcessing || submitting}
+                        className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {paymentProcessing ? <Loader className="w-4 h-4 animate-spin" /> : '💳'}
+                        Card & UPI (Razorpay)
+                      </button>
+
+                      {/* Google Pay */}
+                      <button
+                        onClick={() => handlePaymentMethod('GOOGLE_PAY')}
+                        disabled={paymentProcessing || submitting}
+                        className="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        🔵 Google Pay
+                      </button>
+
+                      {/* PhonePe */}
+                      <button
+                        onClick={() => handlePaymentMethod('PHONEPE')}
+                        disabled={paymentProcessing || submitting}
+                        className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        💜 PhonePe
+                      </button>
+
+                      {/* Cash on Delivery */}
+                      <button
+                        onClick={() => handlePaymentMethod('COD')}
+                        disabled={paymentProcessing || submitting}
+                        className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        💵 Cash on Delivery
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Legacy Checkout Button (for backward compatibility) */}
                   <button
                     onClick={handleCheckout}
-                    disabled={submitting}
-                    className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-neutral-600 disabled:to-neutral-600 disabled:cursor-not-allowed text-white font-bold py-4 rounded-lg transition-all shadow-lg text-lg"
+                    disabled={submitting || paymentProcessing}
+                    className="w-full py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {submitting ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
-                        Placing Order...
-                      </span>
-                    ) : isAuthenticated ? (
-                      `Place Order · ₹${finalTotal.toFixed(0)}`
-                    ) : (
-                      "Login to Order"
-                    )}
+                    {submitting ? "Processing..." : "Place Order (No Payment)"}
                   </button>
                 </div>
               )}
@@ -592,25 +851,18 @@ export default function Order() {
       </div>
 
       {/* Modals */}
-      <AddToCartModal
-        item={selectedItem}
-        isOpen={showAddToCartModal}
-        onClose={() => {
-          setShowAddToCartModal(false);
-          setSelectedItem(null);
-        }}
-        onAdd={(lineItem) => {
-          addLine(lineItem);
-          setShowAddToCartModal(false);
-          setSelectedItem(null);
-        }}
-      />
-
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        onSuccess={() => setShowAuthModal(false)}
-      />
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+      {showAddToCartModal && selectedItem && (
+        <AddToCartModal
+          item={selectedItem}
+          isOpen={showAddToCartModal}
+          onClose={() => setShowAddToCartModal(false)}
+          onAdd={(lineItem) => {
+            addLine(lineItem);
+            setShowAddToCartModal(false);
+          }}
+        />
+      )}
     </div>
   );
 }
