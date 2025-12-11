@@ -19,7 +19,7 @@ self.addEventListener('activate', (event) => {
 
 // Push notification received
 self.addEventListener('push', (event) => {
-  console.log('📬 Push notification received');
+  console.log('ðŸ"¢ [Customer SW] Push notification received');
   
   let notificationData = {
     title: 'Hungry Times',
@@ -32,7 +32,7 @@ self.addEventListener('push', (event) => {
   if (event.data) {
     try {
       const data = event.data.json();
-      console.log('📦 Push data:', data);
+      console.log('ðŸ"¦ [Customer SW] Push data:', data);
       
       notificationData = {
         title: data.title || notificationData.title,
@@ -43,9 +43,16 @@ self.addEventListener('push', (event) => {
         data: data.data || { url: '/' },
         actions: data.actions || [],
         requireInteraction: data.requireInteraction || false,
+        // ✨ NEW: Add sound support
+        sound: data.sound !== false ? true : false
       };
+
+      // ✨ NEW: Log notification type for analytics
+      if (data.type) {
+        console.log(`ðŸ"¢ [Customer SW] Notification type: ${data.type}`);
+      }
     } catch (err) {
-      console.error('❌ Error parsing push data:', err);
+      console.error('âŒ [Customer SW] Error parsing push data:', err);
     }
   }
 
@@ -58,10 +65,12 @@ self.addEventListener('push', (event) => {
       data: notificationData.data,
       actions: notificationData.actions,
       requireInteraction: notificationData.requireInteraction,
-    }).then(() => {
-      console.log('✅ Notification shown');
+      // ✨ NEW: Include vibration pattern
+      vibrate: [200, 100, 200]
+    }).then((notification) => {
+      console.log('âœ… [Customer SW] Notification shown');
     }).catch((err) => {
-      console.error('❌ Error showing notification:', err);
+      console.error('âŒ [Customer SW] Error showing notification:', err);
     })
   );
 });

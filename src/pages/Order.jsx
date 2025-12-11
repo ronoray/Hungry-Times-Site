@@ -228,10 +228,11 @@ export default function Order() {
       // Step 2: Process payment
       if (paymentMethod === 'COD') {
         // Cash on Delivery
-        await fetch(`${API_BASE}/payments/cod/confirm`, {
+        const token = localStorage.getItem('customerToken');
+        await fetch(`${API_BASE}/customer/payments/cod/confirm`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ order_id: orderId })
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ orderId: orderId })
         });
 
         alert(`✅ Order #${orderId} placed successfully!\nPayment method: Cash on Delivery`);
@@ -266,12 +267,13 @@ export default function Order() {
         throw new Error('Razorpay not configured');
       }
 
-      const initRes = await fetch(`${API_BASE}/payments/razorpay/init`, {
+      const token = localStorage.getItem('customerToken');
+      const initRes = await fetch(`${API_BASE}/customer/payments/razorpay/init`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
-          order_id: orderId,
-          amount: Math.round(amount * 100),
+          orderId: orderId,
+          amount: amount,
         })
       });
 
@@ -317,15 +319,15 @@ export default function Order() {
   // 🆕 Verify Razorpay payment
   const verifyRazorpayPayment = async (orderId, response) => {
     try {
-      const verifyRes = await fetch(`${API_BASE}/payments/razorpay/verify`, {
+      const token = localStorage.getItem('customerToken');
+      const verifyRes = await fetch(`${API_BASE}/customer/payments/razorpay/verify`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
-          order_id: orderId,
-          razorpay_order_id: response.razorpay_order_id,
-          razorpay_payment_id: response.razorpay_payment_id,
-          razorpay_signature: response.razorpay_signature,
-          amount: finalTotal
+          orderId: orderId,
+          razorpayOrderId: response.razorpay_order_id,
+          razorpayPaymentId: response.razorpay_payment_id,
+          razorpaySignature: response.razorpay_signature,
         })
       });
 
@@ -347,12 +349,13 @@ export default function Order() {
   // 🆕 Google Pay payment
   const initiateGooglePay = async (orderId, amount) => {
     try {
-      const initRes = await fetch(`${API_BASE}/payments/google-pay/init`, {
+      const token = localStorage.getItem('customerToken');
+      const initRes = await fetch(`${API_BASE}/customer/payments/googlepay/init`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
-          order_id: orderId,
-          amount: Math.round(amount * 100),
+          orderId: orderId,
+          amount: amount,
         })
       });
 
@@ -369,12 +372,13 @@ export default function Order() {
   // 🆕 PhonePe payment
   const initiatePhonePe = async (orderId, amount) => {
     try {
-      const initRes = await fetch(`${API_BASE}/payments/phonepe/init`, {
+      const token = localStorage.getItem('customerToken');
+      const initRes = await fetch(`${API_BASE}/customer/payments/phonepe/init`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
-          order_id: orderId,
-          amount: Math.round(amount * 100),
+          orderId: orderId,
+          amount: amount,
         })
       });
 
