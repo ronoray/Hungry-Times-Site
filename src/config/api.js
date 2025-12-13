@@ -1,18 +1,30 @@
-// site/src/config/api.js - FIXED API CONFIGURATION
+// src/config/api.js - FIXED API CONFIGURATION
 // Supports both local development and production environments
 
-// ✅ FIXED: Changed from hardcoded production URL to dynamic configuration
+// ✅ FIXED: Dynamic API_BASE configuration
 // Development: http://localhost:5000/api
-// Production: https://hungrytimes.in/api (set via VITE_API_BASE env var)
+// Production: Uses VITE_API_BASE env var or /api (relative)
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api';
+const isLocal = /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname);
 
-console.log('📡 API Base URL:', API_BASE);
+const DEV_DEFAULT = 'http://localhost:5000/api';
+const PROD_DEFAULT = '/api';
 
-// Export as default for convenience
+const API_BASE = isLocal
+  ? (import.meta.env.VITE_API_BASE?.trim() || DEV_DEFAULT)
+  : (import.meta.env.VITE_API_BASE?.trim() || PROD_DEFAULT);
+
+console.log('[API] 🔌 Environment:', isLocal ? 'LOCAL' : 'PRODUCTION');
+console.log('[API] 🌐 API Base URL:', API_BASE);
+
+// Export as default (named export for compatibility)
 export default API_BASE;
+export { API_BASE };
 
-// Also export individual endpoint builders for convenience
+// ============================================================================
+// API ENDPOINT HELPERS (Optional - for convenient reference)
+// ============================================================================
+
 export const API_ENDPOINTS = {
   // Authentication
   AUTH_SEND_OTP: `${API_BASE}/customer/auth/send-otp`,
@@ -20,19 +32,23 @@ export const API_ENDPOINTS = {
   AUTH_SET_CREDENTIALS: `${API_BASE}/customer/auth/set-credentials`,
   AUTH_COMPLETE_PROFILE: `${API_BASE}/customer/auth/complete-profile`,
   AUTH_SET_ADDRESS: `${API_BASE}/customer/auth/set-address`,
+  AUTH_UPDATE_ADDRESS: `${API_BASE}/customer/auth/update-address`,
   AUTH_LOGIN: `${API_BASE}/customer/auth/login`,
   AUTH_FORGOT_PASSWORD_SEND_OTP: `${API_BASE}/customer/auth/forgot-password/send-otp`,
+  AUTH_FORGOT_PASSWORD_VERIFY_OTP: `${API_BASE}/customer/auth/forgot-password/verify-otp`,
   AUTH_FORGOT_PASSWORD_RESET: `${API_BASE}/customer/auth/forgot-password/reset`,
   AUTH_LOGOUT: `${API_BASE}/customer/auth/logout`,
   AUTH_ME: `${API_BASE}/customer/auth/me`,
+  AUTH_CHANGE_PASSWORD: `${API_BASE}/customer/auth/change-password`,
 
   // Menu
   MENU_PUBLIC: `${API_BASE}/public/menu`,
 
   // Orders
-  ORDERS_CREATE: `${API_BASE}/customer/orders`,
-  ORDERS_LIST: `${API_BASE}/customer/orders`,
-  ORDERS_GET: (orderId) => `${API_BASE}/customer/orders/${orderId}`,
+  ORDERS_CREATE_PUBLIC: `${API_BASE}/public/orders`,
+  ORDERS_GET_PUBLIC: (orderId) => `${API_BASE}/public/orders/${orderId}`,
+  ORDERS_LIST_CUSTOMER: `${API_BASE}/customer/orders`,
+  ORDERS_GET_CUSTOMER: (orderId) => `${API_BASE}/customer/orders/${orderId}`,
   ORDERS_CANCEL: (orderId) => `${API_BASE}/customer/orders/${orderId}/cancel`,
 
   // Addresses
@@ -44,13 +60,8 @@ export const API_ENDPOINTS = {
   // Payments
   PAYMENTS_RAZORPAY_INIT: `${API_BASE}/customer/payments/razorpay/init`,
   PAYMENTS_RAZORPAY_VERIFY: `${API_BASE}/customer/payments/razorpay/verify`,
-  PAYMENTS_GOOGLEPAY_INIT: `${API_BASE}/customer/payments/googlepay/init`,
-  PAYMENTS_GOOGLEPAY_CONFIRM: `${API_BASE}/customer/payments/googlepay/confirm`,
-  PAYMENTS_PHONEPE_INIT: `${API_BASE}/customer/payments/phonepe/init`,
-  PAYMENTS_PHONEPE_VERIFY: `${API_BASE}/customer/payments/phonepe/verify`,
   PAYMENTS_COD_CONFIRM: `${API_BASE}/customer/payments/cod/confirm`,
   PAYMENTS_ORDER_STATUS: (orderId) => `${API_BASE}/customer/payments/order/${orderId}`,
-  PAYMENTS_ORDER_LOGS: (orderId) => `${API_BASE}/customer/payments/order/${orderId}/logs`,
 
   // Public
   PUBLIC_FEEDBACK: `${API_BASE}/public/feedback`,
@@ -69,8 +80,4 @@ export const API_ENDPOINTS = {
   NOTIFICATIONS_READ: (notificationId) => `${API_BASE}/notifications/${notificationId}/read`,
   NOTIFICATIONS_READ_ALL: `${API_BASE}/notifications/mark-all-read`,
   NOTIFICATIONS_DELETE: (notificationId) => `${API_BASE}/notifications/${notificationId}`,
-
-  // Health/Version
-  HEALTH: `${API_BASE.replace('/api', '')}/health`,
-  VERSION: `${API_BASE.replace('/api', '')}/version`,
 };
