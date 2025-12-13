@@ -1,122 +1,273 @@
-// c:\hungry-times-site\client\public\sw.js
-// Service Worker for Customer Portal (hungrytimes.in)
+// site/public/sw.js - Customer Site Service Worker
+// ============================================================================
+// Simplified version for hungrytimes.in customer portal
+// Features: Push notifications, offline caching, order updates
+// ============================================================================
 
 const CACHE_NAME = 'hungrytimes-customer-v1';
 
-console.log('🔵 Service Worker loaded');
+console.log('[SW] 🚀 Customer Site Service Worker loading');
 
-// Install event
+// ============================================================================
+// INSTALL EVENT
+// ============================================================================
+
 self.addEventListener('install', (event) => {
-  console.log('✅ Service Worker installing...');
+  console.log('[SW] 🔧 Installing service worker');
   self.skipWaiting();
 });
 
-// Activate event
+// ============================================================================
+// ACTIVATE EVENT
+// ============================================================================
+
 self.addEventListener('activate', (event) => {
-  console.log('✅ Service Worker activating...');
+  console.log('[SW] ⚡ Activating service worker');
   event.waitUntil(self.clients.claim());
 });
 
-// Push notification received
-self.addEventListener('push', (event) => {
-  console.log('ðŸ"¢ [Customer SW] Push notification received');
-  
-  let notificationData = {
-    title: 'Hungry Times',
-    body: 'You have a new notification',
-    icon: '/icon-192x192.png',
-    badge: '/icon-192x192.png',
-    data: { url: '/' }
-  };
+// ============================================================================
+// FETCH EVENT - Caching strategy
+// ============================================================================
 
-  if (event.data) {
-    try {
-      const data = event.data.json();
-      console.log('ðŸ"¦ [Customer SW] Push data:', data);
-      
-      notificationData = {
-        title: data.title || notificationData.title,
-        body: data.body || notificationData.body,
-        icon: data.icon || notificationData.icon,
-        badge: data.badge || notificationData.badge,
-        tag: data.tag || 'notification',
-        data: data.data || { url: '/' },
-        actions: data.actions || [],
-        requireInteraction: data.requireInteraction || false,
-        // ✨ NEW: Add sound support
-        sound: data.sound !== false ? true : false
-      };
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
 
-      // ✨ NEW: Log notification type for analytics
-      if (data.type) {
-        console.log(`ðŸ"¢ [Customer SW] Notification type: ${data.type}`);
-      }
-    } catch (err) {
-      console.error('âŒ [Customer SW] Error parsing push data:', err);
-    }
+  // Skip API requests (they need fresh data)
+  if (url.pathname.startsWith('/api/')) {
+    console.log('[SW] 🔄 API request - fetching fresh:', url.pathname);
+    return;
   }
 
-  event.waitUntil(
-    self.registration.showNotification(notificationData.title, {
-      body: notificationData.body,
-      icon: notificationData.icon,
-      badge: notificationData.badge,
-      tag: notificationData.tag,
-      data: notificationData.data,
-      actions: notificationData.actions,
-      requireInteraction: notificationData.requireInteraction,
-      // ✨ NEW: Include vibration pattern
-      vibrate: [200, 100, 200]
-    }).then((notification) => {
-      console.log('âœ… [Customer SW] Notification shown');
-    }).catch((err) => {
-      console.error('âŒ [Customer SW] Error showing notification:', err);
-    })
-  );
-});
-
-// Notification click event
-self.addEventListener('notificationclick', (event) => {
-  console.log('🖱️ Notification clicked');
-  
-  event.notification.close();
-  
-  const urlToOpen = event.notification.data?.url || '/';
-  
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true })
-      .then((clientList) => {
-        // Check if app is already open
-        for (const client of clientList) {
-          if (client.url.includes(self.location.origin) && 'focus' in client) {
-            console.log('✅ Focusing existing window');
-            return client.focus().then(() => {
-              // Navigate to URL if different
-              if (urlToOpen !== '/') {
-                return client.navigate(urlToOpen);
-              }
+  // Cache-first for static assets
+  event.respondWith(
+    caches.match(event.request)
+      .then((response) => {
+        if (response) {
+          console.log('[SW] 💾 Cache hit:', url.pathname);
+          return response;
+        }
+        
+        console.log('[SW] 🌐 Fetching from network:', url.pathname);
+        return fetch(event.request)
+          .then((response) => {
+            // Don't cache non-successful responses
+            if (!response || response.status !== 200) {
+              return response;
+            }
+            
+            // Cache successful responses
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME)
+              .then((cache) => {
+                cache.put(event.request, responseToCache);
+              });
+            
+            return response;
+          })
+          .catch(() => {
+            // Return offline fallback if available
+            console.warn('[SW] ⚠️ Fetch failed, offline mode');
+            return new Response('Offline - no cached version available', {
+              status: 503,
+              statusText: 'Service Unavailable',
+              headers: new Headers({
+                'Content-Type': 'text/plain'
+              })
             });
-          }
-        }
-        // Open new window
-        if (clients.openWindow) {
-          console.log('✅ Opening new window:', urlToOpen);
-          return clients.openWindow(urlToOpen);
-        }
+          });
       })
   );
 });
 
-// Background sync (optional - for offline order submission)
-self.addEventListener('sync', (event) => {
-  console.log('🔄 Background sync:', event.tag);
-  
-  if (event.tag === 'sync-orders') {
-    event.waitUntil(syncPendingOrders());
+// ============================================================================
+// PUSH EVENT - Handle push notifications
+// ============================================================================
+
+self.addEventListener('push', (event) => {
+  console.log('[SW] 📬 Push notification received');
+
+  if (!event.data) {
+    console.warn('[SW] ⚠️ No data in push event');
+    return;
+  }
+
+  // Parse push payload
+  let notificationData = {
+    title: 'Hungry Times',
+    body: 'You have a new notification',
+    icon: '/icon-512x512.png',
+    badge: '/badge-72x72.png',
+    tag: 'notification',
+    data: { url: '/' }
+  };
+
+  try {
+    const payload = event.data.json();
+    console.log('[SW] 📦 Push payload:', payload);
+    
+    notificationData = {
+      title: payload.title || notificationData.title,
+      body: payload.body || notificationData.body,
+      icon: payload.icon || notificationData.icon,
+      badge: payload.badge || notificationData.badge,
+      tag: payload.tag || notificationData.tag,
+      data: payload.data || notificationData.data,
+      vibrate: payload.vibrate || [200, 100, 200],
+      requireInteraction: payload.requireInteraction || false,
+      actions: payload.actions || []
+    };
+
+    console.log('[SW] 🎯 Notification details:', {
+      title: notificationData.title,
+      tag: notificationData.tag,
+      type: notificationData.data?.type
+    });
+  } catch (error) {
+    console.error('[SW] ❌ Error parsing push data:', error);
+  }
+
+  // Show notification
+  event.waitUntil(
+    self.registration.showNotification(notificationData.title, notificationData)
+      .then(() => {
+        console.log('[SW] ✅ Notification shown');
+      })
+      .catch((error) => {
+        console.error('[SW] ❌ Error showing notification:', error);
+      })
+  );
+
+  // Notify open clients about the push
+  event.waitUntil(
+    self.clients.matchAll({ includeUncontrolled: true, type: 'window' })
+      .then((clients) => {
+        console.log(`[SW] 📡 Notifying ${clients.length} client(s) about push`);
+        clients.forEach((client) => {
+          client.postMessage({
+            type: 'push-received',
+            notification: notificationData
+          });
+        });
+      })
+  );
+});
+
+// ============================================================================
+// NOTIFICATION CLICK EVENT
+// ============================================================================
+
+self.addEventListener('notificationclick', (event) => {
+  console.log('[SW] 🖱️ Notification clicked:', event.notification.tag);
+  event.notification.close();
+
+  // Get URL from notification data
+  const urlToOpen = event.notification.data?.url || '/';
+  console.log('[SW] 🔗 Opening URL:', urlToOpen);
+
+  // Try to focus existing window or open new one
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        // Check if window already open
+        for (const client of clientList) {
+          if (client.url.includes(location.origin) && 'focus' in client) {
+            console.log('[SW] ✅ Focusing existing window');
+            client.focus();
+            // Navigate to URL if needed
+            if (urlToOpen !== '/') {
+              client.navigate(urlToOpen);
+            }
+            return;
+          }
+        }
+        
+        // Open new window
+        if (clients.openWindow) {
+          console.log('[SW] ✅ Opening new window');
+          return clients.openWindow(urlToOpen);
+        }
+      })
+  );
+
+  // Notify app that notification was clicked
+  self.clients.matchAll({ type: 'window' })
+    .then((clients) => {
+      clients.forEach((client) => {
+        client.postMessage({
+          type: 'notification-clicked',
+          data: event.notification.data
+        });
+      });
+    });
+});
+
+// ============================================================================
+// NOTIFICATION CLOSE EVENT
+// ============================================================================
+
+self.addEventListener('notificationclose', (event) => {
+  console.log('[SW] ❌ Notification closed:', event.notification.tag);
+});
+
+// ============================================================================
+// MESSAGE EVENT - Handle messages from app
+// ============================================================================
+
+self.addEventListener('message', (event) => {
+  console.log('[SW] 💬 Message received from app:', event.data?.type);
+
+  // Handle SKIP_WAITING
+  if (event.data?.type === 'SKIP_WAITING') {
+    console.log('[SW] ⏭️ Skipping waiting, activating new version');
+    self.skipWaiting();
+  }
+
+  // Handle GET_TOKEN request (for push subscription)
+  if (event.data?.type === 'get-token') {
+    console.log('[SW] 🔑 Requesting auth token');
+    const token = localStorage?.getItem?.('customerToken');
+    event.ports[0]?.postMessage({ token });
+  }
+
+  // Handle CLEAR_CACHE
+  if (event.data?.type === 'clear-cache') {
+    console.log('[SW] 🗑️ Clearing cache');
+    caches.delete(CACHE_NAME)
+      .then(() => {
+        console.log('[SW] ✅ Cache cleared');
+      });
   }
 });
 
-async function syncPendingOrders() {
-  // TODO: Implement offline order sync if needed
-  console.log('🔄 Syncing pending orders...');
-}
+// ============================================================================
+// SYNC EVENT - Background sync (optional)
+// ============================================================================
+
+self.addEventListener('sync', (event) => {
+  console.log('[SW] 🔄 Background sync:', event.tag);
+
+  if (event.tag === 'sync-pending-orders') {
+    console.log('[SW] 📋 Syncing pending orders');
+    // Can be implemented for offline order submission
+  }
+});
+
+// ============================================================================
+// INITIALIZATION COMPLETE
+// ============================================================================
+
+console.log('═══════════════════════════════════════════════════════');
+console.log('[SW] ✅ Customer Site Service Worker Ready');
+console.log('[SW] Version: 1.0');
+console.log('[SW] Portal: Customer (hungrytimes.in)');
+console.log('[SW] Features:');
+console.log('     ✅ Push notifications');
+console.log('     ✅ Order status updates');
+console.log('     ✅ Offline caching');
+console.log('     ✅ Notification click handling');
+console.log('[SW] Supported notification types:');
+console.log('     - 📦 Order Status (accepted, preparing, delivered)');
+console.log('     - 🛒 New Order Confirmation');
+console.log('     - 💳 Payment Updates');
+console.log('═══════════════════════════════════════════════════════');

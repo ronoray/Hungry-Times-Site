@@ -1,12 +1,11 @@
-// customer-portal/src/pages/Gallery.jsx - ENVIRONMENT AWARE
+// hungrytimes-frontend/src/pages/Gallery.jsx - FIXED VERSION
 import { useState, useEffect } from 'react'
 import Section from '../components/Section'
 
-// Use environment variables that work in both dev and production
+// Get API base from environment or use default
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'
-const CDN_BASE = import.meta.env.VITE_CDN_BASE || 'http://localhost:5000'
 
-console.log('🔧 Gallery Config:', { API_BASE, CDN_BASE, mode: import.meta.env.MODE })
+console.log('🔧 Gallery initialized with API_BASE:', API_BASE)
 
 export default function Gallery() {
   const [images, setImages] = useState([])
@@ -23,35 +22,26 @@ export default function Gallery() {
       setLoading(true)
       setError(null)
       
-      console.log('📡 Fetching gallery from:', `${API_BASE}/public/gallery`)
+      const url = `${API_BASE}/gallery/public`
+      console.log('📡 Fetching from:', url)
       
-      const response = await fetch(`${API_BASE}/public/gallery`)
+      const response = await fetch(url)
       
       if (!response.ok) {
-        throw new Error(`Failed to load gallery images (${response.status})`)
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
       
       const data = await response.json()
       console.log('✅ Gallery data received:', data)
       
-      // Process image URLs based on environment
-      const processedImages = (data.images || []).map(img => {
-        let url = img.url
-        
-        // If URL is relative, make it absolute
-        if (!url.startsWith('http')) {
-          url = `${CDN_BASE}${url}`
-        }
-        
-        console.log(`🖼️ Image: ${img.dish_name} → ${url}`)
-        
-        return {
-          ...img,
-          url
-        }
-      })
+      setImages(data.images || [])
       
-      setImages(processedImages)
+      if (data.images && data.images.length > 0) {
+        console.log(`✅ Loaded ${data.images.length} active images`)
+        data.images.forEach(img => {
+          console.log(`  - ${img.dish_name}: ${img.image_url}`)
+        })
+      }
     } catch (err) {
       console.error('❌ Gallery fetch error:', err)
       setError(err.message)
@@ -91,7 +81,7 @@ export default function Gallery() {
           </div>
           <h3 className="font-semibold mb-2">Unable to Load Gallery</h3>
           <p className="text-neutral-400 mb-2">{error}</p>
-          <p className="text-xs text-neutral-500 mb-4">API: {API_BASE}</p>
+          <p className="text-xs text-neutral-500 mb-4">API Endpoint: {API_BASE}/gallery/public</p>
           <button 
             onClick={fetchGalleryImages}
             className="btn btn-primary"
@@ -136,12 +126,12 @@ export default function Gallery() {
               {/* Image Card */}
               <div className="card aspect-square overflow-hidden relative mb-3">
                 <img
-                  src={image.url}
+                  src={image.image_url}
                   alt={image.dish_name || 'Gallery image'}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                   loading="lazy"
                   onError={(e) => {
-                    console.error('❌ Failed to load image:', image.url)
+                    console.error('❌ Failed to load image:', image.image_url)
                     e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%23333" width="400" height="400"/%3E%3Ctext fill="%23666" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EImage not found%3C/text%3E%3C/svg%3E'
                   }}
                 />
@@ -193,7 +183,7 @@ export default function Gallery() {
           {/* Image Container */}
           <div className="max-w-6xl w-full" onClick={(e) => e.stopPropagation()}>
             <img
-              src={selectedImage.url}
+              src={selectedImage.image_url}
               alt={selectedImage.dish_name || 'Gallery image'}
               className="w-full h-auto max-h-[80vh] object-contain rounded-lg shadow-2xl"
             />
