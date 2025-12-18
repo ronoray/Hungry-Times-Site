@@ -5,7 +5,7 @@
 // ✅ Cart working smoothly
 // ✅ All features complete
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import Menu from "./Menu";
@@ -14,7 +14,7 @@ import CartDrawer from "../components/CartDrawer";
 import GoogleMapsAutocomplete from "../components/GoogleMapsAutocomplete";
 import { ShoppingCart, MapPin, MessageSquare, Loader } from "lucide-react";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
+import API_BASE from '../config/api.js';
 
 export default function Order() {
   const { isAuthenticated, customer } = useAuth();
@@ -36,6 +36,13 @@ export default function Order() {
   // Order State
   const [orderCreated, setOrderCreated] = useState(null);
   const [orderConfirmed, setOrderConfirmed] = useState(false);
+
+  useEffect(() => {
+  if (customer?.address && !deliveryAddress) {
+    console.log('[Order] Auto-populating address from customer profile');
+    setDeliveryAddress(customer.address);
+  }
+}, [customer?.address, deliveryAddress]);
 
   // ============================================================================
   // CALCULATIONS
@@ -86,14 +93,21 @@ export default function Order() {
 
     try {
       const token = localStorage.getItem("customerToken");
-      const response = await fetch(`${API_BASE}/api/customer/orders`, {
+      const response = await fetch(`${API_BASE}/customer/orders`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          items: lines,
+          items: lines.map(line => ({
+            itemId: line.id,
+            itemName: line.name,
+            quantity: line.qty,
+            basePrice: line.basePrice,
+            variants: line.variants || [],
+            addons: line.addons || []
+          })),
           deliveryAddress,
           specialNotes,
           paymentMethod: paymentMethod || "pending",
@@ -128,7 +142,7 @@ export default function Order() {
     try {
       const token = localStorage.getItem("customerToken");
       const response = await fetch(
-        `${API_BASE}/api/customer/payments/cod/confirm`,
+        `${API_BASE}/customer/payments/cod/confirm`,
         {
           method: "POST",
           headers: {
@@ -172,7 +186,7 @@ export default function Order() {
       const token = localStorage.getItem("customerToken");
 
       const initResponse = await fetch(
-        `${API_BASE}/api/customer/payments/razorpay/init`,
+        `${API_BASE}/customer/payments/razorpay/init`,
         {
           method: "POST",
           headers: {
@@ -205,7 +219,7 @@ export default function Order() {
         handler: async (response) => {
           try {
             const verifyResponse = await fetch(
-              `${API_BASE}/api/customer/payments/razorpay/verify`,
+              `${API_BASE}/customer/payments/razorpay/verify`,
               {
                 method: "POST",
                 headers: {

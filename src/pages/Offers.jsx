@@ -37,7 +37,7 @@ export default function Offers() {
 
     try {
       // If your endpoint is public under /api/public, change to `${API_BASE}/api/public/referral/validate`
-      const response = await fetch(`${API_BASE}/api/referral/validate`, {
+      const response = await fetch(`${API_BASE}/referral/validate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
