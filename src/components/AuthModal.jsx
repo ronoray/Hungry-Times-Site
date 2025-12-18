@@ -1117,8 +1117,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-neutral-900 rounded-2xl max-w-md w-full p-8 relative border border-neutral-800 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4">
+      <div className="bg-neutral-900 w-full md:max-w-md rounded-t-2xl md:rounded-2xl p-6 md:p-8 relative border-0 md:border border-neutral-800 max-h-[90vh] md:max-h-[95vh] overflow-y-auto">
         {step !== STEPS.SUCCESS && (
           <button
             onClick={handleClose}

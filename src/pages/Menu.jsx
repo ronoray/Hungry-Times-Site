@@ -9,8 +9,8 @@ import AddToCartModal from "../components/AddToCartModal";
 import API_BASE from "../config/api";
 
 // Description length limits
-const DESC_MAX_RECOMMENDED = 60;  // compact cards
-const DESC_MAX_REGULAR = 120;     // regular items
+const DESC_MAX_RECOMMENDED = 40;  // compact cards - carousel
+const DESC_MAX_REGULAR = 100;     // regular items
 
 // ========================
 // Description Modal
