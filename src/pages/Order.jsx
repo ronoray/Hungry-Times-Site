@@ -464,6 +464,48 @@ export default function Order() {
         </button>
       )}
 
+      {/* MOBILE: Sticky Payment Footer */}
+      {lines.length > 0 && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800 p-3 space-y-2 z-30">
+          {/* Quick Total */}
+          <div className="flex justify-between items-center px-1">
+            <span className="text-neutral-400 text-sm">Total:</span>
+            <span className="text-orange-400 font-bold text-lg">₹{finalTotal}</span>
+          </div>
+
+          {/* Payment Buttons */}
+          <div className="space-y-1">
+            <button
+              onClick={handleRazorpayPayment}
+              disabled={paymentProcessing || lines.length === 0 || !deliveryAddress}
+              className="w-full py-2 h-10 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 disabled:bg-neutral-600 text-white font-bold rounded text-xs transition-colors"
+            >
+              {paymentProcessing ? "Processing..." : "💳 Pay Online"}
+            </button>
+
+            <button
+              onClick={handleCODPayment}
+              disabled={paymentProcessing || lines.length === 0 || !deliveryAddress}
+              className="w-full py-2 h-10 bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-neutral-600 text-white font-bold rounded text-xs transition-colors"
+            >
+              {paymentProcessing ? "Processing..." : "💵 COD"}
+            </button>
+          </div>
+
+          {/* Error */}
+          {paymentError && (
+            <div className="text-red-400 text-xs text-center bg-red-500/10 rounded px-2 py-1">
+              {paymentError}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Mobile Spacing - Prevent content hiding */}
+      {lines.length > 0 && (
+        <div className="md:hidden h-40" />
+      )}
+
       {/* MOBILE: Cart drawer */}
       <CartDrawer
         isOpen={cartDrawerOpen}
