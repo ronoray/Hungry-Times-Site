@@ -1,4 +1,4 @@
-// context/AuthContext.jsx - COMPLETE CUSTOMER AUTH FLOW WITH PUSH RE-SUBSCRIPTION
+// context/AuthContext.jsx - COMPLETE CUSTOMER AUTH FLOW WITH FORGOT PASSWORD
 import { createContext, useContext, useState, useEffect } from 'react';
 import { resubscribeOnLogin } from '../App';
 import API_BASE from '../config/api.js';
@@ -45,29 +45,47 @@ export function AuthProvider({ children }) {
   };
 
   /**
-   * ✅ FIXED: Login function now calls resubscribeOnLogin
-   * This attaches the push subscription to the customer account
+   * Login function that stores token and re-subscribes to push
    */
-  const login = async (customer, newToken) => {
-    console.log('[Auth] 🔐 Logging in customer:', customer.phone);
+    const login = async (customer, newToken) => {
+    console.log('[Auth] Logging in customer:', customer.phone);
     
     localStorage.setItem('customerToken', newToken);
     setToken(newToken);
     setCustomer(customer);
     
-    // ✅ Re-subscribe to push notifications with customer account
-    console.log('[Auth] 📲 Re-subscribing to push notifications...');
+    // ✅ FETCH COMPLETE PROFILE FROM SERVER
+    console.log('[Auth] Fetching complete customer profile...');
+    try {
+      const res = await fetch(`${API_BASE}/customer/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${newToken}`
+        }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        console.log('[Auth] Complete profile fetched:', data.customer.phone);
+        setCustomer(data.customer);  // ✅ UPDATE WITH COMPLETE PROFILE
+      }
+    } catch (err) {
+      console.error('[Auth] Failed to fetch complete profile:', err);
+      // Continue with partial profile if fetch fails
+    }
+    
+    // Re-subscribe to push notifications with customer account
+    console.log('[Auth] Re-subscribing to push notifications...');
     setTimeout(() => {
       resubscribeOnLogin()
         .then(success => {
           if (success) {
-            console.log('[Auth] ✅ Push re-subscription successful');
+            console.log('[Auth] Push re-subscription successful');
           } else {
-            console.warn('[Auth] ⚠️ Push re-subscription had issues but login succeeded');
+            console.warn('[Auth] Push re-subscription had issues but login succeeded');
           }
         })
         .catch(err => {
-          console.error('[Auth] ❌ Push re-subscription error:', err);
+          console.error('[Auth] Push re-subscription error:', err);
           // Don't fail login if push fails
         });
     }, 500);
@@ -77,7 +95,7 @@ export function AuthProvider({ children }) {
   // STEP 1: SEND OTP
   // ============================================
   const sendOTP = async (phone) => {
-    console.log('[Auth] 📤 Sending OTP to:', phone);
+    console.log('[Auth] Sending OTP to:', phone);
     
     const res = await fetch(`${API_BASE}/customer/auth/send-otp`, {
       method: 'POST',
@@ -90,7 +108,7 @@ export function AuthProvider({ children }) {
       throw new Error(error.error || 'Failed to send OTP');
     }
 
-    console.log('[Auth] ✅ OTP sent successfully');
+    console.log('[Auth] OTP sent successfully');
     return await res.json();
   };
 
@@ -98,7 +116,7 @@ export function AuthProvider({ children }) {
   // STEP 2: VERIFY OTP
   // ============================================
   const verifyOTP = async (phone, otp) => {
-    console.log('[Auth] 🔍 Verifying OTP for:', phone);
+    console.log('[Auth] Verifying OTP for:', phone);
     
     const res = await fetch(`${API_BASE}/customer/auth/verify-otp`, {
       method: 'POST',
@@ -108,28 +126,25 @@ export function AuthProvider({ children }) {
 
     if (!res.ok) {
       const error = await res.json();
-      console.error('[Auth] ❌ OTP verification failed:', error);
+      console.error('[Auth] OTP verification failed:', error);
       throw new Error(error.error || 'Failed to verify OTP');
     }
 
     const data = await res.json();
-    console.log('[Auth] ✅ OTP verified successfully');
+    console.log('[Auth] OTP verified successfully');
     
-    // Store temporary token for profile completion
-    const result = {
+    return {
       tempToken: data.tempToken,
       customer: data.customer,
       isNewUser: data.customer?.isNewUser
     };
-    
-    return result;
   };
 
   // ============================================
   // STEP 3: SET USERNAME & PASSWORD
   // ============================================
   const setCredentials = async (tempToken, username, password) => {
-    console.log('[Auth] 🔐 Setting credentials for username:', username);
+    console.log('[Auth] Setting credentials for username:', username);
     
     const res = await fetch(`${API_BASE}/customer/auth/set-credentials`, {
       method: 'POST',
@@ -142,11 +157,11 @@ export function AuthProvider({ children }) {
 
     if (!res.ok) {
       const error = await res.json();
-      console.error('[Auth] ❌ Failed to set credentials:', error);
+      console.error('[Auth] Failed to set credentials:', error);
       throw new Error(error.error || 'Failed to set credentials');
     }
 
-    console.log('[Auth] ✅ Credentials set successfully');
+    console.log('[Auth] Credentials set successfully');
     return await res.json();
   };
 
@@ -154,7 +169,7 @@ export function AuthProvider({ children }) {
   // STEP 4: COMPLETE PROFILE (Name + Email)
   // ============================================
   const completeProfile = async (tempToken, name, email) => {
-    console.log('[Auth] 📝 Completing profile for:', name);
+    console.log('[Auth] Completing profile for:', name);
     
     const res = await fetch(`${API_BASE}/customer/auth/complete-profile`, {
       method: 'POST',
@@ -167,11 +182,11 @@ export function AuthProvider({ children }) {
 
     if (!res.ok) {
       const error = await res.json();
-      console.error('[Auth] ❌ Failed to complete profile:', error);
+      console.error('[Auth] Failed to complete profile:', error);
       throw new Error(error.error || 'Failed to complete profile');
     }
 
-    console.log('[Auth] ✅ Profile completed');
+    console.log('[Auth] Profile completed');
     return await res.json();
   };
 
@@ -179,7 +194,7 @@ export function AuthProvider({ children }) {
   // STEP 5: SET ADDRESS & COMPLETE REGISTRATION
   // ============================================
   const setAddress = async (tempToken, address, latitude, longitude) => {
-    console.log('[Auth] 📍 Setting address:', address);
+    console.log('[Auth] Setting address:', address);
     
     const res = await fetch(`${API_BASE}/customer/auth/set-address`, {
       method: 'POST',
@@ -192,15 +207,14 @@ export function AuthProvider({ children }) {
 
     if (!res.ok) {
       const error = await res.json();
-      console.error('[Auth] ❌ Failed to set address:', error);
+      console.error('[Auth] Failed to set address:', error);
       throw new Error(error.error || 'Failed to set address');
     }
 
     const data = await res.json();
-    console.log('[Auth] ✅ Address set, registration complete');
+    console.log('[Auth] Address set, registration complete');
     
-    // ✅ Registration complete - store final token and call login
-    // login() will handle push re-subscription
+    // Registration complete - store final token and call login
     if (data.customer && data.token) {
       await login(data.customer, data.token);
     }
@@ -212,7 +226,7 @@ export function AuthProvider({ children }) {
   // USERNAME/PASSWORD LOGIN (Returning customers)
   // ============================================
   const loginWithPassword = async (username, password) => {
-    console.log('[Auth] 🔑 Attempting login for username:', username);
+    console.log('[Auth] Attempting login for username:', username);
     
     const res = await fetch(`${API_BASE}/customer/auth/login`, {
       method: 'POST',
@@ -222,12 +236,12 @@ export function AuthProvider({ children }) {
 
     if (!res.ok) {
       const error = await res.json();
-      console.error('[Auth] ❌ Login failed:', error);
+      console.error('[Auth] Login failed:', error);
       throw new Error(error.error || 'Login failed');
     }
 
     const data = await res.json();
-    console.log('[Auth] ✅ Login successful');
+    console.log('[Auth] Login successful');
     
     // login() will handle push re-subscription
     await login(data.customer, data.token);
@@ -235,10 +249,10 @@ export function AuthProvider({ children }) {
   };
 
   // ============================================
-  // FORGOT PASSWORD - SEND OTP
+  // FORGOT PASSWORD - STEP 1: SEND OTP
   // ============================================
   const sendForgotPasswordOTP = async (phone) => {
-    console.log('[Auth] 📤 Sending forgot password OTP to:', phone);
+    console.log('[Auth] Sending forgot password OTP to:', phone);
     
     const res = await fetch(`${API_BASE}/customer/auth/forgot-password/send-otp`, {
       method: 'POST',
@@ -248,19 +262,19 @@ export function AuthProvider({ children }) {
 
     if (!res.ok) {
       const error = await res.json();
-      console.error('[Auth] ❌ Failed to send forgot password OTP:', error);
+      console.error('[Auth] Failed to send forgot password OTP:', error);
       throw new Error(error.error || 'Failed to send OTP');
     }
 
-    console.log('[Auth] ✅ Forgot password OTP sent');
+    console.log('[Auth] Forgot password OTP sent');
     return await res.json();
   };
 
   // ============================================
-  // FORGOT PASSWORD - VERIFY OTP
+  // FORGOT PASSWORD - STEP 2: VERIFY OTP
   // ============================================
   const verifyForgotPasswordOTP = async (phone, otp) => {
-    console.log('[Auth] 🔍 Verifying forgot password OTP for:', phone);
+    console.log('[Auth] Verifying forgot password OTP for:', phone);
     
     const res = await fetch(`${API_BASE}/customer/auth/forgot-password/verify-otp`, {
       method: 'POST',
@@ -270,55 +284,62 @@ export function AuthProvider({ children }) {
 
     if (!res.ok) {
       const error = await res.json();
-      console.error('[Auth] ❌ Forgot password OTP verification failed:', error);
+      console.error('[Auth] Forgot password OTP verification failed:', error);
       throw new Error(error.error || 'OTP verification failed');
     }
 
     const data = await res.json();
-    console.log('[Auth] ✅ Forgot password OTP verified, temp token received');
+    console.log('[Auth] Forgot password OTP verified, temp token received');
     
     return {
       tempToken: data.tempToken,
+      customer: data.customer,
       message: data.message
     };
   };
 
   // ============================================
-  // FORGOT PASSWORD - RESET PASSWORD
+  // FORGOT PASSWORD - STEP 3: RESET PASSWORD
   // ============================================
-  const resetPassword = async (tempToken, newPassword) => {
-    console.log('[Auth] 🔐 Resetting password...');
-    
-    const res = await fetch(`${API_BASE}/customer/auth/forgot-password/reset`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${tempToken}`
-      },
-      body: JSON.stringify({ newPassword })
-    });
+  const resetForgotPassword = async (tempToken, newPassword, confirmPassword) => {
+  console.log('[Auth] Resetting password...');
+  
+  const res = await fetch(`${API_BASE}/customer/auth/forgot-password/reset`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${tempToken}`
+    },
+    body: JSON.stringify({ newPassword, confirmPassword })
+  });
 
-    if (!res.ok) {
-      const error = await res.json();
-      console.error('[Auth] ❌ Password reset failed:', error);
-      throw new Error(error.error || 'Failed to reset password');
-    }
+  if (!res.ok) {
+    const error = await res.json();
+    console.error('[Auth] Password reset failed:', error);
+    throw new Error(error.error || 'Failed to reset password');
+  }
 
-    const data = await res.json();
-    console.log('[Auth] ✅ Password reset successfully');
-    
-    // Return token so user can login if desired
-    return {
-      token: data.token,
-      message: data.message
-    };
+  const data = await res.json();
+  console.log('[Auth] Password reset successfully');
+  
+  // ✅ AUTO-LOGIN THE CUSTOMER (NEW)
+  if (data.token && data.customer) {
+    await login(data.customer, data.token);
+    console.log('[Auth] Customer auto-logged in after password reset');
+  }
+  
+  return {
+    token: data.token,
+    customer: data.customer,
+    message: data.message
   };
+};
 
   // ============================================
   // LOGOUT
   // ============================================
   const logout = async () => {
-    console.log('[Auth] 🚪 Logging out...');
+    console.log('[Auth] Logging out...');
     
     if (token) {
       try {
@@ -329,7 +350,7 @@ export function AuthProvider({ children }) {
           }
         });
       } catch (err) {
-        console.error('[Auth] ⚠️ Logout error:', err);
+        console.error('[Auth] Logout error:', err);
         // Continue with local logout even if backend fails
       }
     }
@@ -337,7 +358,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('customerToken');
     setToken(null);
     setCustomer(null);
-    console.log('[Auth] ✅ Logged out');
+    console.log('[Auth] Logged out');
   };
 
   const value = {
@@ -355,12 +376,12 @@ export function AuthProvider({ children }) {
     
     // Login flows
     loginWithPassword,
-    login, // Exposed for manual login if needed
+    login,
     
     // Forgot password
     sendForgotPasswordOTP,
     verifyForgotPasswordOTP,
-    resetPassword,
+    resetForgotPassword,
     
     // Logout
     logout,

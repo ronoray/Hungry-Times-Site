@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import GoogleMapsAutocomplete from '../components/GoogleMapsAutocomplete';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+import API_BASE from '../config/api.js';
 
 export default function Profile() {
   const { customer, isAuthenticated, logout, token, login } = useAuth();
@@ -96,7 +96,7 @@ export default function Profile() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/api/customer/auth/update-address`, {
+      const res = await fetch(`${API_BASE}/customer/auth/update-address`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -160,7 +160,7 @@ export default function Profile() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/api/customer/auth/change-phone/send-otp`, {
+      const res = await fetch(`${API_BASE}/customer/auth/change-phone/send-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -193,7 +193,7 @@ export default function Profile() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/api/customer/auth/change-phone/verify-otp`, {
+      const res = await fetch(`${API_BASE}/customer/auth/change-phone/verify-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -245,7 +245,7 @@ export default function Profile() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/api/customer/auth/change-password`, {
+      const res = await fetch(`${API_BASE}/customer/auth/change-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -284,7 +284,7 @@ export default function Profile() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/api/customer/auth/update-profile`, {
+      const res = await fetch(`${API_BASE}/customer/auth/update-profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

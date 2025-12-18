@@ -1,7 +1,7 @@
 // c:\hungry-times-site\client\src\utils\pushNotifications.js
 // Push notification utilities for customer portal
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'https://ops.hungrytimes.in';
+import API_BASE from '../config/api.js';
 
 /**
  * Request push notification permission and subscribe
@@ -43,7 +43,7 @@ export async function subscribeToPush() {
 
     // Get VAPID public key from server
     console.log('🔑 Fetching VAPID public key...');
-    const vapidResponse = await fetch(`${API_BASE}/api/push/vapid-public`);
+    const vapidResponse = await fetch(`${API_BASE}/push/vapid-public-key`);
     
     if (!vapidResponse.ok) {
       throw new Error('Failed to get VAPID key');
@@ -71,13 +71,13 @@ export async function subscribeToPush() {
     }
 
     console.log('📤 Sending subscription to server...');
-    const saveResponse = await fetch(`${API_BASE}/api/push/subscribe`, {
+    const saveResponse = await fetch(`${API_BASE}/push/subscribe`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify(subscription.toJSON())
+      body: JSON.stringify({ subscription: subscription.toJSON() })
     });
 
     if (!saveResponse.ok) {
@@ -132,7 +132,7 @@ export async function unsubscribeFromPush() {
                    sessionStorage.getItem('customerToken');
 
     if (token) {
-      await fetch(`${API_BASE}/api/push/unsubscribe`, {
+      await fetch(`${API_BASE}/push/unsubscribe`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

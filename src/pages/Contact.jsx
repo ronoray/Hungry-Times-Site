@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { BRAND } from '../lib/constants'
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://ops.hungrytimes.in/api'
+import API_BASE from '../config/api';
 
 export default function Contact() {
   const [formData, setFormData] = useState({
