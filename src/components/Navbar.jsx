@@ -140,14 +140,16 @@ export default function Navbar() {
                 📋 {hasItems ? `Order (${cartCount})` : "Menu"}
               </button>
 
-              {/* Mobile Hamburger Menu - visible only on tablet/mobile */}
-              <button
-                onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="lg:hidden p-2 text-neutral-300 hover:text-white transition-colors"
-                aria-label="Menu"
-              >
-                {showMobileMenu ? <X className="w-6 h-6" /> : <MenuIcon className="w-6 h-6" />}
-              </button>
+              {/* Mobile Hamburger Menu - visible only on tablet/mobile, HIDDEN on /menu page */}
+              {location.pathname !== '/menu' && (
+                <button
+                  onClick={() => setShowMobileMenu(!showMobileMenu)}
+                  className="lg:hidden p-2 text-neutral-300 hover:text-white transition-colors"
+                  aria-label="Menu"
+                >
+                  {showMobileMenu ? <X className="w-6 h-6" /> : <MenuIcon className="w-6 h-6" />}
+                </button>
+              )}
             </div>
           </div>
         </nav>
