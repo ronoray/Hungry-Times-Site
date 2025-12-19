@@ -928,6 +928,7 @@
   .recommended-item-card .read-desc-btn {
     display: none !important;
   }
+}
 
 /* Tablet adjustments */
 @media (min-width: 769px) and (max-width: 1024px) {
@@ -935,6 +936,7 @@
     grid-template-columns: 240px 1fr !important;
     gap: 1.5rem !important;
   }
+}
 
 /* ============================================
    ADD TO CART BUTTON STYLES
@@ -991,7 +993,6 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-}
 
 /* Mobile adjustments */
 @media (max-width: 768px) {
