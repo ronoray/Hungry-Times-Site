@@ -740,7 +740,7 @@
     display: inline-flex !important;
     position: sticky !important;
     top: 4.5rem !important;
-    z-index: 10 !important;
+    z-index: 60 !important;
   }
 
   .mobile-overlay {
@@ -804,6 +804,7 @@
 
   .menu-item-card {
     min-width: 0 !important;
+    padding: 0.875rem !important;
   }
 
   .item-name,
@@ -811,6 +812,25 @@
     overflow-wrap: break-word !important;
     word-break: normal !important;
     hyphens: auto !important;
+  }
+
+  /* Fix item header layout on mobile - stack vertically */
+  .item-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.25rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .item-name {
+    font-size: 0.9375rem !important;
+    line-height: 1.2 !important;
+    width: 100% !important;
+  }
+
+  .item-price {
+    font-size: 1.125rem !important;
+    width: 100% !important;
   }
 
   /* Recommended Section - Mobile - CAROUSEL */
