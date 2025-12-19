@@ -23,11 +23,6 @@
   cursor: pointer !important;
 }
 
-/* OVERRIDE NUCLEAR RESET: hamburger must be truly hidden by default */
-.menu-page .mobile-menu-toggle {
-  display: none !important;
-}
-
 .menu-page * {
   margin: 0;
   padding: 0;
@@ -725,13 +720,59 @@
    MOBILE RESPONSIVE STYLES
    ============================================ */
 
-/* MOBILE HAMBURGER REMOVED - Now handled by Navbar component */
-/* The hamburger and category sidebar are now managed by the main Navbar */
+   /* ============================================
+   MOBILE RESPONSIVE STYLES
+   ============================================ */
+
+/* Mobile Hamburger */
+.mobile-menu-toggle {
+  display: none !important;
+}
+
+@media (min-width: 769px) {
+  .mobile-menu-toggle {
+    display: none !important;
+  }
+}
 
 @media (max-width: 768px) {
-  /* Category sidebar is now handled by Navbar hamburger menu */
+  .mobile-menu-toggle {
+    display: inline-flex !important;
+    position: sticky !important;
+    top: 4.5rem !important;
+    z-index: 10 !important;
+  }
+
+  .mobile-overlay {
+    display: block !important;
+  }
+
+  .hero-grid {
+    grid-template-columns: 1fr !important;
+    max-height: 230px !important;
+  }
+
+  .menu-layout {
+    grid-template-columns: 1fr !important;
+    gap: 0 !important;
+  }
+
   .categories-sidebar {
-    display: none !important; /* Hidden on mobile - use Navbar hamburger instead */
+    position: fixed !important;
+    top: 0 !important;
+    left: -100% !important;
+    width: 280px !important;
+    height: 100vh !important;
+    z-index: 999 !important;
+    transition: left 0.3s ease !important;
+  }
+
+  .categories-sidebar.open {
+    left: 0 !important;
+  }
+
+  .sidebar-sticky {
+    position: static !important;
   }
 
   .hero-grid {
