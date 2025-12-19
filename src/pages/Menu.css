@@ -738,13 +738,44 @@
 @media (max-width: 768px) {
   .mobile-menu-toggle {
     display: inline-flex !important;
-    position: sticky !important;
-    top: 4.5rem !important;
+    position: fixed !important;
+    top: 1rem !important;
+    right: 1rem !important;
     z-index: 60 !important;
+    margin: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 0.5rem !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+
+  .mobile-menu-toggle .hamburger-lines {
+    display: inline-flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    width: 24px !important;
+  }
+
+  .mobile-menu-toggle .hamburger-lines span {
+    display: block !important;
+    width: 100% !important;
+    height: 2px !important;
+    background: #ffffff !important;
+    border-radius: 2px !important;
+  }
+
+  .mobile-menu-toggle .hamburger-label {
+    display: none !important;
   }
 
   .mobile-overlay {
     display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+    z-index: 55 !important;
   }
 
   .hero-grid {
