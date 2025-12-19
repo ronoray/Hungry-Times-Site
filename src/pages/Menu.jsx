@@ -505,7 +505,7 @@ export default function Menu() {
     <div className="menu-page-wrapper">
       <div className="menu-page">
         {/* Hero */}
-        <div className="menu-hero">
+        <div className="menu-hero menu-hero-mobile-compact">
           <div className="hero-grid">
             <div className="hero-image-wrapper hero-black-bg">
               <div className="hero-content-overlay">
