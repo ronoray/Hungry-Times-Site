@@ -936,18 +936,6 @@
     gap: 1.5rem !important;
   }
 
-  .recommended-items-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* Large screens - 3 columns for recommended */
-@media (min-width: 1025px) {
-  .recommended-items-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
 /* ============================================
    ADD TO CART BUTTON STYLES
    ============================================ */
