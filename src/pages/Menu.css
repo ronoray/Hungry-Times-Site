@@ -1017,3 +1017,27 @@
     height: 16px;
   }
 }
+
+/* Hide old badge */
+.recommended-badge {
+  display: none;
+}
+
+/* New badge at bottom of card */
+.recommended-badge-bottom {
+  display: block;
+  text-align: center;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #334155;
+}
+
+.recommended-badge-bottom .star-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  background: #10B981;
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  font-weight: 700;
+}
