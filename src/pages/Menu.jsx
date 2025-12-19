@@ -594,6 +594,7 @@ export default function Menu() {
                       </h2>
                       <span className="star-icon">⭐</span>
                     </div>
+                    <div className="recommended-items-grid-wrapper">
                     <div className="recommended-items-grid">
                       {recommendedItems.map((it) => (
                         <MenuItemCard
@@ -602,6 +603,7 @@ export default function Menu() {
                           isRecommendedCard={true}
                         />
                       ))}
+                      </div>
                     </div>
                   </div>
                 )}
