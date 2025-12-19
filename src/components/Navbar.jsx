@@ -122,13 +122,13 @@ export default function Navbar() {
 
         {/* Mobile Navigation - Compact */}
         <div className="md:hidden border-t border-neutral-800 bg-neutral-900/50">
-          <ul className="container-section flex items-center gap-1 py-2 overflow-x-auto scrollbar-hide">
+          <ul className="flex items-center gap-0 py-2 overflow-x-auto scrollbar-hide px-3 sm:px-4">
             {links.slice(0, 4).map(l => (
               <li key={l.to} className="flex-shrink-0">
                 <NavLink
                   to={l.to}
                   className={({ isActive }) => 
-                    `text-xs px-3 py-2 block hover:text-white transition-colors whitespace-nowrap ${
+                    `text-xs px-2 sm:px-3 py-2 block hover:text-white transition-colors whitespace-nowrap ${
                       isActive ? 'text-orange-400 font-semibold' : 'text-neutral-400'
                     }`
                   }
