@@ -199,6 +199,7 @@ export default function Menu() {
   const [activeTop, setActiveTop] = useState(null);
   const [activeSub, setActiveSub] = useState(null);
   const [expandedItems, setExpandedItems] = useState(new Set());
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Modals
   const [imgModal, setImgModal] = useState({
@@ -301,6 +302,7 @@ export default function Menu() {
   const handleCategoryClick = (tcId, firstSubId) => {
     setActiveTop(tcId);
     setActiveSub(firstSubId);
+    setSidebarOpen(false); // Close sidebar on mobile after selection
     
     // Scroll to the subcategory after state updates
     setTimeout(() => {
@@ -537,11 +539,30 @@ export default function Menu() {
           </div>
         </div>
 
+        {/* Mobile Category Menu Toggle */}
+        <button
+          className="mobile-menu-toggle"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          aria-label={sidebarOpen ? "Close categories" : "Open categories"}
+        >
+          <span className="hamburger-lines" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+          <span className="hamburger-label">Categories</span>
+        </button>
+
+        {/* Overlay */}
+        {sidebarOpen && (
+          <div className="mobile-overlay" onClick={() => setSidebarOpen(false)} />
+        )}
+
         {/* Main layout */}
         <div className="menu-container">
           <div className="menu-layout">
             {/* Sidebar */}
-            <aside className="categories-sidebar">
+            <aside className={`categories-sidebar ${sidebarOpen ? "open" : ""}`}>
               <div className="sidebar-sticky">
                 <h3 className="sidebar-heading">Categories</h3>
                 <nav className="sidebar-category-list">
