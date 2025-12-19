@@ -341,13 +341,6 @@ export default function Menu() {
         key={it.id}
         className={isRecommendedCard ? "recommended-item-card" : "menu-item-card"}
       >
-        {isRecommendedCard ? (
-          <div className="recommended-badge">
-            <span className="star-badge">⭐ RECOMMENDED</span>
-          </div>
-        ) : (
-          it.isRecommended && <div className="item-star-badge">⭐</div>
-        )}
 
         <div className="item-header">
           <div className="item-name-wrapper">
@@ -459,6 +452,12 @@ export default function Menu() {
             </>
           )}
         </button>
+
+        {isRecommendedCard && (
+          <div className="recommended-badge-bottom">
+            <span className="star-badge">⭐ RECOMMENDED</span>
+          </div>
+        )}
 
         {isExpanded && !isRecommendedCard && (
           <div className="options-container">
