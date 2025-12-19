@@ -139,75 +139,10 @@ export default function Navbar() {
               >
                 📋 {hasItems ? `Order (${cartCount})` : "Menu"}
               </button>
-
-              {/* Mobile Hamburger Menu - visible only on tablet/mobile, HIDDEN on /menu page */}
-              {location.pathname !== '/menu' && (
-                <button
-                  onClick={() => setShowMobileMenu(!showMobileMenu)}
-                  className="lg:hidden p-2 text-neutral-300 hover:text-white transition-colors"
-                  aria-label="Menu"
-                >
-                  {showMobileMenu ? <X className="w-6 h-6" /> : <MenuIcon className="w-6 h-6" />}
-                </button>
-              )}
             </div>
           </div>
         </nav>
       </header>
-
-      {/* MOBILE SLIDE-OUT MENU */}
-      <div 
-        className={`fixed inset-0 z-40 lg:hidden transition-opacity duration-300 ${
-          showMobileMenu ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
-      >
-        {/* Backdrop */}
-        <div 
-          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-          onClick={() => setShowMobileMenu(false)}
-        />
-        
-        {/* Menu Panel */}
-        <div 
-          className={`absolute top-16 right-0 w-64 h-[calc(100vh-4rem)] bg-neutral-900 border-l border-neutral-800 shadow-2xl transform transition-transform duration-300 ${
-            showMobileMenu ? 'translate-x-0' : 'translate-x-full'
-          }`}
-        >
-          <nav className="flex flex-col p-4 gap-2">
-            {desktopLinks.map(link => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                onClick={() => setShowMobileMenu(false)}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive 
-                      ? 'bg-orange-500 text-white font-semibold' 
-                      : 'text-neutral-300 hover:bg-neutral-800 hover:text-white'
-                  }`
-                }
-              >
-                {link.label === 'Home' && <Home className="w-5 h-5" />}
-                {link.label === 'Menu' && <UtensilsCrossed className="w-5 h-5" />}
-                {link.label === 'Gallery' && <ImageIcon className="w-5 h-5" />}
-                {link.label === 'Testimonials' && <Star className="w-5 h-5" />}
-                {link.label === 'Contact' && <Phone className="w-5 h-5" />}
-                {link.label === 'Feedback' && <MessageSquare className="w-5 h-5" />}
-                <span>{link.label}</span>
-              </NavLink>
-            ))}
-            
-            {/* Phone Link */}
-            <a 
-              href={`tel:${BRAND.phone1}`}
-              className="flex items-center gap-3 px-4 py-3 mt-4 border-t border-neutral-800 text-neutral-300 hover:text-white transition-colors"
-            >
-              <Phone className="w-5 h-5" />
-              <span>{BRAND.phone1}</span>
-            </a>
-          </nav>
-        </div>
-      </div>
 
       {/* MOBILE BOTTOM NAVIGATION */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-neutral-950 border-t border-neutral-800 pb-4">
