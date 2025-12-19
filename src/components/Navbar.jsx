@@ -208,7 +208,7 @@ export default function Navbar() {
       </div>
 
       {/* MOBILE BOTTOM NAVIGATION */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-neutral-950 border-t border-neutral-800 safe-area-pb">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-neutral-950 border-t border-neutral-800 pb-4">
         <div className="grid grid-cols-4 h-16">
           {mobileBottomNav.map(item => {
             const Icon = item.icon;
@@ -241,7 +241,7 @@ export default function Navbar() {
       </nav>
 
       {/* Spacer for fixed bottom nav on mobile */}
-      <div className="md:hidden h-16" />
+      <div className="md:hidden h-20" />
 
       {/* Auth Modal */}
       <AuthModal

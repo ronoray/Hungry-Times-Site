@@ -23,3 +23,25 @@ html, body, #root { height: 100%; }
     overflow-x: hidden; /* stop any accidental sideways scroll */
   }
 }
+
+/* ============================================
+   MOBILE BOTTOM NAVIGATION FIX
+   ============================================ */
+
+@layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+}
+
+@media (max-width: 767px) {
+  /* Add bottom padding to body for bottom nav */
+  body {
+    padding-bottom: 5rem !important;
+  }
+  
+  /* Ensure bottom nav is always visible */
+  nav.fixed.bottom-0 {
+    z-index: 9999 !important;
+  }
+}
