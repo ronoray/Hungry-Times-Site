@@ -40,7 +40,8 @@ export default function Navbar() {
   return (
     <>
       <header className="sticky top-0 z-50 backdrop-blur-md bg-neutral-950/95 border-b border-neutral-800">
-        <nav className="container-section h-16 flex items-center justify-between px-3 sm:px-4">
+        <nav className="w-full h-16 flex items-center justify-center px-3 sm:px-4">
+          <div className="max-w-7xl w-full flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 py-1">
             <img
@@ -113,16 +114,18 @@ export default function Navbar() {
             {/* Smart Order Now Button - Desktop/Tablet only */}
             <button
               onClick={handleOrderClick}
-              className="hidden sm:block btn btn-primary text-sm font-semibold px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white transition-colors"
+              className="hidden sm:flex items-center gap-2 px-6 py-2 rounded-xl bg-yellow-500 hover:bg-yellow-600 text-black font-bold text-sm transition-colors"
             >
-              {hasItems ? `Order (${cartCount})` : "Menu"}
+              📋 {hasItems ? `Order (${cartCount})` : "Menu"}
             </button>
+            </div>  
           </div>
         </nav>
 
         {/* Mobile Navigation - Compact */}
-        <div className="md:hidden border-t border-neutral-800 bg-neutral-900/50">
-          <ul className="flex items-center gap-0 py-2 overflow-x-auto scrollbar-hide px-3 sm:px-4">
+        <div className="md:hidden border-t border-neutral-800 bg-neutral-900/50 w-full">
+          <div className="max-w-7xl mx-auto">
+            <ul className="flex items-center gap-0 py-2 overflow-x-auto scrollbar-hide px-3 sm:px-4">
             {links.slice(0, 4).map(l => (
               <li key={l.to} className="flex-shrink-0">
                 <NavLink
@@ -138,6 +141,7 @@ export default function Navbar() {
               </li>
             ))}
           </ul>
+          </div>
         </div>
       </header>
 
