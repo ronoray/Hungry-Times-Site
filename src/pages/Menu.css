@@ -767,8 +767,9 @@
 
   .item-name,
   .item-description {
-    overflow-wrap: anywhere !important;
-    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    word-break: normal !important;
+    hyphens: auto !important;
   }
 
   /* Recommended Section - Mobile - CAROUSEL */
