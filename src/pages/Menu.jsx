@@ -541,14 +541,18 @@ export default function Menu() {
           </div>
         </div>
 
-        {/* Mobile Hamburger */}
+        {/* Mobile Hamburger (CSS controls visibility) */}
         <button
           className="mobile-menu-toggle"
           onClick={() => setSidebarOpen(!sidebarOpen)}
+          aria-label={sidebarOpen ? "Close menu categories" : "Open menu categories"}
         >
-          <span />
-          <span />
-          <span />
+          <span className="hamburger-lines" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+          <span className="hamburger-label">Menu</span>
         </button>
 
         {/* Overlay (only when sidebar open) */}

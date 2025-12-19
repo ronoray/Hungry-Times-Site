@@ -125,7 +125,7 @@ export default function Navbar() {
         {/* Mobile Navigation - Compact */}
         <div className="md:hidden border-t border-neutral-800 bg-neutral-900/50 w-full">
           <div className="max-w-7xl mx-auto">
-            <ul className="flex items-center gap-0 py-2 overflow-x-auto scrollbar-hide px-3 sm:px-4">
+            <ul className="flex items-center justify-center gap-2 py-2 overflow-x-auto scrollbar-hide px-3 sm:px-4">
               {links.slice(0, 4).map(l => (
                 <li key={l.to} className="flex-shrink-0">
                   <NavLink

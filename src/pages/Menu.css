@@ -23,6 +23,11 @@
   cursor: pointer !important;
 }
 
+/* OVERRIDE NUCLEAR RESET: hamburger must be truly hidden by default */
+.menu-page .mobile-menu-toggle {
+  display: none !important;
+}
+
 .menu-page * {
   margin: 0;
   padding: 0;
@@ -715,41 +720,58 @@
 /* Mobile Hamburger */
 .mobile-menu-toggle {
   display: none !important;
-  position: fixed !important;
-  top: 1rem !important;
-  left: 1rem !important;
-  z-index: 1000 !important;
-  flex-direction: column !important;
-  gap: 4px !important;
-  width: 40px !important;
+  position: sticky !important;       /* ✅ no longer floats above Navbar */
+  top: 4.5rem !important;            /* ✅ stays within Menu page area */
+  z-index: 10 !important;            /* ✅ below Navbar (Navbar is z-50) */
+
+  margin: 0.5rem 0 0.5rem 0 !important;
+
+  width: auto !important;
   height: 40px !important;
-  padding: 8px !important;
+  padding: 8px 12px !important;
+
   background: rgba(0, 0, 0, 0.9) !important;
   border: 1px solid var(--color-accent) !important;
-  border-radius: 8px !important;
-  cursor: pointer !important;
+  border-radius: 10px !important;
+
+  align-items: center !important;
+  gap: 10px !important;
 }
 
-.mobile-menu-toggle span {
+/* DESKTOP: never show hamburger */
+@media (min-width: 769px) {
+  .mobile-menu-toggle {
+    display: none !important;
+  }
+}
+
+.mobile-menu-toggle .hamburger-lines {
+  display: inline-flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  width: 18px !important;
+}
+
+.mobile-menu-toggle .hamburger-lines span {
   display: block !important;
   width: 100% !important;
   height: 2px !important;
   background: var(--color-accent) !important;
-  transition: all 0.3s ease !important;
+  border-radius: 2px !important;
 }
 
-.mobile-overlay {
-  display: none !important;
-  position: fixed !important;
-  inset: 0 !important;
-  background: rgba(0, 0, 0, 0.7) !important;
-  z-index: 998 !important;
+.mobile-menu-toggle .hamburger-label {
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  color: var(--color-accent) !important;
+  letter-spacing: 0.2px !important;
 }
 
 @media (max-width: 768px) {
+
   .mobile-menu-toggle {
-    display: flex !important;
-    top: 5.5rem !important;
+    display: inline-flex !important;
+    top: 4.5rem !important; /* below navbar */
   }
 
   .mobile-overlay {
@@ -758,39 +780,7 @@
 
   .hero-grid {
     grid-template-columns: 1fr !important;
-    max-height: 230px !important; /* shorter hero */
-  }
-
-  .hero-content-overlay {
-    padding: 1.25rem !important;
-  }
-
-  .hero-cta {
-    gap: 0.5rem !important;
-  }
-
-  .hero-title {
-    font-size: 1.8rem !important;
-  }
-
-  .hero-subtitle {
-    font-size: 0.95rem !important;
-  }
-
-  .cta-text {
-    font-size: 1.05rem !important;
-  }
-
-  .cta-button {
-    font-size: 0.9rem !important;
-    padding: 0.55rem 1.1rem !important;
-    min-width: 0 !important;
-    width: auto !important;
-  }
-
-  .menu-container {
-    padding: 0.75rem 0.75rem !important;
-    margin-top: 64px !important;
+    max-height: 230px !important;
   }
 
   .menu-layout {
@@ -804,11 +794,8 @@
     left: -100% !important;
     width: 280px !important;
     height: 100vh !important;
-    background: rgba(10, 10, 10, 0.98) !important;
     z-index: 999 !important;
     transition: left 0.3s ease !important;
-    overflow-y: auto !important;
-    padding: 1rem !important;
   }
 
   .categories-sidebar.open {
@@ -827,6 +814,21 @@
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 0.75rem !important;
     padding: 0 !important;
+  }
+
+  /* FIX: prevent grid cards from overflowing / clipping on mobile */
+  .items-grid {
+    width: 100% !important;
+  }
+
+  .menu-item-card {
+    min-width: 0 !important;
+  }
+
+  .item-name,
+  .item-description {
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
   }
 
   /* Recommended Section - Mobile - CAROUSEL */
