@@ -5,7 +5,7 @@ export default function Home() {
   return (
     <>
       {/* Hero Section with Single Image Placeholder */}
-      <section className="relative min-h-[70vh] flex items-center justify-center bg-gradient-to-b from-neutral-900 to-neutral-950">
+      <section className="relative min-h-[40vh] md:min-h-[70vh] flex items-center justify-center bg-gradient-to-b from-neutral-900 to-neutral-950">
         <div className="absolute inset-0 bg-neutral-800 animate-pulse">
           {/* Placeholder for hero image */}
           <div className="w-full h-full flex items-center justify-center text-neutral-600">
