@@ -757,7 +757,7 @@
     padding: 0 !important;
     background: rgba(255, 140, 0, 0.2) !important;
     border: 1px solid rgba(255, 140, 0, 0.4) !important;
-    border-radius: 0.5rem !important;
+    border-radius: 8px !important; /* matches Tailwind rounded-lg */
     align-items: center !important;
     justify-content: center !important;
     cursor: pointer !important;
