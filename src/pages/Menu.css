@@ -760,17 +760,20 @@
   .mobile-menu-toggle .hamburger-lines {
     display: flex !important;
     flex-direction: column !important;
-    justify-content: space-between !important;
-    width: 18px !important;
-    height: 12px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    width: 20px !important;
+    height: 16px !important;
   }
 
   .mobile-menu-toggle .hamburger-lines span {
     display: block !important;
-    width: 100% !important;
+    width: 20px !important;
     height: 2px !important;
     background: #ff8c00 !important;
-    border-radius: 1px !important;
+    border-radius: 0 !important;
+    flex-shrink: 0 !important;
   }
 
   .mobile-menu-toggle .hamburger-label {
