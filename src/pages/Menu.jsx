@@ -202,6 +202,17 @@ export default function Menu() {
   const [expandedItems, setExpandedItems] = useState(new Set());
   const { sidebarOpen, setSidebarOpen } = useMenuCategory();
 
+  useEffect(() => {
+  if (sidebarOpen) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = '';
+  }
+  return () => {
+    document.body.style.overflow = '';
+  };
+}, [sidebarOpen]);
+
   // Modals
   const [imgModal, setImgModal] = useState({
     open: false,
