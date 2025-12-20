@@ -5,6 +5,7 @@ import "./Menu.css";
 import { useCart } from "../context/CartContext";
 import { ShoppingCart, Plus, Check } from "lucide-react";
 import AddToCartModal from "../components/AddToCartModal";
+import { useMenuCategory } from '../context/MenuCategoryContext';
 
 import API_BASE from "../config/api";
 
@@ -199,7 +200,7 @@ export default function Menu() {
   const [activeTop, setActiveTop] = useState(null);
   const [activeSub, setActiveSub] = useState(null);
   const [expandedItems, setExpandedItems] = useState(new Set());
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { sidebarOpen, setSidebarOpen } = useMenuCategory();
 
   // Modals
   const [imgModal, setImgModal] = useState({
@@ -538,20 +539,6 @@ export default function Menu() {
             </div>
           </div>
         </div>
-
-        {/* Mobile Category Menu Toggle */}
-        <button
-          className="mobile-menu-toggle"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          aria-label={sidebarOpen ? "Close categories" : "Open categories"}
-        >
-          <span className="hamburger-lines" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </span>
-          <span className="hamburger-label">Categories</span>
-        </button>
 
         {/* Overlay */}
         {sidebarOpen && (

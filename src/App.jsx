@@ -7,6 +7,7 @@ import Footer from "./components/Footer";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import { LocationProvider } from "./context/LocationContext";
+import { MenuCategoryProvider } from './context/MenuCategoryContext';
 import API_BASE from "./config/api.js";
 import "./styles/index.css";
 
@@ -312,6 +313,7 @@ export default function App() {
   }, []);
 
   return (
+  <MenuCategoryProvider>
     <AuthProvider>
       <CartProvider>
         <LocationProvider>
@@ -332,5 +334,6 @@ export default function App() {
         </LocationProvider>
       </CartProvider>
     </AuthProvider>
+  </MenuCategoryProvider>
   );
 }
