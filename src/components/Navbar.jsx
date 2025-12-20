@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.svg';
 import UserMenu from './UserMenu';
 import AuthModal from './AuthModal';
+import { useMenuCategory } from '../context/MenuCategoryContext';
 import { useCart } from '../context/CartContext';
 import { 
   Home, 
@@ -55,6 +56,8 @@ export default function Navbar() {
     }
   };
 
+  // Inside the Navbar component, add this line with other hooks:
+  const { sidebarOpen, setSidebarOpen } = useMenuCategory();
   const isActive = (path) => location.pathname === path;
 
   return (
@@ -115,6 +118,27 @@ export default function Navbar() {
                     {Math.min(cartCount, 9)}
                   </span>
                 </Link>
+              )}
+
+              {location.pathname === '/menu' && (
+                <button
+                  onClick={() => setSidebarOpen(!sidebarOpen)}  
+                  className="
+                    lg:hidden
+                    w-12 h-12 p-0
+                    bg-orange-500/20 hover:bg-orange-500/30
+                    border border-orange-500/40
+                    rounded-lg
+                    flex items-center justify-center
+                    transition-colors
+                  "
+                >
+                  <div className="flex flex-col gap-1 w-5">
+                    <span className="block h-0.5 w-full bg-orange-500"></span>
+                    <span className="block h-0.5 w-full bg-orange-500"></span>
+                    <span className="block h-0.5 w-full bg-orange-500"></span>
+                  </div>
+                </button>
               )}
 
               {/* Login Button OR User Menu */}
