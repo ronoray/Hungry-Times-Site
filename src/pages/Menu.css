@@ -753,7 +753,7 @@
     background: rgba(11, 11, 11, 0.98) !important;
     padding-top: 5rem !important;
     -webkit-overflow-scrolling: touch !important;
-    padding-bottom: 6rem !important;
+    padding-bottom: 8rem !important;
   }
 
   .categories-sidebar.open {
