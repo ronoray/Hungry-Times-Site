@@ -751,6 +751,8 @@
     transition: left 0.3s ease !important;
     overflow-y: auto !important;
     background: rgba(11, 11, 11, 0.98) !important;
+    padding-top: 5rem !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 
   .categories-sidebar.open {
