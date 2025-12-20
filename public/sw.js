@@ -1,10 +1,11 @@
 // site/public/sw.js - Customer Site Service Worker
 // ============================================================================
 // Simplified version for hungrytimes.in customer portal
-// Features: Push notifications, offline caching, order updates
+// Features: Push notifications, smart caching, order updates
 // ============================================================================
 
-const CACHE_NAME = 'hungrytimes-customer-v1';
+const CACHE_NAME = 'hungry-times-v3-20241220'; // ← INCREMENT THIS ON EVERY DEPLOY!
+const STATIC_ASSETS = ['/icon-512x512.png', '/badge-72x72.png'];
 
 console.log('[SW] 🚀 Customer Site Service Worker loading');
 
@@ -14,7 +15,19 @@ console.log('[SW] 🚀 Customer Site Service Worker loading');
 
 self.addEventListener('install', (event) => {
   console.log('[SW] 🔧 Installing service worker');
-  self.skipWaiting();
+  
+  // Pre-cache critical assets
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('[SW] 💾 Pre-caching static assets');
+        return cache.addAll(STATIC_ASSETS);
+      })
+      .then(() => {
+        console.log('[SW] ✅ Static assets cached');
+        return self.skipWaiting(); // Activate immediately
+      })
+  );
 });
 
 // ============================================================================
@@ -23,61 +36,104 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   console.log('[SW] ⚡ Activating service worker');
-  event.waitUntil(self.clients.claim());
+  
+  event.waitUntil(
+    // Delete old caches
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('[SW] 🗑️ Deleting old cache:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+    .then(() => {
+      console.log('[SW] ✅ Old caches deleted');
+      return self.clients.claim(); // Take control immediately
+    })
+  );
 });
 
 // ============================================================================
-// FETCH EVENT - Caching strategy
+// FETCH EVENT - Smart Caching Strategy
 // ============================================================================
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Skip API requests (they need fresh data)
+  // Skip API requests (always fetch fresh)
   if (url.pathname.startsWith('/api/')) {
-    console.log('[SW] 🔄 API request - fetching fresh:', url.pathname);
     return;
   }
 
-  // Cache-first for static assets
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        if (response) {
-          console.log('[SW] 💾 Cache hit:', url.pathname);
-          return response;
-        }
-        
-        console.log('[SW] 🌐 Fetching from network:', url.pathname);
-        return fetch(event.request)
-          .then((response) => {
-            // Don't cache non-successful responses
-            if (!response || response.status !== 200) {
-              return response;
-            }
-            
-            // Cache successful responses
+  // Skip chrome-extension and other non-http requests
+  if (!url.protocol.startsWith('http')) {
+    return;
+  }
+
+  // Determine caching strategy based on file type
+  const isDocument = event.request.mode === 'navigate' || 
+                     event.request.destination === 'document' ||
+                     url.pathname.endsWith('.html');
+  
+  const isAsset = /\.(js|css|json)$/i.test(url.pathname);
+  const isMedia = /\.(png|jpg|jpeg|gif|svg|webp|woff|woff2|ttf|eot)$/i.test(url.pathname);
+
+  if (isDocument || isAsset) {
+    // NETWORK-FIRST for HTML/CSS/JS (always check for updates!)
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Clone and cache the response
+          if (response && response.status === 200) {
             const responseToCache = response.clone();
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                cache.put(event.request, responseToCache);
-              });
-            
-            return response;
-          })
-          .catch(() => {
-            // Return offline fallback if available
-            console.warn('[SW] ⚠️ Fetch failed, offline mode');
-            return new Response('Offline - no cached version available', {
-              status: 503,
-              statusText: 'Service Unavailable',
-              headers: new Headers({
-                'Content-Type': 'text/plain'
-              })
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
             });
-          });
-      })
-  );
+          }
+          return response;
+        })
+        .catch(() => {
+          // Network failed, try cache as fallback
+          return caches.match(event.request)
+            .then((cachedResponse) => {
+              if (cachedResponse) {
+                console.log('[SW] 📦 Network failed, serving from cache:', url.pathname);
+                return cachedResponse;
+              }
+              // No cache, return offline message
+              return new Response('Offline - please check your connection', {
+                status: 503,
+                statusText: 'Service Unavailable',
+                headers: new Headers({ 'Content-Type': 'text/plain' })
+              });
+            });
+        })
+    );
+  } else if (isMedia) {
+    // CACHE-FIRST for images/fonts (they rarely change)
+    event.respondWith(
+      caches.match(event.request)
+        .then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          // Not in cache, fetch and cache
+          return fetch(event.request)
+            .then((response) => {
+              if (response && response.status === 200) {
+                const responseToCache = response.clone();
+                caches.open(CACHE_NAME).then((cache) => {
+                  cache.put(event.request, responseToCache);
+                });
+              }
+              return response;
+            });
+        })
+    );
+  }
 });
 
 // ============================================================================
@@ -257,17 +313,18 @@ self.addEventListener('sync', (event) => {
 // INITIALIZATION COMPLETE
 // ============================================================================
 
-console.log('═══════════════════════════════════════════════════════');
+console.log('╔══════════════════════════════════════════════════════╗');
 console.log('[SW] ✅ Customer Site Service Worker Ready');
-console.log('[SW] Version: 1.0');
+console.log('[SW] Version: v3-20241220');
+console.log('[SW] Cache Strategy: NETWORK-FIRST for HTML/CSS/JS');
 console.log('[SW] Portal: Customer (hungrytimes.in)');
 console.log('[SW] Features:');
 console.log('     ✅ Push notifications');
 console.log('     ✅ Order status updates');
-console.log('     ✅ Offline caching');
-console.log('     ✅ Notification click handling');
+console.log('     ✅ Smart caching (network-first)');
+console.log('     ✅ Auto-update on new deploy');
 console.log('[SW] Supported notification types:');
 console.log('     - 📦 Order Status (accepted, preparing, delivered)');
 console.log('     - 🛒 New Order Confirmation');
 console.log('     - 💳 Payment Updates');
-console.log('═══════════════════════════════════════════════════════');
+console.log('╚══════════════════════════════════════════════════════╝');
