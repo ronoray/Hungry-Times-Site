@@ -757,10 +757,11 @@
   }
 
   .mobile-menu-toggle .hamburger-lines {
-    display: inline-flex !important;
+    display: flex !important;
     flex-direction: column !important;
-    gap: 4px !important;
-    width: 24px !important;
+    justify-content: space-between !important;
+    width: 20px !important;
+    height: 14px !important;
   }
 
   .mobile-menu-toggle .hamburger-lines span {
@@ -768,7 +769,7 @@
     width: 100% !important;
     height: 2px !important;
     background: #ffffff !important;
-    border-radius: 2px !important;
+    border-radius: 1px !important;
   }
 
   .mobile-menu-toggle .hamburger-label {
