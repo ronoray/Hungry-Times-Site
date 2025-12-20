@@ -123,7 +123,16 @@ export default function Navbar() {
               ) : (
                 <button
                   onClick={() => setShowAuthModal(true)}
-                  className="flex items-center gap-2 px-3 md:px-4 py-2 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 rounded-lg text-white font-medium transition-colors text-sm"
+                  className="
+                      bg-orange-500 hover:bg-orange-600 active:bg-orange-700
+                      rounded-lg text-white font-medium transition-colors text-sm
+                      flex items-center justify-center
+
+                      w-12 h-12 p-0            /* ✅ mobile: EXACT 48x48 */
+                      sm:w-auto sm:h-auto      /* ✅ larger screens: normal button */
+                      sm:px-3 md:px-4 sm:py-2  /* ✅ restore padding on bigger screens */
+                      sm:gap-2
+                    "
                 >
                   <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
