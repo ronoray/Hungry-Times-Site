@@ -1,4 +1,4 @@
-// src/components/Navbar.jsx - MODERN MOBILE UX
+// src/components/Navbar.jsx - FIXED: Force hamburger styles with !important
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { BRAND } from '../lib/constants';
@@ -56,7 +56,6 @@ export default function Navbar() {
     }
   };
 
-  // Inside the Navbar component, add this line with other hooks:
   const { sidebarOpen, setSidebarOpen } = useMenuCategory();
   const isActive = (path) => location.pathname === path;
 
@@ -120,23 +119,32 @@ export default function Navbar() {
                 </Link>
               )}
 
+              {/* HAMBURGER MENU - Mobile only, when on /menu page */}
               {location.pathname === '/menu' && (
                 <button
                   onClick={() => setSidebarOpen(!sidebarOpen)}  
-                  className="
-                    lg:hidden
-                    w-12 h-12 p-0
-                    bg-orange-500/20 hover:bg-orange-500/30
-                    border border-orange-500/40
-                    rounded-lg
-                    flex items-center justify-center
-                    transition-colors
-                  "
+                  className="lg:hidden w-12 h-12 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 rounded-lg transition-colors"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 0,
+                    margin: 0
+                  }}
                 >
-                  <div className="flex flex-col gap-1 w-5">
-                    <span className="block h-0.5 w-full bg-orange-500"></span>
-                    <span className="block h-0.5 w-full bg-orange-500"></span>
-                    <span className="block h-0.5 w-full bg-orange-500"></span>
+                  <div 
+                    className="flex flex-col w-5"
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <span className="block h-0.5 w-full bg-orange-500" style={{display: 'block', width: '100%', height: '2px', backgroundColor: '#f97316'}}></span>
+                    <span className="block h-0.5 w-full bg-orange-500" style={{display: 'block', width: '100%', height: '2px', backgroundColor: '#f97316'}}></span>
+                    <span className="block h-0.5 w-full bg-orange-500" style={{display: 'block', width: '100%', height: '2px', backgroundColor: '#f97316'}}></span>
                   </div>
                 </button>
               )}
@@ -152,9 +160,9 @@ export default function Navbar() {
                       rounded-lg text-white font-medium transition-colors text-sm
                       flex items-center justify-center
 
-                      w-12 h-12 p-0            /* ✅ mobile: EXACT 48x48 */
-                      sm:w-auto sm:h-auto      /* ✅ larger screens: normal button */
-                      sm:px-3 md:px-4 sm:py-2  /* ✅ restore padding on bigger screens */
+                      w-12 h-12 p-0
+                      sm:w-auto sm:h-auto
+                      sm:px-3 md:px-4 sm:py-2
                       sm:gap-2
                     "
                 >
