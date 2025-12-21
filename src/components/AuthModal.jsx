@@ -1117,8 +1117,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4">
-      <div className="bg-neutral-900 w-full md:max-w-md rounded-t-2xl md:rounded-2xl relative border-0 md:border border-neutral-800 max-h-[90vh] md:max-h-[95vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4" onClick={step !== STEPS.SUCCESS ? handleClose : undefined}>
+      <div 
+        className="bg-neutral-900 w-full md:max-w-md rounded-t-2xl md:rounded-2xl relative border-0 md:border border-neutral-800 flex flex-col"
+        style={{ maxHeight: 'calc(100vh - 2rem)' }}
+        onClick={(e) => e.stopPropagation()}
+      >
         {step !== STEPS.SUCCESS && (
           <button
             onClick={handleClose}
@@ -1128,8 +1132,10 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
           </button>
         )}
 
-        <div className="flex-1 overflow-y-auto p-6 md:p-8">
-          {renderStep()}
+        <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="p-6 md:p-8">
+            {renderStep()}
+          </div>
         </div>
       </div>
     </div>
