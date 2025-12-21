@@ -199,8 +199,18 @@ export default function Menu() {
 
   const [activeTop, setActiveTop] = useState(null);
   const [activeSub, setActiveSub] = useState(null);
-  const [expandedItems, setExpandedItems] = useState(new Set());
   const { sidebarOpen, setSidebarOpen } = useMenuCategory();
+
+  // Helper to check if item has any customization options
+  function hasVariantsOrAddons(it, type) {
+    const families = (it.families || []).filter((f) => f.type === type);
+    if (families.length > 0) {
+      return families.some((fam) => (fam.options || []).length > 0);
+    }
+    if (type === "variant") return (it.variants || []).length > 0;
+    if (type === "addon") return (it.addonGroups || []).length > 0;
+    return false;
+  }
 
   useEffect(() => {
   if (sidebarOpen) {
@@ -302,15 +312,6 @@ export default function Menu() {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const toggleExpand = (itemId) => {
-    setExpandedItems((prev) => {
-      const next = new Set(prev);
-      if (next.has(itemId)) next.delete(itemId);
-      else next.add(itemId);
-      return next;
-    });
-  };
-
   const handleCategoryClick = (tcId, firstSubId) => {
     setActiveTop(tcId);
     setActiveSub(firstSubId);
@@ -327,14 +328,12 @@ export default function Menu() {
     }, 100); // Small delay to ensure state has updated
   };
 
-  // ========================
-  // Card component
+// ========================
+  // Menu Item Card Component
   // ========================
   const MenuItemCard = ({ it, isRecommendedCard = false }) => {
     const hasVariants = hasVariantsOrAddons(it, "variant");
     const hasAddons = hasVariantsOrAddons(it, "addon");
-    const isExpanded = expandedItems.has(it.id);
-    const showExpandBtn = hasVariants || hasAddons;
 
     const DESC_MAX = isRecommendedCard
       ? DESC_MAX_RECOMMENDED
@@ -351,7 +350,6 @@ export default function Menu() {
         key={it.id}
         className={isRecommendedCard ? "recommended-item-card" : "menu-item-card"}
       >
-
         <div className="item-header">
           <div className="item-name-wrapper">
             <h3 className="item-name">{it.name}</h3>
@@ -394,7 +392,6 @@ export default function Menu() {
               onClick={() =>
                 setImgModal({
                   open: true,
-                  // If server returns absolute URL, use as-is; if server returns a root path, keep it.
                   urls: [imageUrl],
                   name: it.name,
                 })
@@ -404,75 +401,57 @@ export default function Menu() {
             </button>
           )}
 
-          {/* No options toggle on compact recommended cards */}
-          {showExpandBtn && !isRecommendedCard && (
-            <button
-              className="expand-btn"
-              onClick={() => toggleExpand(it.id)}
-            >
-              {isExpanded ? "− Hide Options" : "+ View Options"}
-            </button>
-          )}
-        </div>
-
-        {/* Add to Cart Button */}
-        <button
-          onClick={() => {
-            const hasOptions = hasVariantsOrAddons(it, 'variant') || hasVariantsOrAddons(it, 'addon');
-            
-            if (hasOptions) {
-              // Open modal for items with variants/addons
-              setSelectedItem(it);
-              setShowAddToCartModal(true);
-            } else {
-              // Add directly for simple items
-              addLine({
-                itemId: it.id,
-                name: it.name,
-                basePrice: parseFloat(it.basePrice || 0),
-                variant: null,
-                addons: [],
-                qty: 1
-              });
+          <button
+            onClick={() => {
+              const hasOptions = hasVariantsOrAddons(it, 'variant') || hasVariantsOrAddons(it, 'addon');
               
-              // Show success feedback
-              setAddedItems(prev => {
-                const next = new Set(prev);
-                next.add(it.id);
-                return next;
-              });
-              setTimeout(() => {
+              if (hasOptions) {
+                // Open modal for items with variants/addons
+                setSelectedItem(it);
+                setShowAddToCartModal(true);
+              } else {
+                // Add directly for simple items
+                addLine({
+                  itemId: it.id,
+                  name: it.name,
+                  basePrice: parseFloat(it.basePrice || 0),
+                  variant: null,
+                  addons: [],
+                  qty: 1
+                });
+                
+                // Show success feedback
                 setAddedItems(prev => {
                   const next = new Set(prev);
-                  next.delete(it.id);
+                  next.add(it.id);
                   return next;
                 });
-              }, 2000);
-            }
-          }}
-          className={`add-to-cart-btn ${addedItems.has(it.id) ? 'added' : ''}`}
-        >
-          {addedItems.has(it.id) ? (
-            <>
-              <Check className="btn-icon" /> Added to Cart
-            </>
-          ) : (
-            <>
-              <ShoppingCart className="btn-icon" /> Add to Cart
-            </>
-          )}
-        </button>
+                setTimeout(() => {
+                  setAddedItems(prev => {
+                    const next = new Set(prev);
+                    next.delete(it.id);
+                    return next;
+                  });
+                }, 2000);
+              }
+            }}
+            className={`add-to-cart-btn ${addedItems.has(it.id) ? 'added' : ''}`}
+          >
+            {addedItems.has(it.id) ? (
+              <>
+                <Check className="btn-icon" /> Added to Cart
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="btn-icon" /> Add to Cart
+              </>
+            )}
+          </button>
+        </div>
 
         {isRecommendedCard && (
           <div className="recommended-badge-bottom">
             <span className="star-badge">⭐ RECOMMENDED</span>
-          </div>
-        )}
-
-        {isExpanded && !isRecommendedCard && (
-          <div className="options-container">
-            {renderVariants(it)}
-            {renderAddons(it)}
           </div>
         )}
       </article>
@@ -695,77 +674,6 @@ export default function Menu() {
           }}
         />
       )}
-    </div>
-  );
-}
-
-// ========================
-// Helpers for variants/addons
-// ========================
-function hasVariantsOrAddons(it, type) {
-  const families = (it.families || []).filter((f) => f.type === type);
-  if (families.length > 0) {
-    return families.some((fam) => (fam.options || []).length > 0);
-  }
-  if (type === "variant") return (it.variants || []).length > 0;
-  if (type === "addon") return (it.addonGroups || []).length > 0;
-  return false;
-}
-
-function renderVariants(it) {
-  const famVariants = (it.families || []).filter((f) => f.type === "variant");
-  const blocks = famVariants.length
-    ? famVariants
-    : it.variants?.length
-    ? [{ name: "Variants", options: it.variants }]
-    : [];
-
-  if (!blocks.length) return null;
-
-  return (
-    <div className="variants-section">
-      {blocks.map((blk, i) => (
-        <div key={i}>
-          <div className="section-label">{blk.name || "Variants"}</div>
-          <div className="options-row">
-            {(blk.options || []).map((opt) => (
-              <span key={opt.id} className="option-chip">
-                {opt.name}
-                {formatPriceDelta(opt.priceDelta)}
-              </span>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function renderAddons(it) {
-  const famAddons = (it.families || []).filter((f) => f.type === "addon");
-  const blocks = famAddons.length
-    ? famAddons
-    : it.addonGroups?.length
-    ? it.addonGroups
-    : [];
-
-  if (!blocks.length) return null;
-
-  return (
-    <div className="addons-section">
-      {blocks.map((blk, i) => (
-        <div key={i}>
-          <div className="section-label">{blk.name || "Add-ons"}</div>
-          <div className="options-row">
-            {(blk.options || []).map((opt) => (
-              <span key={opt.id} className="option-chip">
-                {opt.name}
-                {formatPriceDelta(opt.priceDelta)}
-              </span>
-            ))}
-          </div>
-        </div>
-      ))}
     </div>
   );
 }

@@ -13,19 +13,56 @@ export function CartProvider({ children }) {
     localStorage.setItem("ht_cart", JSON.stringify(lines));
   }, [lines]);
 
-  // helpers
-  const calcUnit = (l) =>
-    (Number(l.basePrice) || 0) +
-    (Number(l.variant?.priceDelta) || 0) +
-    (Array.isArray(l.addons) ? l.addons.reduce((s,a)=> s + (Number(a.priceDelta)||0), 0) : 0);
+  // ============================================================================
+  // CALCULATE UNIT PRICE - Support both singular and array variants
+  // ============================================================================
+  const calcUnit = (l) => {
+    const basePrice = Number(l.basePrice) || 0;
+    
+    // Handle both old (singular variant) and new (array variants) structure
+    let variantPrice = 0;
+    if (Array.isArray(l.variants)) {
+      // New structure: variants array
+      variantPrice = l.variants.reduce((sum, v) => sum + (Number(v.priceDelta) || 0), 0);
+    } else if (l.variant) {
+      // Old structure: singular variant
+      variantPrice = Number(l.variant.priceDelta) || 0;
+    }
+    
+    // Addons always array
+    const addonPrice = Array.isArray(l.addons) 
+      ? l.addons.reduce((s, a) => s + (Number(a.priceDelta) || 0), 0) 
+      : 0;
+    
+    return basePrice + variantPrice + addonPrice;
+  };
 
+  // ============================================================================
+  // ADD LINE - Support both singular and array variants
+  // ============================================================================
   const addLine = (line) => setLines(prev => {
-    // merge same config
-    const same = (l) =>
-      l.itemId === line.itemId &&
-      JSON.stringify(l.variant || null) === JSON.stringify(line.variant || null) &&
-      JSON.stringify((l.addons||[]).map(a=>a.id).sort()) ===
-      JSON.stringify((line.addons||[]).map(a=>a.id).sort());
+    // Merge same config
+    const same = (l) => {
+      // Compare item IDs
+      if (l.itemId !== line.itemId) return false;
+      
+      // Compare variants (handle both singular and array)
+      const lVariants = Array.isArray(l.variants) 
+        ? l.variants 
+        : (l.variant ? [l.variant] : []);
+      const lineVariants = Array.isArray(line.variants) 
+        ? line.variants 
+        : (line.variant ? [line.variant] : []);
+      
+      const variantsMatch = JSON.stringify(lVariants.map(v => v.id).sort()) === 
+                           JSON.stringify(lineVariants.map(v => v.id).sort());
+      
+      // Compare addons
+      const addonsMatch = JSON.stringify((l.addons || []).map(a => a.id).sort()) ===
+                         JSON.stringify((line.addons || []).map(a => a.id).sort());
+      
+      return variantsMatch && addonsMatch;
+    };
 
     const idx = prev.findIndex(same);
     if (idx >= 0) {
@@ -33,8 +70,8 @@ export function CartProvider({ children }) {
       copy[idx] = { ...copy[idx], qty: copy[idx].qty + (line.qty || 1) };
       return copy;
     }
-    const key = (globalThis.crypto?.randomUUID?.() ||
-                Math.random().toString(36).slice(2));
+    
+    const key = (globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2));
     return [...prev, { ...line, qty: line.qty || 1, key }];
   });
 

@@ -97,7 +97,7 @@ export default function CartDrawer({
                         )}
                       </div>
                       <button
-                        onClick={() => removeLine(idx)}
+                        onClick={() => removeLine(line.key)}
                         className="text-red-400 hover:text-red-300 p-1 flex-shrink-0"
                         aria-label="Remove item"
                       >
@@ -108,7 +108,7 @@ export default function CartDrawer({
                     {/* Quantity Controls */}
                     <div className="flex items-center gap-3 mt-2">
                       <button
-                        onClick={() => updateQty(idx, Math.max(1, line.qty - 1))}
+                        onClick={() => updateQty(line.key, Math.max(1, line.qty - 1))}
                         className="w-8 h-8 bg-neutral-700 rounded hover:bg-neutral-600 active:bg-neutral-500 flex items-center justify-center text-white transition-colors"
                         aria-label="Decrease quantity"
                       >
@@ -118,7 +118,7 @@ export default function CartDrawer({
                         {line.qty}
                       </span>
                       <button
-                        onClick={() => updateQty(idx, line.qty + 1)}
+                        onClick={() => updateQty(line.key, line.qty + 1)}
                         className="w-8 h-8 bg-neutral-700 rounded hover:bg-neutral-600 active:bg-neutral-500 flex items-center justify-center text-white transition-colors"
                         aria-label="Increase quantity"
                       >

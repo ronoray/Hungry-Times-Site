@@ -12,13 +12,14 @@ import Menu from "./Menu";
 import AddToCartModal from "../components/AddToCartModal";
 import CartDrawer from "../components/CartDrawer";
 import GoogleMapsAutocomplete from "../components/GoogleMapsAutocomplete";
-import { ShoppingCart, MapPin, MessageSquare, Loader } from "lucide-react";
+import { ShoppingCart, MapPin, MessageSquare, Loader, Trash2 } from "lucide-react";
+
 
 import API_BASE from '../config/api.js';
 
 export default function Order() {
   const { isAuthenticated, customer } = useAuth();
-  const { lines, clearCart, addLine } = useCart();
+  const { lines, clearCart, addLine, removeLine } = useCart();
 
   // UI State
   const [selectedItemForModal, setSelectedItemForModal] = useState(null);
@@ -333,7 +334,7 @@ export default function Order() {
 
                 return (
                   <div
-                    key={idx}
+                    key={line.key}
                     className="bg-neutral-800 rounded-lg p-4 flex items-start justify-between gap-4"
                   >
                     <div className="flex-1 min-w-0">
@@ -350,7 +351,18 @@ export default function Order() {
                       )}
                       <p className="text-orange-400 font-semibold mt-2">₹{lineTotal}</p>
                     </div>
-                    <p className="text-white font-bold text-lg whitespace-nowrap">x{line.qty}</p>
+
+                    {/* Remove and Quantity controls */}
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => removeLine(line.key)}
+                        className="text-red-400 hover:text-red-300 p-2"
+                        aria-label="Remove item"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                      <p className="text-white font-bold text-lg whitespace-nowrap">x{line.qty}</p>
+                    </div>
                   </div>
                 );
               })}
