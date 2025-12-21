@@ -512,18 +512,36 @@ export default function Menu() {
               />
               <div className="hero-content-overlay">
                 <div className="hero-cta">
-                  <p className="cta-text">Ready to order?</p>
-                  <a href="tel:+918420822919" className="cta-button">
-                    📞 Call 8420822919
-                  </a>
-                  <a
-                    href="https://wa.me/918420822919"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="cta-button cta-button-whatsapp"
+                  <p className="cta-text">Order Online Now!</p>
+                  
+                  {/* Primary CTA - Start Order */}
+                  <button
+                    onClick={() => {
+                      // Scroll to first menu section
+                      const firstSection = rightPaneRef.current?.querySelector('[data-sub]');
+                      if (firstSection) {
+                        firstSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }
+                    }}
+                    className="cta-button cta-button-primary"
                   >
-                    💬 WhatsApp
-                  </a>
+                    🛒 Start Your Order
+                  </button>
+                  
+                  {/* Secondary CTAs - Call & WhatsApp */}
+                  <div className="cta-secondary-group">
+                    <a href="tel:+918420822919" className="cta-button cta-button-secondary">
+                      📞 Call
+                    </a>
+                    <a
+                      href="https://wa.me/918420822919"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="cta-button cta-button-secondary cta-button-whatsapp-secondary"
+                    >
+                      💬 WhatsApp
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>

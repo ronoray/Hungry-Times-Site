@@ -202,6 +202,114 @@
   box-shadow: 0 6px 20px rgba(37, 211, 102, 0.6) !important;
 }
 
+/* Primary CTA - Emphasized Online Ordering */
+.cta-button-primary {
+  background: linear-gradient(135deg, #f97316, #ea580c) !important;
+  color: #ffffff !important;
+  font-size: 1.125rem !important;
+  font-weight: 700 !important;
+  padding: 0.875rem 2rem !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.5) !important;
+  min-width: 220px !important;
+  cursor: pointer !important;
+}
+
+.cta-button-primary:hover {
+  background: linear-gradient(135deg, #ea580c, #c2410c) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.7) !important;
+}
+
+.cta-button-primary:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.5) !important;
+}
+
+/* Secondary CTA Group */
+.cta-secondary-group {
+  display: flex !important;
+  gap: 0.75rem !important;
+  margin-top: 0.5rem !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Secondary CTAs - Smaller, Less Prominent */
+.cta-button-secondary {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  padding: 0.625rem 1.25rem !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  backdrop-filter: blur(10px) !important;
+  min-width: 120px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+.cta-button-secondary:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.cta-button-secondary:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* WhatsApp Secondary - Keep green tint */
+.cta-button-whatsapp-secondary {
+  background: rgba(37, 211, 102, 0.2) !important;
+  border-color: rgba(37, 211, 102, 0.4) !important;
+}
+
+.cta-button-whatsapp-secondary:hover {
+  background: rgba(37, 211, 102, 0.3) !important;
+  border-color: rgba(37, 211, 102, 0.5) !important;
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3) !important;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .cta-button-primary {
+    font-size: 1rem !important;
+    padding: 0.75rem 1.5rem !important;
+    min-width: 200px !important;
+  }
+  
+  .cta-button-secondary {
+    font-size: 0.813rem !important;
+    padding: 0.5rem 1rem !important;
+    min-width: 100px !important;
+  }
+  
+  .cta-secondary-group {
+    gap: 0.5rem !important;
+    margin-top: 0.5rem !important;
+  }
+  
+  .cta-text {
+    font-size: 1.25rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .cta-button-primary {
+    font-size: 0.938rem !important;
+    padding: 0.688rem 1.25rem !important;
+    min-width: 180px !important;
+  }
+  
+  .cta-button-secondary {
+    font-size: 0.75rem !important;
+    padding: 0.5rem 0.875rem !important;
+    min-width: 90px !important;
+  }
+}
+
 .menu-container {
   max-width: 1440px !important;
   margin: 0 auto !important;
