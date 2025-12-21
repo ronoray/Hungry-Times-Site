@@ -1117,12 +1117,15 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4" onClick={step !== STEPS.SUCCESS ? handleClose : undefined}>
+    <div 
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center z-50" 
+      onClick={step !== STEPS.SUCCESS ? handleClose : undefined}
+    >
       <div 
-        className="bg-neutral-900 w-full md:max-w-md rounded-t-2xl md:rounded-2xl relative border-0 md:border border-neutral-800 flex flex-col"
-        style={{ maxHeight: 'calc(100vh - 2rem)' }}
+        className="bg-neutral-900 w-full md:max-w-md md:rounded-2xl relative border-0 md:border border-neutral-800 flex flex-col h-[95vh] md:h-auto md:max-h-[85vh] rounded-t-3xl"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Close Button */}
         {step !== STEPS.SUCCESS && (
           <button
             onClick={handleClose}
@@ -1132,10 +1135,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
           </button>
         )}
 
-        <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
-          <div className="p-6 md:p-8">
-            {renderStep()}
-          </div>
+        {/* Scrollable Content Area */}
+        <div 
+          className="flex-1 overflow-y-auto overscroll-contain px-6 py-8 md:px-8" 
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          {renderStep()}
         </div>
       </div>
     </div>
