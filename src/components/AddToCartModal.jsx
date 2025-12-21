@@ -305,7 +305,7 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
       onClick={onClose}
     >
       <div
-        className="bg-neutral-900 w-full md:max-w-2xl rounded-t-2xl md:rounded-2xl overflow-y-auto max-h-[90vh] md:max-h-[95vh] relative"
+        className="bg-neutral-900 w-full md:max-w-2xl rounded-t-2xl md:rounded-2xl relative flex flex-col overflow-hidden max-h-[90dvh] md:max-h-[95vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* CLOSE BUTTON - ALWAYS VISIBLE */}
@@ -317,38 +317,41 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
           <X className="w-5 h-5 md:w-6 md:h-6" />
         </button>
 
-        {/* HEADER IMAGE */}
-        {item.imageUrl && (
-          <div className="w-full h-48 md:h-64 bg-neutral-800 rounded-t-2xl overflow-hidden">
-            <img
-              src={imageUrl}
-              alt={item.name}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.target.src = "/images/placeholder-dish.jpg";
-              }}
-            />
-          </div>
-        )}
+        {/* SCROLL AREA */}
+        <div className="flex-1 min-h-0 overflow-y-auto [-webkit-overflow-scrolling:touch] overscroll-contain touch-pan-y">
 
-        {/* CONTENT SECTION */}
-        <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-6">
+          {/* HEADER IMAGE */}
+          {item.imageUrl && (
+            <div className="w-full h-48 md:h-64 bg-neutral-800 rounded-t-2xl overflow-hidden">
+              <img
+                src={imageUrl}
+                alt={item.name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.src = "/images/placeholder-dish.jpg";
+                }}
+              />
+            </div>
+          )}
 
-          {/* TITLE & DESCRIPTION */}
-          <div className="pr-12">
-            <h2 className="text-xl md:text-2xl font-bold text-white">
-              {item.name}
-            </h2>
-            {item.description && (
-              <p className="text-neutral-400 text-sm mt-2">
-                {item.description}
+          {/* ALL MODAL CONTENT STARTS HERE */}
+          <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-6">
+
+            {/* TITLE & DESCRIPTION */}
+            <div className="pr-12">
+              <h2 className="text-xl md:text-2xl font-bold text-white">
+                {item.name}
+              </h2>
+              {item.description && (
+                <p className="text-neutral-400 text-sm mt-2">
+                  {item.description}
+                </p>
+              )}
+              <p className="text-orange-400 text-lg md:text-xl mt-2 font-semibold">
+                ₹{basePrice.toFixed(0)}
+                <span className="text-neutral-500 text-xs ml-2">base price</span>
               </p>
-            )}
-            <p className="text-orange-400 text-lg md:text-xl mt-2 font-semibold">
-              ₹{basePrice.toFixed(0)}
-              <span className="text-neutral-500 text-xs ml-2">base price</span>
-            </p>
-          </div>
+            </div>
 
           {/* VARIANTS FROM VARIANTS TABLE (Optional) */}
           {variants.length > 0 && (
@@ -667,8 +670,9 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
               Add {quantity} to Cart — ₹{finalTotal.toFixed(0)}
             </span>
           </button>
-        </div>
-      </div>
-    </div>
+        </div> 
+      </div>   
+    </div>     
+  </div>       
   );
 }
