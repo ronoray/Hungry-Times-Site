@@ -1118,17 +1118,19 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4">
-      <div className="bg-neutral-900 w-full md:max-w-md rounded-t-2xl md:rounded-2xl p-6 md:p-8 relative border-0 md:border border-neutral-800 max-h-[90vh] md:max-h-[95vh] overflow-y-auto">
+      <div className="bg-neutral-900 w-full md:max-w-md rounded-t-2xl md:rounded-2xl relative border-0 md:border border-neutral-800 max-h-[90vh] md:max-h-[95vh] flex flex-col">
         {step !== STEPS.SUCCESS && (
           <button
             onClick={handleClose}
-            className="absolute top-4 right-4 text-neutral-400 hover:text-white transition-colors"
+            className="absolute top-4 right-4 text-neutral-400 hover:text-white transition-colors z-10"
           >
             <X className="w-6 h-6" />
           </button>
         )}
 
-        {renderStep()}
+        <div className="flex-1 overflow-y-auto p-6 md:p-8">
+          {renderStep()}
+        </div>
       </div>
     </div>
   );
