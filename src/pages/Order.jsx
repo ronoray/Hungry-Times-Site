@@ -271,7 +271,7 @@ export default function Order() {
 
   if (orderConfirmed) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-[#0B0B0B]">
+      <div className="min-h-screen flex items-center justify-center p-4 pt-20 pb-24 md:pt-20 md:pb-8 bg-[#0B0B0B]">
         <div className="text-center max-w-md">
           <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <ShoppingCart className="w-8 h-8 text-green-500" />
@@ -294,14 +294,14 @@ export default function Order() {
   // ============================================================================
 
   return (
-    <div className="min-h-screen bg-[#0B0B0B]">
+    <div className="min-h-screen bg-[#0B0B0B] pt-20 pb-24 md:pt-20 md:pb-8">
       {/* MOBILE: Menu at top */}
-      <div className="md:hidden mb-6 px-4 pt-4">
+      <div className="md:hidden mb-6 px-4">
         <Menu />
       </div>
 
       {/* MAIN CONTENT: 2-3 column layout */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 px-4 md:px-8 py-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 px-4 md:px-8 py-4 md:py-6">
         
         {/* LEFT: Menu (Desktop only) */}
         <div className="hidden md:block md:col-span-1">
@@ -466,7 +466,7 @@ export default function Order() {
       {cartCount > 0 && (
         <button
           onClick={() => setCartDrawerOpen(true)}
-          className="md:hidden fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-orange-500 hover:bg-orange-600 shadow-2xl flex items-center justify-center text-white font-bold transition-transform"
+          className="md:hidden fixed bottom-28 right-6 z-40 w-14 h-14 rounded-full bg-orange-500 hover:bg-orange-600 shadow-2xl flex items-center justify-center text-white font-bold transition-transform"
           aria-label="Open cart"
         >
           <ShoppingCart className="w-6 h-6" />
@@ -478,7 +478,7 @@ export default function Order() {
 
       {/* MOBILE: Sticky Payment Footer */}
       {lines.length > 0 && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800 p-3 space-y-2 z-30">
+        <div className="md:hidden fixed left-0 right-0 bg-neutral-900 border-t border-neutral-800 p-3 space-y-2 z-[60] bottom-20 pb-safe">
           {/* Quick Total */}
           <div className="flex justify-between items-center px-1">
             <span className="text-neutral-400 text-sm">Total:</span>
@@ -515,7 +515,7 @@ export default function Order() {
 
       {/* Mobile Spacing - Prevent content hiding */}
       {lines.length > 0 && (
-        <div className="md:hidden h-40" />
+        <div className="md:hidden h-48" />
       )}
 
       {/* MOBILE: Cart drawer */}
