@@ -270,6 +270,15 @@ export default function Order() {
   // ============================================================================
 
   if (orderConfirmed) {
+
+    useEffect(() => {
+      // Scroll to top on mobile when page loads
+      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 100);
+      }
+    }, []);
     return (
       <div className="min-h-screen flex items-center justify-center p-4 pt-20 pb-24 md:pt-20 md:pb-8 bg-[#0B0B0B]">
         <div className="text-center max-w-md">
@@ -294,9 +303,9 @@ export default function Order() {
   // ============================================================================
 
   return (
-    <div className="min-h-screen bg-[#0B0B0B] pt-20 pb-24 md:pt-20 md:pb-8">
+    <div className="min-h-screen bg-[#0B0B0B] pt-20 pb-24 md:pt-20 md:pb-8 overflow-y-auto">
       {/* MOBILE: Menu at top */}
-      <div className="md:hidden mb-6 px-4">
+      <div className="md:hidden mb-6 px-4 max-h-[40vh] overflow-y-auto">
         <Menu />
       </div>
 
@@ -309,8 +318,8 @@ export default function Order() {
         </div>
 
         {/* CENTER: Cart items (full width mobile, spans 2 columns desktop) */}
-        <div className="md:col-span-2">
-          <h2 className="text-2xl font-bold text-white mb-4">Your Order</h2>
+        <div className="md:col-span-2 mb-6">
+          <h2 className="text-2xl font-bold text-white mb-4 sticky top-20 bg-[#0B0B0B] py-2 z-10">Your Order</h2>
 
           {lines.length === 0 ? (
             <div className="bg-neutral-800 rounded-lg p-8 text-center">
