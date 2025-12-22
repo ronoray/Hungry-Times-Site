@@ -305,7 +305,7 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
       onClick={onClose}
     >
       <div
-        className="bg-neutral-900 w-full md:max-w-2xl rounded-t-2xl md:rounded-2xl relative flex flex-col overflow-hidden h-[95vh] md:h-auto md:max-h-[85vh]"
+        className="bg-neutral-900 w-full md:max-w-2xl rounded-t-2xl md:rounded-2xl relative flex flex-col overflow-hidden h-[85vh] md:h-auto md:max-h-[85vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* CLOSE BUTTON - ALWAYS VISIBLE */}
@@ -335,7 +335,7 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
           )}
 
           {/* ALL MODAL CONTENT STARTS HERE */}
-          <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-8 md:pb-6 safe-area-inset-bottom">
+          <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-24 md:pb-6">
 
             {/* TITLE & DESCRIPTION */}
             <div className="pr-12">
