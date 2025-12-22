@@ -335,7 +335,7 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
           )}
 
           {/* ALL MODAL CONTENT STARTS HERE */}
-          <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-6">
+          <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-8 md:pb-6 safe-area-inset-bottom">
 
             {/* TITLE & DESCRIPTION */}
             <div className="pr-12">
