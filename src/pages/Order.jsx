@@ -379,6 +379,59 @@ export default function Order() {
           )}
         </div>
 
+        {/* MOBILE: Delivery Address & Notes (SHOW ON MOBILE ONLY) */}
+        <div className="md:hidden space-y-4 px-4">
+          {/* Delivery Address */}
+          <div>
+            <label className="block font-semibold text-white text-sm mb-2">
+              <MapPin className="w-4 h-4 inline mr-2" />
+              Delivery Address *
+            </label>
+            <GoogleMapsAutocomplete
+              onSelect={(address) => setDeliveryAddress(address.address)}
+              defaultValue={deliveryAddress}
+            />
+            {!deliveryAddress && (
+              <p className="text-red-400 text-xs mt-1">
+                Please enter delivery address to continue
+              </p>
+            )}
+          </div>
+
+          {/* Special Notes */}
+          <div>
+            <label className="block font-semibold text-white text-sm mb-2">
+              <MessageSquare className="w-4 h-4 inline mr-2" />
+              Special Notes (Optional)
+            </label>
+            <textarea
+              value={specialNotes}
+              onChange={(e) => setSpecialNotes(e.target.value)}
+              placeholder="Any special requests? (e.g., extra spicy, no onions)"
+              className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-neutral-500"
+              rows="2"
+            />
+          </div>
+
+          {/* Order Summary on Mobile */}
+          <div className="bg-neutral-800 rounded-lg p-4">
+            <div className="space-y-2">
+              <div className="flex justify-between text-neutral-400 text-sm">
+                <span>Subtotal</span>
+                <span>₹{cartTotal}</span>
+              </div>
+              <div className="flex justify-between text-neutral-400 text-sm">
+                <span>GST (5%)</span>
+                <span>₹{gstAmount}</span>
+              </div>
+              <div className="border-t border-neutral-700 pt-2 flex justify-between font-bold text-white">
+                <span>Total</span>
+                <span className="text-orange-500">₹{finalTotal}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* RIGHT: Order summary & checkout (Desktop only) */}
         <div className="hidden md:block md:col-span-1">
           <div className="bg-neutral-800 rounded-lg p-6 space-y-6">
