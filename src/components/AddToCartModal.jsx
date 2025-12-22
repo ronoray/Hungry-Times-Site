@@ -305,7 +305,7 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
       onClick={onClose}
     >
       <div
-        className="bg-neutral-900 w-full md:max-w-2xl rounded-t-2xl md:rounded-2xl relative flex flex-col overflow-hidden max-h-[90dvh] md:max-h-[95vh]"
+        className="bg-neutral-900 w-full md:max-w-2xl rounded-t-2xl md:rounded-2xl relative flex flex-col overflow-hidden h-[95vh] md:h-auto md:max-h-[85vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* CLOSE BUTTON - ALWAYS VISIBLE */}
