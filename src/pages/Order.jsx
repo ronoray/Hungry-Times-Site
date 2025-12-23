@@ -266,19 +266,17 @@ export default function Order() {
   };
 
   // ============================================================================
-  // ORDER CONFIRMATION
-  // ============================================================================
+
+  // Scroll to top when order is confirmed (mobile only)
+  useEffect(() => {
+    if (orderConfirmed && typeof window !== 'undefined' && window.innerWidth < 768) {
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
+    }
+  }, [orderConfirmed]);
 
   if (orderConfirmed) {
-
-    useEffect(() => {
-      // Scroll to top on mobile when page loads
-      if (typeof window !== 'undefined' && window.innerWidth < 768) {
-        setTimeout(() => {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }, 100);
-      }
-    }, []);
     return (
       <div className="min-h-screen flex items-center justify-center p-4 pt-20 pb-24 md:pt-20 md:pb-8 bg-[#0B0B0B]">
         <div className="text-center max-w-md">
