@@ -1,4 +1,4 @@
-// site/src/App.jsx - FIXED: Push notifications don't block page load
+// site/src/App.jsx - FIXED: No guest subscriptions, auth required
 import { useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import Navbar from "./components/Navbar";
@@ -37,7 +37,7 @@ function urlBase64ToUint8Array(base64String) {
 
 /**
  * Register service worker and setup push notifications
- * ⚠️ IMPORTANT: This runs in background and should NOT block app rendering
+ * ⚠️ IMPORTANT: Requires authentication - customer must be logged in
  */
 async function setupPushNotifications() {
   try {
@@ -90,8 +90,7 @@ async function setupPushNotifications() {
 
     if (!keyResponse.ok) {
       console.warn(`[Push] ⚠️ Failed to get VAPID key: ${keyResponse.status}`);
-      // Don't throw - push is optional
-      return true;
+      return false;
     }
 
     const { publicKey } = await keyResponse.json();
@@ -101,7 +100,7 @@ async function setupPushNotifications() {
     const vapidArray = urlBase64ToUint8Array(publicKey);
     if (!vapidArray) {
       console.warn('[Push] ⚠️ Invalid VAPID key format');
-      return true;
+      return false;
     }
 
     // Subscribe to push notifications (with timeout)
@@ -120,30 +119,25 @@ async function setupPushNotifications() {
     
     console.log('[Push] ✅ Push subscription created');
 
-    // Get authentication token (optional - guest users might not have one)
+    // ✅ Get authentication token - REQUIRED for push subscription
     const token = localStorage.getItem('customerToken');
-    const hasAuth = !!token;
 
-    // Send subscription to backend (optional - doesn't block if fails)
-    console.log('[Push] 🤝 Sending subscription to backend...', { hasAuth });
+    if (!token) {
+      console.log('[Push] ⚠️ No auth token - customer must login first to subscribe to push');
+      return false;
+    }
+
+    // Send subscription to backend with authentication
+    console.log('[Push] 🤝 Sending subscription to backend with auth token...');
     
     try {
-      const headers = {
-        'Content-Type': 'application/json'
-      };
-      
-      // Only add auth if token exists
-      if (hasAuth) {
-        headers['Authorization'] = `Bearer ${token}`;
-        console.log('[Push] 📋 Including auth token with subscription');
-      } else {
-        console.log('[Push] ℹ️ No auth token, sending as guest subscription');
-      }
-
       const subResponse = await Promise.race([
         fetch(`${API_BASE}/push/subscribe`, {
           method: 'POST',
-          headers,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
           body: JSON.stringify({ 
             subscription: subscription.toJSON() 
           })
@@ -156,32 +150,22 @@ async function setupPushNotifications() {
       if (!subResponse.ok) {
         const errorText = await subResponse.text();
         console.warn(`[Push] ⚠️ Backend subscription failed: ${subResponse.status} - ${errorText}`);
-        
-        // Check if it's auth-related
-        if (subResponse.status === 401) {
-          console.log('[Push] ℹ️ 401 Unauthorized - guest user, subscription stored locally');
-          console.log('[Push] ℹ️ When user logs in, subscription will be attached to account');
-        }
-        
-        // Don't fail - subscription is still registered locally
-        return true;
+        return false;
       }
 
       const result = await subResponse.json();
       console.log('[Push] ✅ Successfully subscribed to push notifications:', result);
       return true;
     } catch (error) {
-      console.warn('[Push] ⚠️ Subscription to backend failed:', error.message);
-      // Subscription is still created locally, continue anyway
-      console.log('[Push] ℹ️ Subscription stored locally, will sync when user logs in');
-      return true;
+      console.error('[Push] ❌ Subscription to backend failed:', error.message);
+      return false;
     }
 
   } catch (error) {
     // ⚠️ DON'T THROW - Log the error but let app continue
     console.warn('[Push] ⚠️ Push setup warning:', error.message);
     // Push notifications are optional - app should work without them
-    return true;
+    return false;
   }
 }
 
@@ -200,7 +184,6 @@ function setupServiceWorkerMessages() {
       switch (type) {
         case 'push-received':
           console.log('[Push] 📬 Push notification received:', data);
-          // Dispatch custom event for app components to react to
           window.dispatchEvent(new CustomEvent('notification:received', { detail: data }));
           break;
 
@@ -215,7 +198,6 @@ function setupServiceWorkerMessages() {
           break;
 
         case 'get-token':
-          // Service worker requests auth token
           const token = localStorage.getItem('customerToken');
           event.ports[0]?.postMessage({ token });
           break;
@@ -234,7 +216,6 @@ function setupServiceWorkerMessages() {
 /**
  * Re-subscribe on login
  * Call this from AuthContext after customer successfully logs in
- * This attaches the local subscription to the customer account
  */
 export async function resubscribeOnLogin() {
   console.log('[Push] 🔄 Re-subscribing after customer login...');
@@ -270,70 +251,75 @@ export async function resubscribeOnLogin() {
           return true;
         } else {
           const errorText = await subResponse.text();
-          console.warn('[Push] ⚠️ Re-subscription after login failed:', subResponse.status);
+          console.warn('[Push] ⚠️ Re-subscription after login failed:', subResponse.status, errorText);
           return false;
         }
       } else {
-        console.log('[Push] ℹ️ No local subscription found yet, will create on next refresh');
-        return false;
+        console.log('[Push] ℹ️ No local subscription found, will create new subscription...');
+        // No existing subscription, create one
+        return await setupPushNotifications();
       }
     }
+    return false;
   } catch (error) {
     console.error('[Push] ❌ Re-subscription after login error:', error);
     return false;
   }
 }
 
-/**
- * Main App Component
- */
 export default function App() {
   useEffect(() => {
-    // Setup push notifications on app load
-    // ✅ FIXED: Run in background - don't block page rendering
-    console.log('[Push] 🚀 App mounted, initializing push notifications...');
+    console.log('[Push] 🚀 App mounted');
     
-    // Fire and forget - don't await
-    setupPushNotifications()
-      .then(success => {
-        if (success) {
-          console.log('[Push] ✅ Push notifications initialized');
-        } else {
-          console.warn('[Push] ⚠️ Push notifications setup skipped - app continues');
-        }
-      })
-      .catch(error => {
-        // Catch any uncaught errors
-        console.warn('[Push] ⚠️ Push setup error (non-blocking):', error.message);
-      });
-
     // Setup service worker message listener
     setupServiceWorkerMessages();
+    
+    // ✅ Check if user is already logged in
+    const token = localStorage.getItem('customerToken');
+    
+    if (token) {
+      console.log('[Push] 🔑 Customer is logged in, setting up push notifications...');
+      
+      // Subscribe to push notifications
+      setupPushNotifications()
+        .then(success => {
+          if (success) {
+            console.log('[Push] ✅ Push notifications initialized');
+          } else {
+            console.warn('[Push] ⚠️ Push setup failed but app continues');
+          }
+        })
+        .catch(error => {
+          console.warn('[Push] ⚠️ Push setup error (non-blocking):', error.message);
+        });
+    } else {
+      console.log('[Push] ℹ️ Customer not logged in yet, waiting for login to setup push');
+    }
 
   }, []);
 
   return (
-  <MenuCategoryProvider>
-    <AuthProvider>
-      <CartProvider>
-        <LocationProvider>
-          <div className="min-h-screen flex flex-col bg-[#0B0B0B] text-white">
-            
-            {/* Navigation Bar */}
-            <Navbar />
+    <MenuCategoryProvider>
+      <AuthProvider>
+        <CartProvider>
+          <LocationProvider>
+            <div className="min-h-screen flex flex-col bg-[#0B0B0B] text-white">
+              
+              {/* Navigation Bar */}
+              <Navbar />
 
-            {/* Main Content */}
-            <main className="flex-1">
-              <Outlet />
-            </main>
+              {/* Main Content */}
+              <main className="flex-1">
+                <Outlet />
+              </main>
 
-            {/* Footer */}
-            <Footer />
+              {/* Footer */}
+              <Footer />
 
-          </div>
-        </LocationProvider>
-      </CartProvider>
-    </AuthProvider>
-  </MenuCategoryProvider>
+            </div>
+          </LocationProvider>
+        </CartProvider>
+      </AuthProvider>
+    </MenuCategoryProvider>
   );
 }
