@@ -321,7 +321,7 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
         <div className="flex-1 min-h-0 overflow-y-auto [-webkit-overflow-scrolling:touch] overscroll-contain touch-pan-y">
 
           {/* HEADER IMAGE */}
-          {item.imageUrl && (
+          {item.image_Url && (
             <div className="w-full h-48 md:h-64 bg-neutral-800 rounded-t-2xl overflow-hidden">
               <img
                 src={imageUrl}
