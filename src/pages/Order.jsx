@@ -345,7 +345,7 @@ export default function Order() {
                     className="bg-neutral-800 rounded-lg p-4 flex items-start justify-between gap-4"
                   >
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-white">{line.name}</h4>
+                      <h4 className="font-semibold text-white break-words">{line.itemName || line.name}</h4>
                       {line.variants && line.variants.length > 0 && (
                         <p className="text-sm text-neutral-400 mt-1">
                           {line.variants.map((v) => v.name).join(", ")}

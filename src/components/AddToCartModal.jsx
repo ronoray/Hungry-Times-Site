@@ -275,8 +275,8 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
   // IMAGE URL HANDLING
   // ============================================================================
 
-  const imageUrl = item.imageUrl
-    ? `${CDN_BASE}${item.imageUrl}`
+  const imageUrl = item.image_url
+    ? `${CDN_BASE}${item.image_url}`
     : "/images/placeholder-dish.jpg";
 
   // ============================================================================
