@@ -252,7 +252,7 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
 
     const lineItem = {
       itemId: item.id,
-      name: item.name,
+      itemName: item.name,
       basePrice: basePrice,
       variants: variantList.map((v) => ({
         id: v.id,
@@ -275,9 +275,7 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
   // IMAGE URL HANDLING
   // ============================================================================
 
-  const imageUrl = item.image_url
-    ? `${CDN_BASE}${item.image_url}`
-    : "/images/placeholder-dish.jpg";
+  const imageUrl = item.imageUrl || "/images/placeholder-dish.jpg";
 
   // ============================================================================
   // HELPER: Check if option is locked (packaging)
@@ -321,7 +319,7 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
         <div className="flex-1 min-h-0 overflow-y-auto [-webkit-overflow-scrolling:touch] overscroll-contain touch-pan-y">
 
           {/* HEADER IMAGE */}
-          {item.image_Url && (
+          {item.imageUrl && (
             <div className="w-full h-48 md:h-64 bg-neutral-800 rounded-t-2xl overflow-hidden">
               <img
                 src={imageUrl}
