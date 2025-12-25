@@ -8,7 +8,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
-import Menu from "./Menu";
 import AddToCartModal from "../components/AddToCartModal";
 import CartDrawer from "../components/CartDrawer";
 import GoogleMapsAutocomplete from "../components/GoogleMapsAutocomplete";
@@ -302,22 +301,13 @@ export default function Order() {
 
   return (
     <div className="min-h-screen bg-[#0B0B0B] pt-20 pb-24 md:pt-20 md:pb-8 overflow-y-auto">
-      {/* MOBILE: Menu at top */}
-      <div className="md:hidden mb-6 px-4 max-h-[40vh] overflow-y-auto">
-        <Menu />
-      </div>
 
       {/* MAIN CONTENT: 2-3 column layout */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 px-4 md:px-8 py-4 md:py-6">
-        
-        {/* LEFT: Menu (Desktop only) */}
-        <div className="hidden md:block md:col-span-1">
-          <Menu />
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-4 md:px-8 py-4 md:py-6 max-w-7xl mx-auto">
 
         {/* CENTER: Cart items (full width mobile, spans 2 columns desktop) */}
         <div className="md:col-span-2 mb-6">
-          <h2 className="text-2xl font-bold text-white mb-4 sticky top-20 bg-[#0B0B0B] py-2 z-10">Your Order</h2>
+          <h2 className="text-2xl font-bold text-white mb-4">Your Order</h2>
 
           {lines.length === 0 ? (
             <div className="bg-neutral-800 rounded-lg p-8 text-center">
@@ -344,7 +334,7 @@ export default function Order() {
                     key={line.key}
                     className="bg-neutral-800 rounded-lg p-4 flex items-start justify-between gap-4"
                   >
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 overflow-visible">
                       <h4 className="font-semibold text-white break-words">{line.itemName || line.name}</h4>
                       {line.variants && line.variants.length > 0 && (
                         <p className="text-sm text-neutral-400 mt-1">
