@@ -1,22 +1,22 @@
-// site/src/pages/Order.jsx - SIMPLIFIED & FIXED
-// ✅ Clean layout with NO hidden menu
-// ✅ Menu on left (desktop), below (mobile)
-// ✅ All buttons fully responsive
-// ✅ Cart working smoothly
-// ✅ All features complete
+// site/src/pages/Order.jsx - COMPLETE WITH ADDRESS MANAGEMENT
+// ✅ Smart address selection (auto-select single, choose from multiple)
+// ✅ Add new address during checkout
+// ✅ Customer instructions field
+// ✅ Redirect to order details after successful payment
 
 import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import AddToCartModal from "../components/AddToCartModal";
 import CartDrawer from "../components/CartDrawer";
 import GoogleMapsAutocomplete from "../components/GoogleMapsAutocomplete";
-import { ShoppingCart, MapPin, MessageSquare, Loader, Trash2 } from "lucide-react";
-
+import { ShoppingCart, MapPin, MessageSquare, Loader, Plus, Check, Edit2 } from "lucide-react";
 
 import API_BASE from '../config/api.js';
 
 export default function Order() {
+  const navigate = useNavigate();
   const { isAuthenticated, customer } = useAuth();
   const { lines, clearCart, addLine, removeLine } = useCart();
 
@@ -24,30 +24,109 @@ export default function Order() {
   const [selectedItemForModal, setSelectedItemForModal] = useState(null);
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
 
+  // Address State
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [showAddAddressForm, setShowAddAddressForm] = useState(false);
+  const [newAddressData, setNewAddressData] = useState({
+    name: '',
+    fullAddress: '',
+    latitude: null,
+    longitude: null
+  });
+
   // Form State
-  const [deliveryAddress, setDeliveryAddress] = useState(customer?.address || "");
-  const [specialNotes, setSpecialNotes] = useState("");
+  const [deliveryInstructions, setDeliveryInstructions] = useState("");
 
   // Payment State
   const [paymentMethod, setPaymentMethod] = useState(null);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState("");
 
-  // Order State
-  const [orderCreated, setOrderCreated] = useState(null);
-  const [orderConfirmed, setOrderConfirmed] = useState(false);
-
+  // ============================================================================
+  // FETCH ADDRESSES ON LOAD
+  // ============================================================================
   useEffect(() => {
-  if (customer?.address && !deliveryAddress) {
-    console.log('[Order] Auto-populating address from customer profile');
-    setDeliveryAddress(customer.address);
-  }
-}, [customer?.address, deliveryAddress]);
+    if (isAuthenticated) {
+      fetchAddresses();
+    }
+  }, [isAuthenticated]);
+
+  const fetchAddresses = async () => {
+    try {
+      const token = localStorage.getItem("customerToken");
+      const response = await fetch(`${API_BASE}/customer/addresses`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch addresses");
+
+      const data = await response.json();
+      const fetchedAddresses = data.addresses || [];
+      setAddresses(fetchedAddresses);
+
+      // Auto-select if only one address
+      if (fetchedAddresses.length === 1) {
+        setSelectedAddressId(fetchedAddresses[0].id);
+      } else if (fetchedAddresses.length > 1) {
+        // Auto-select default address
+        const defaultAddr = fetchedAddresses.find(a => a.isDefault);
+        if (defaultAddr) {
+          setSelectedAddressId(defaultAddr.id);
+        }
+      }
+    } catch (error) {
+      console.error("[Order] Error fetching addresses:", error);
+    }
+  };
+
+  // ============================================================================
+  // ADD NEW ADDRESS
+  // ============================================================================
+  const handleAddNewAddress = async (e) => {
+    e.preventDefault();
+
+    if (!newAddressData.fullAddress || !newAddressData.latitude) {
+      alert("Please select a valid address from the map");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("customerToken");
+      const response = await fetch(`${API_BASE}/customer/addresses`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newAddressData),
+      });
+
+      if (!response.ok) throw new Error("Failed to add address");
+
+      const data = await response.json();
+      
+      // Refresh addresses list
+      await fetchAddresses();
+      
+      // Auto-select the newly added address
+      setSelectedAddressId(data.address.id);
+      
+      // Close form and reset
+      setShowAddAddressForm(false);
+      setNewAddressData({ name: '', fullAddress: '', latitude: null, longitude: null });
+      
+      alert("Address added successfully!");
+    } catch (error) {
+      alert(error.message);
+    }
+  };
 
   // ============================================================================
   // CALCULATIONS
   // ============================================================================
-
   const { cartTotal, gstAmount, finalTotal } = useMemo(() => {
     let total = 0;
     lines.forEach((line) => {
@@ -68,10 +147,12 @@ export default function Order() {
 
   const cartCount = lines.reduce((sum, line) => sum + (line.qty || 1), 0);
 
+  // Get selected address object
+  const selectedAddress = addresses.find(addr => addr.id === selectedAddressId);
+
   // ============================================================================
   // ORDER CREATION & PAYMENT HANDLERS
   // ============================================================================
-
   const handleCreateOrder = async () => {
     if (!isAuthenticated) {
       setPaymentError("Please login to place an order");
@@ -83,8 +164,8 @@ export default function Order() {
       return;
     }
 
-    if (!deliveryAddress.trim()) {
-      setPaymentError("Please enter a delivery address");
+    if (!selectedAddressId || !selectedAddress) {
+      setPaymentError("Please select a delivery address");
       return;
     }
 
@@ -108,18 +189,19 @@ export default function Order() {
             variants: line.variants || [],
             addons: line.addons || []
           })),
-          deliveryAddress,
-          specialNotes,
+          deliveryAddressId: selectedAddressId,
+          deliveryAddress: selectedAddress.fullAddress,
+          deliveryInstructions: deliveryInstructions.trim() || null,
           paymentMethod: paymentMethod || "pending",
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`Server error: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Server error: ${response.status}`);
       }
 
       const data = await response.json();
-      setOrderCreated(data.orderId);
       return data.orderId;
     } catch (error) {
       console.error("[Order] ❌ Error:", error);
@@ -157,8 +239,9 @@ export default function Order() {
         throw new Error(`COD confirmation failed: ${response.status}`);
       }
 
-      setOrderConfirmed(true);
+      // Success - redirect to order details
       clearCart();
+      navigate(`/orders/${orderId}`);
     } catch (error) {
       console.error("[Order] ❌ COD Error:", error);
       setPaymentError(error.message || "Failed to confirm COD payment");
@@ -239,19 +322,20 @@ export default function Order() {
               throw new Error("Payment verification failed");
             }
 
-            setOrderConfirmed(true);
+            // Success - redirect to order details
             clearCart();
+            navigate(`/orders/${orderId}`);
           } catch (error) {
             console.error("[Order] ❌ Verification Error:", error);
-            setPaymentError("Payment verification failed");
-          } finally {
+            setPaymentError(error.message || "Payment verification failed");
             setPaymentProcessing(false);
           }
         },
-        prefill: {
-          name: customer?.name || "",
-          email: customer?.email || "",
-          contact: customer?.phone || "",
+        modal: {
+          ondismiss: () => {
+            setPaymentError("Payment cancelled");
+            setPaymentProcessing(false);
+          },
         },
       };
 
@@ -265,168 +349,226 @@ export default function Order() {
   };
 
   // ============================================================================
-
-  // Scroll to top when order is confirmed (mobile only)
-  useEffect(() => {
-    if (orderConfirmed && typeof window !== 'undefined' && window.innerWidth < 768) {
-      setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 100);
-    }
-  }, [orderConfirmed]);
-
-  if (orderConfirmed) {
+  // RENDER
+  // ============================================================================
+  if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 pt-20 pb-24 md:pt-20 md:pb-8 bg-[#0B0B0B]">
-        <div className="text-center max-w-md">
-          <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <ShoppingCart className="w-8 h-8 text-green-500" />
-          </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Order Confirmed!</h2>
-          <p className="text-neutral-400 mb-2">Order ID: #{orderCreated}</p>
-          <p className="text-neutral-400 mb-6">
-            Your order has been placed successfully!
-          </p>
-          <a href="/menu" className="inline-block w-full btn btn-primary">
-            Continue Shopping
-          </a>
+      <div className="min-h-screen bg-neutral-900 flex items-center justify-center p-4">
+        <div className="text-center">
+          <h2 className="text-white text-2xl font-bold mb-4">Please Login</h2>
+          <p className="text-neutral-400 mb-6">You need to be logged in to place an order</p>
+          <button
+            onClick={() => navigate('/login')}
+            className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold"
+          >
+            Go to Login
+          </button>
         </div>
       </div>
     );
   }
 
-  // ============================================================================
-  // MAIN PAGE - MOBILE & DESKTOP
-  // ============================================================================
-
   return (
-    <div className="min-h-screen bg-[#0B0B0B] pt-20 pb-24 md:pt-20 md:pb-8 overflow-y-auto">
+    <div className="min-h-screen bg-neutral-900 pb-32 md:pb-8">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <h1 className="text-3xl font-bold text-white mb-6">Checkout</h1>
 
-      {/* MAIN CONTENT: 2-3 column layout */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-4 md:px-8 py-4 md:py-6 max-w-7xl mx-auto">
-
-        {/* CENTER: Cart items (full width mobile, spans 2 columns desktop) */}
-        <div className="md:col-span-2 mb-6">
-          <h2 className="text-2xl font-bold text-white mb-4">Your Order</h2>
-
-          {lines.length === 0 ? (
-            <div className="bg-neutral-800 rounded-lg p-8 text-center">
-              <ShoppingCart className="w-12 h-12 text-neutral-600 mx-auto mb-3" />
-              <p className="text-neutral-400 mb-4">Your cart is empty</p>
-              <a 
-                href="/menu" 
-                className="text-orange-500 hover:text-orange-400 font-semibold inline-block"
-              >
-                Browse menu →
-              </a>
+        <div className="grid md:grid-cols-3 gap-6">
+          {/* LEFT: Cart Items */}
+          <div className="md:col-span-2 space-y-6">
+            {/* Cart Items */}
+            <div className="bg-neutral-800 rounded-lg p-6">
+              <h2 className="text-white font-bold text-xl mb-4">Your Cart ({cartCount} items)</h2>
+              
+              {lines.length === 0 ? (
+                <div className="text-center py-12 text-neutral-400">
+                  <ShoppingCart className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                  <p>Your cart is empty</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {lines.map((line, idx) => (
+                    <div key={idx} className="flex justify-between items-start border-b border-neutral-700 pb-3">
+                      <div className="flex-1">
+                        <p className="text-white font-medium">{line.name}</p>
+                        <p className="text-neutral-400 text-sm">Qty: {line.qty}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-white font-bold">₹{((line.basePrice || 0) * line.qty)}</p>
+                        <button
+                          onClick={() => removeLine(idx)}
+                          className="text-red-500 text-sm hover:text-red-400"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="space-y-3">
-              {lines.map((line, idx) => {
-                const unitPrice =
-                  (line.basePrice || 0) +
-                  (line.variants?.reduce((sum, v) => sum + (v.priceDelta || 0), 0) || 0) +
-                  (line.addons?.reduce((sum, a) => sum + (a.priceDelta || 0), 0) || 0);
-                const lineTotal = unitPrice * (line.qty || 1);
 
-                return (
-                  <div
-                    key={line.key}
-                    className="bg-neutral-800 rounded-lg p-4 flex items-start justify-between gap-4"
+            {/* Address Selection */}
+            <div className="bg-neutral-800 rounded-lg p-6">
+              <h2 className="text-white font-bold text-xl mb-4 flex items-center gap-2">
+                <MapPin className="w-6 h-6 text-orange-500" />
+                Delivery Address
+              </h2>
+
+              {addresses.length === 0 && !showAddAddressForm && (
+                <div className="text-center py-8">
+                  <p className="text-neutral-400 mb-4">No saved addresses</p>
+                  <button
+                    onClick={() => setShowAddAddressForm(true)}
+                    className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium"
                   >
-                    <div className="flex-1 min-w-0 overflow-visible">
-                      <h4 className="font-semibold text-white break-words">{line.itemName || line.name}</h4>
-                      {line.variants && line.variants.length > 0 && (
-                        <p className="text-sm text-neutral-400 mt-1">
-                          {line.variants.map((v) => v.name).join(", ")}
-                        </p>
-                      )}
-                      {line.addons && line.addons.length > 0 && (
-                        <p className="text-sm text-neutral-400">
-                          {line.addons.map((a) => a.name).join(", ")}
-                        </p>
-                      )}
-                      <p className="text-orange-400 font-semibold mt-2">₹{lineTotal}</p>
-                    </div>
+                    <Plus className="w-5 h-5 inline mr-2" />
+                    Add Address
+                  </button>
+                </div>
+              )}
 
-                    {/* Remove and Quantity controls */}
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => removeLine(line.key)}
-                        className="text-red-400 hover:text-red-300 p-2"
-                        aria-label="Remove item"
+              {addresses.length > 0 && !showAddAddressForm && (
+                <>
+                  <div className="space-y-3 mb-4">
+                    {addresses.map((addr) => (
+                      <div
+                        key={addr.id}
+                        onClick={() => setSelectedAddressId(addr.id)}
+                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                          selectedAddressId === addr.id
+                            ? 'border-orange-500 bg-orange-500/10'
+                            : 'border-neutral-700 hover:border-neutral-600'
+                        }`}
                       >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                      <p className="text-white font-bold text-lg whitespace-nowrap">x{line.qty}</p>
-                    </div>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              {addr.name && (
+                                <span className="text-white font-medium">{addr.name}</span>
+                              )}
+                              {addr.isDefault && (
+                                <span className="px-2 py-0.5 bg-orange-500 text-white text-xs rounded-full">
+                                  Default
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-neutral-300 text-sm">{addr.fullAddress}</p>
+                            <p className="text-neutral-500 text-xs mt-1">
+                              📍 {addr.distanceKm} km • {addr.withinServiceArea ? '✓ Deliverable' : '⚠ Out of range'}
+                            </p>
+                          </div>
+                          {selectedAddressId === addr.id && (
+                            <Check className="w-6 h-6 text-orange-500 flex-shrink-0" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
 
-        {/* MOBILE: Delivery Address & Notes (SHOW ON MOBILE ONLY) */}
-        <div className="md:hidden space-y-4 px-4">
-          {/* Delivery Address */}
-          <div>
-            <label className="block font-semibold text-white text-sm mb-2">
-              <MapPin className="w-4 h-4 inline mr-2" />
-              Delivery Address *
-            </label>
-            <GoogleMapsAutocomplete
-              onSelect={(address) => setDeliveryAddress(address.address)}
-              defaultValue={deliveryAddress}
-            />
-            {!deliveryAddress && (
-              <p className="text-red-400 text-xs mt-1">
-                Please enter delivery address to continue
+                  {addresses.length < 5 && (
+                    <button
+                      onClick={() => setShowAddAddressForm(true)}
+                      className="w-full py-2 border-2 border-dashed border-neutral-600 hover:border-orange-500 text-neutral-400 hover:text-orange-500 rounded-lg font-medium transition-colors"
+                    >
+                      <Plus className="w-5 h-5 inline mr-2" />
+                      Add New Address
+                    </button>
+                  )}
+                </>
+              )}
+
+              {/* Add Address Form */}
+              {showAddAddressForm && (
+                <form onSubmit={handleAddNewAddress} className="space-y-4">
+                  <div>
+                    <label className="block text-neutral-300 text-sm mb-2">
+                      Label (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={newAddressData.name}
+                      onChange={(e) => setNewAddressData({ ...newAddressData, name: e.target.value })}
+                      placeholder="e.g., Home, Office"
+                      className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-neutral-300 text-sm mb-2">
+                      Address *
+                    </label>
+                    <GoogleMapsAutocomplete
+                      onSelect={(result) => {
+                        setNewAddressData({
+                          ...newAddressData,
+                          fullAddress: result.address,
+                          latitude: result.latitude,
+                          longitude: result.longitude
+                        });
+                      }}
+                      defaultValue={newAddressData.fullAddress}
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddAddressForm(false);
+                        setNewAddressData({ name: '', fullAddress: '', latitude: null, longitude: null });
+                      }}
+                      className="flex-1 px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium"
+                    >
+                      Save Address
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {!selectedAddressId && addresses.length > 0 && !showAddAddressForm && (
+                <p className="text-red-400 text-sm mt-2">
+                  ⚠ Please select an address to continue
+                </p>
+              )}
+            </div>
+
+            {/* Special Instructions */}
+            <div className="bg-neutral-800 rounded-lg p-6">
+              <label className="block text-white font-bold text-lg mb-2">
+                <MessageSquare className="w-5 h-5 inline mr-2" />
+                Special Instructions (Optional)
+              </label>
+              <textarea
+                value={deliveryInstructions}
+                onChange={(e) => {
+                  if (e.target.value.length <= 200) {
+                    setDeliveryInstructions(e.target.value);
+                  }
+                }}
+                placeholder="Any special requests? (e.g., extra spicy, no onions, gate code)"
+                className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-neutral-500"
+                rows="3"
+                maxLength={200}
+              />
+              <p className="text-neutral-500 text-xs mt-1 text-right">
+                {deliveryInstructions.length}/200 characters
               </p>
-            )}
-          </div>
-
-          {/* Special Notes */}
-          <div>
-            <label className="block font-semibold text-white text-sm mb-2">
-              <MessageSquare className="w-4 h-4 inline mr-2" />
-              Special Notes (Optional)
-            </label>
-            <textarea
-              value={specialNotes}
-              onChange={(e) => setSpecialNotes(e.target.value)}
-              placeholder="Any special requests? (e.g., extra spicy, no onions)"
-              className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-neutral-500"
-              rows="2"
-            />
-          </div>
-
-          {/* Order Summary on Mobile */}
-          <div className="bg-neutral-800 rounded-lg p-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-neutral-400 text-sm">
-                <span>Subtotal</span>
-                <span>₹{cartTotal}</span>
-              </div>
-              <div className="flex justify-between text-neutral-400 text-sm">
-                <span>GST (5%)</span>
-                <span>₹{gstAmount}</span>
-              </div>
-              <div className="border-t border-neutral-700 pt-2 flex justify-between font-bold text-white">
-                <span>Total</span>
-                <span className="text-orange-500">₹{finalTotal}</span>
-              </div>
             </div>
           </div>
-        </div>
 
-        {/* RIGHT: Order summary & checkout (Desktop only) */}
-        <div className="hidden md:block md:col-span-1">
-          <div className="bg-neutral-800 rounded-lg p-6 space-y-6">
-            {/* Order Summary */}
-            <div>
-              <h3 className="font-bold text-white text-lg mb-4">Order Summary</h3>
-              <div className="space-y-2">
+          {/* RIGHT: Order Summary & Payment */}
+          <div className="md:col-span-1">
+            <div className="bg-neutral-800 rounded-lg p-6 sticky top-6">
+              <h3 className="text-white font-bold text-xl mb-4">Order Summary</h3>
+              
+              <div className="space-y-2 mb-4">
                 <div className="flex justify-between text-neutral-400">
                   <span>Subtotal</span>
                   <span>₹{cartTotal}</span>
@@ -435,140 +577,55 @@ export default function Order() {
                   <span>GST (5%)</span>
                   <span>₹{gstAmount}</span>
                 </div>
-                <div className="border-t border-neutral-700 pt-2 flex justify-between font-bold text-white text-lg">
+                <div className="border-t border-neutral-700 pt-2 mt-2 flex justify-between text-white font-bold text-lg">
                   <span>Total</span>
                   <span className="text-orange-500">₹{finalTotal}</span>
                 </div>
               </div>
-            </div>
 
-            {/* Delivery Address */}
-            <div>
-              <label className="block font-semibold text-white text-sm mb-2">
-                <MapPin className="w-4 h-4 inline mr-2" />
-                Delivery Address
-              </label>
-              <GoogleMapsAutocomplete
-                onSelect={(address) => setDeliveryAddress(address.address)}
-                defaultValue={deliveryAddress}
-              />
-            </div>
+              {paymentError && (
+                <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-400 text-sm">
+                  {paymentError}
+                </div>
+              )}
 
-            {/* Special Notes */}
-            <div>
-              <label className="block font-semibold text-white text-sm mb-2">
-                <MessageSquare className="w-4 h-4 inline mr-2" />
-                Special Notes
-              </label>
-              <textarea
-                value={specialNotes}
-                onChange={(e) => setSpecialNotes(e.target.value)}
-                placeholder="Any special requests? (optional)"
-                className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                rows="3"
-              />
-            </div>
+              <div className="space-y-2">
+                <button
+                  onClick={handleRazorpayPayment}
+                  disabled={paymentProcessing || lines.length === 0 || !selectedAddressId}
+                  className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors"
+                >
+                  {paymentProcessing ? (
+                    <>
+                      <Loader className="w-4 h-4 inline animate-spin mr-2" />
+                      Processing...
+                    </>
+                  ) : (
+                    "💳 Pay Online"
+                  )}
+                </button>
 
-            {/* Error Message */}
-            {paymentError && (
-              <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3 text-red-400 text-sm">
-                {paymentError}
+                <button
+                  onClick={handleCODPayment}
+                  disabled={paymentProcessing || lines.length === 0 || !selectedAddressId}
+                  className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors"
+                >
+                  {paymentProcessing ? (
+                    <>
+                      <Loader className="w-4 h-4 inline animate-spin mr-2" />
+                      Processing...
+                    </>
+                  ) : (
+                    "💵 Cash on Delivery"
+                  )}
+                </button>
               </div>
-            )}
-
-            {/* Payment Buttons */}
-            <div className="space-y-2">
-              <button
-                onClick={handleRazorpayPayment}
-                disabled={paymentProcessing || lines.length === 0}
-                className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-neutral-600 text-white font-bold rounded-lg transition-colors"
-              >
-                {paymentProcessing ? (
-                  <>
-                    <Loader className="w-4 h-4 inline animate-spin mr-2" />
-                    Processing...
-                  </>
-                ) : (
-                  "💳 Pay Online"
-                )}
-              </button>
-
-              <button
-                onClick={handleCODPayment}
-                disabled={paymentProcessing || lines.length === 0}
-                className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:bg-neutral-600 text-white font-bold rounded-lg transition-colors"
-              >
-                {paymentProcessing ? (
-                  <>
-                    <Loader className="w-4 h-4 inline animate-spin mr-2" />
-                    Processing...
-                  </>
-                ) : (
-                  "💵 Pay on Delivery"
-                )}
-              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* MOBILE: Floating cart button */}
-      {cartCount > 0 && (
-        <button
-          onClick={() => setCartDrawerOpen(true)}
-          className="md:hidden fixed bottom-28 right-6 z-40 w-14 h-14 rounded-full bg-orange-500 hover:bg-orange-600 shadow-2xl flex items-center justify-center text-white font-bold transition-transform"
-          aria-label="Open cart"
-        >
-          <ShoppingCart className="w-6 h-6" />
-          <span className="absolute -top-2 -right-2 bg-white text-orange-500 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-            {cartCount}
-          </span>
-        </button>
-      )}
-
-      {/* MOBILE: Sticky Payment Footer */}
-      {lines.length > 0 && (
-        <div className="md:hidden fixed left-0 right-0 bg-neutral-900 border-t border-neutral-800 p-3 space-y-2 z-[60] bottom-20 pb-safe">
-          {/* Quick Total */}
-          <div className="flex justify-between items-center px-1">
-            <span className="text-neutral-400 text-sm">Total:</span>
-            <span className="text-orange-400 font-bold text-lg">₹{finalTotal}</span>
-          </div>
-
-          {/* Payment Buttons */}
-          <div className="space-y-1">
-            <button
-              onClick={handleRazorpayPayment}
-              disabled={paymentProcessing || lines.length === 0 || !deliveryAddress}
-              className="w-full py-2 h-10 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 disabled:bg-neutral-600 text-white font-bold rounded text-xs transition-colors"
-            >
-              {paymentProcessing ? "Processing..." : "💳 Pay Online"}
-            </button>
-
-            <button
-              onClick={handleCODPayment}
-              disabled={paymentProcessing || lines.length === 0 || !deliveryAddress}
-              className="w-full py-2 h-10 bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-neutral-600 text-white font-bold rounded text-xs transition-colors"
-            >
-              {paymentProcessing ? "Processing..." : "💵 COD"}
-            </button>
-          </div>
-
-          {/* Error */}
-          {paymentError && (
-            <div className="text-red-400 text-xs text-center bg-red-500/10 rounded px-2 py-1">
-              {paymentError}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Mobile Spacing - Prevent content hiding */}
-      {lines.length > 0 && (
-        <div className="md:hidden h-48" />
-      )}
-
-      {/* MOBILE: Cart drawer */}
+      {/* Mobile cart drawer */}
       <CartDrawer
         isOpen={cartDrawerOpen}
         onClose={() => setCartDrawerOpen(false)}
@@ -576,10 +633,10 @@ export default function Order() {
         cartTotal={cartTotal}
         gstAmount={gstAmount}
         finalTotal={finalTotal}
-        deliveryAddress={deliveryAddress}
-        setDeliveryAddress={setDeliveryAddress}
-        specialNotes={specialNotes}
-        setSpecialNotes={setSpecialNotes}
+        deliveryAddress={selectedAddress?.fullAddress || ''}
+        setDeliveryAddress={() => {}}
+        specialNotes={deliveryInstructions}
+        setSpecialNotes={setDeliveryInstructions}
         paymentError={paymentError}
         paymentProcessing={paymentProcessing}
         onCODPayment={handleCODPayment}
