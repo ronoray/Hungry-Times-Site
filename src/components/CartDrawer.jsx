@@ -97,8 +97,14 @@ export default function CartDrawer({
                         )}
                       </div>
                       <button
-                        onClick={() => removeLine(line.key)}
-                        className="text-red-400 hover:text-red-300 p-1 flex-shrink-0"
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          console.log('[CartDrawer] 🗑️ Removing line with key:', line.key);
+                          removeLine(line.key);
+                        }}
+                        className="text-red-400 hover:text-red-300 p-1 flex-shrink-0 relative z-10"
                         aria-label="Remove item"
                       >
                         <Trash2 className="w-4 h-4" />

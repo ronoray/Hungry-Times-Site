@@ -172,6 +172,11 @@ export default function Order() {
     setPaymentProcessing(true);
     setPaymentError("");
 
+    // ✅ DEBUG: What's in the cart?
+    console.log('[Order] 🛒 Cart lines:', lines);
+    console.log('[Order] 📦 First item:', lines[0]);
+    console.log('[Order] 🔍 Item keys:', Object.keys(lines[0] || {}));
+
     try {
       const token = localStorage.getItem("customerToken");
       const response = await fetch(`${API_BASE}/customer/orders`, {
@@ -182,17 +187,17 @@ export default function Order() {
         },
         body: JSON.stringify({
           items: lines.map(line => ({
-            itemId: line.id,
-            itemName: line.name,
-            quantity: line.qty,
-            basePrice: line.basePrice,
+            itemId: line.itemId || line.id || line.item?.id || null,
+            itemName: line.itemName || line.name || line.item?.name || line.title || 'Unknown Item',
+            quantity: line.qty || line.quantity || 1,
+            basePrice: line.basePrice || line.price || 0,
             variants: line.variants || [],
             addons: line.addons || []
           })),
           deliveryAddressId: selectedAddressId,
           deliveryAddress: selectedAddress.fullAddress,
           deliveryInstructions: deliveryInstructions.trim() || null,
-          paymentMethod: paymentMethod || "pending",
+          paymentMethod: paymentMethod || "COD",
         }),
       });
 
@@ -213,7 +218,7 @@ export default function Order() {
 
   const handleCODPayment = async () => {
     setPaymentProcessing(true);
-    setPaymentMethod("cod");
+    setPaymentMethod("COD");
     const orderId = await handleCreateOrder();
 
     if (!orderId) {
@@ -396,7 +401,7 @@ export default function Order() {
                       <div className="text-right">
                         <p className="text-white font-bold">₹{((line.basePrice || 0) * line.qty)}</p>
                         <button
-                          onClick={() => removeLine(idx)}
+                          onClick={() => removeLine(line.key)}
                           className="text-red-500 text-sm hover:text-red-400"
                         >
                           Remove
