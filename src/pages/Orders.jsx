@@ -203,18 +203,21 @@ export default function Orders() {
                     {/* Order Details */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-neutral-800">
                       <div>
-                        <p className="text-neutral-500 text-xs mb-1">Total Amount</p>
-                        <p className="text-white font-bold text-lg">₹{order.total}</p>
-                      </div>
-                      
-                      <div>
                         <p className="text-neutral-500 text-xs mb-1">Payment</p>
                         <p className="text-white font-medium">{order.payment_mode}</p>
-                        <p className={`text-xs ${order.payment_status === 'paid' ? 'text-green-500' : 'text-yellow-500'}`}>
-                          {order.payment_status === 'paid' ? 'Paid' : 'Pending'}
-                        </p>
-                      </div>
-                      
+                        {/* ✅ Auto-show paid for delivered COD orders */}
+                        {order.status === 'delivered' ? (
+                            <p className="text-xs text-green-500">✓ Paid</p>
+                        ) : order.status === 'delivered' && order.payment_status === 'paid' ? (
+                            <p className="text-xs text-green-500">✓ Paid</p>
+                        ) : order.status === 'cancelled' || order.status === 'rejected' ? (
+                            <p className="text-xs text-neutral-500">N/A</p>
+                        ) : order.payment_status === 'paid' ? (
+                            <p className="text-xs text-green-500">✓ Paid</p>
+                        ) : (
+                            <p className="text-xs text-yellow-500">Payment Pending</p>
+                        )}
+                      </div>             
                       <div className="md:text-right">
                         <button
                           onClick={() => navigate(`/orders/${order.id}`)}
