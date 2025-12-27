@@ -253,6 +253,7 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
     const lineItem = {
       itemId: item.id,
       itemName: item.name,
+      name: item.name,  // ✅ ADD THIS - for display in cart
       basePrice: basePrice,
       variants: variantList.map((v) => ({
         id: v.id,
