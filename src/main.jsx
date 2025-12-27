@@ -16,6 +16,7 @@ import Offers from "./pages/Offers";
 import Testimonials from "./pages/Testimonials";
 import Order from "./pages/Order";
 import Profile from "./pages/Profile";
+import Orders from "./pages/Orders";
 // Note: Orders.jsx doesn't exist - removed import
 
 const router = createBrowserRouter(
@@ -31,6 +32,7 @@ const router = createBrowserRouter(
         { path: "menu", element: <Menu /> },
         { path: "home", element: <Home /> },
         { path: "order", element: <Order /> },
+        { path: "orders", element: <Orders /> },
         { path: "profile", element: <Profile /> },
         // Note: Orders route removed - page doesn't exist yet
         { path: "gallery", element: <Gallery /> },
