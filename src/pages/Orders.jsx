@@ -33,6 +33,8 @@ export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -220,7 +222,10 @@ export default function Orders() {
                       </div>             
                       <div className="md:text-right">
                         <button
-                          onClick={() => navigate(`/orders/${order.id}`)}
+                          onClick={() => {
+                            setSelectedOrder(order);
+                            setShowDetailModal(true);
+                          }}
                           className="text-orange-500 hover:text-orange-400 text-sm font-medium"
                         >
                           View Details →
@@ -234,6 +239,151 @@ export default function Orders() {
           </div>
         )}
       </div>
+
+      {/* Order Detail Modal */}
+      {showDetailModal && selectedOrder && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-neutral-900 rounded-lg border border-neutral-800 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-neutral-900 border-b border-neutral-800 p-4 md:p-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-white text-xl md:text-2xl font-bold">
+                  Order #{selectedOrder.id}
+                </h2>
+                <p className="text-neutral-400 text-sm">
+                  {new Date(selectedOrder.created_at).toLocaleString('en-IN', {
+                    dateStyle: 'long',
+                    timeStyle: 'short'
+                  })}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowDetailModal(false);
+                  setSelectedOrder(null);
+                }}
+                className="text-neutral-400 hover:text-white text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-4 md:p-6 space-y-6">
+              {/* Status */}
+              <div>
+                <h3 className="text-neutral-400 text-sm font-medium mb-2">Order Status</h3>
+                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border ${STATUS_COLORS[selectedOrder.status]}`}>
+                  {(() => {
+                    const StatusIcon = STATUS_ICONS[selectedOrder.status] || Clock;
+                    return <StatusIcon className="w-5 h-5" />;
+                  })()}
+                  <span className="font-semibold">{formatStatus(selectedOrder.status)}</span>
+                </div>
+              </div>
+
+              {/* Items */}
+              <div>
+                <h3 className="text-neutral-400 text-sm font-medium mb-3">Order Items</h3>
+                <div className="space-y-3">
+                  {parseItems(selectedOrder.items_json).map((item, idx) => (
+                    <div key={idx} className="bg-neutral-800/50 rounded-lg p-3 border border-neutral-700">
+                      <div className="flex justify-between items-start mb-1">
+                        <div className="flex-1">
+                          <p className="text-white font-medium">{item.quantity}x {item.itemName}</p>
+                          {item.variants && item.variants.length > 0 && (
+                            <p className="text-neutral-500 text-xs mt-1">
+                              Variants: {item.variants.map(v => v.name).join(', ')}
+                            </p>
+                          )}
+                          {item.addons && item.addons.length > 0 && (
+                            <p className="text-neutral-500 text-xs mt-1">
+                              Add-ons: {item.addons.map(a => a.name).join(', ')}
+                            </p>
+                          )}
+                        </div>
+                        <p className="text-white font-medium ml-4">₹{item.total || (item.price * item.quantity)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Delivery Address */}
+              {selectedOrder.delivery_address && (
+                <div>
+                  <h3 className="text-neutral-400 text-sm font-medium mb-2">Delivery Address</h3>
+                  <div className="bg-neutral-800/50 rounded-lg p-3 border border-neutral-700">
+                    <p className="text-white text-sm">{selectedOrder.delivery_address}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Delivery Instructions */}
+              {selectedOrder.delivery_instructions && (
+                <div>
+                  <h3 className="text-neutral-400 text-sm font-medium mb-2">Delivery Instructions</h3>
+                  <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
+                    <p className="text-orange-300 text-sm italic">"{selectedOrder.delivery_instructions}"</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Details */}
+              <div>
+                <h3 className="text-neutral-400 text-sm font-medium mb-3">Payment Information</h3>
+                <div className="bg-neutral-800/50 rounded-lg p-4 border border-neutral-700 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-neutral-400 text-sm">Payment Method:</span>
+                    <span className="text-white font-medium">{selectedOrder.payment_mode}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-400 text-sm">Payment Status:</span>
+                    {selectedOrder.status === 'delivered' ? (
+                      <span className="text-green-500 font-medium">✓ Paid</span>
+                    ) : selectedOrder.status === 'cancelled' || selectedOrder.status === 'rejected' ? (
+                      <span className="text-neutral-500">N/A</span>
+                    ) : selectedOrder.payment_status === 'paid' ? (
+                      <span className="text-green-500 font-medium">✓ Paid</span>
+                    ) : (
+                      <span className="text-yellow-500 font-medium">Pending</span>
+                    )}
+                  </div>
+                  <div className="pt-2 border-t border-neutral-700 flex justify-between items-center">
+                    <span className="text-white font-semibold">Total Amount:</span>
+                    <span className="text-orange-500 text-xl font-bold">₹{selectedOrder.total}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cancellation Reason */}
+              {(selectedOrder.status === 'cancelled' || selectedOrder.status === 'rejected') && selectedOrder.cancellation_reason && (
+                <div>
+                  <h3 className="text-neutral-400 text-sm font-medium mb-2">
+                    {selectedOrder.status === 'cancelled' ? 'Cancellation' : 'Rejection'} Reason
+                  </h3>
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                    <p className="text-red-300 text-sm">{selectedOrder.cancellation_reason}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="sticky bottom-0 bg-neutral-900 border-t border-neutral-800 p-4 md:p-6">
+              <button
+                onClick={() => {
+                  setShowDetailModal(false);
+                  setSelectedOrder(null);
+                }}
+                className="w-full px-4 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
