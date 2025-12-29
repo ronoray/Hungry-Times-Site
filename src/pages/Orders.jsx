@@ -6,6 +6,22 @@ import { useAuth } from '../context/AuthContext';
 import { Package, Clock, CheckCircle, XCircle, Truck, ChefHat, AlertCircle } from 'lucide-react';
 import API_BASE from '../config/api.js';
 
+// Helper to format date in IST, forcing UTC interpretation
+const formatOrderDate = (dateString, style = 'medium') => {
+  if (!dateString) return '—';
+  
+  // Force UTC interpretation by adding 'Z' if missing
+  const utcDate = dateString.includes('Z') || dateString.includes('+')
+    ? dateString 
+    : dateString.replace(' ', 'T') + 'Z';
+  
+  return new Date(utcDate).toLocaleString('en-IN', {
+    dateStyle: style === 'long' ? 'long' : 'medium',
+    timeStyle: 'short',
+    timeZone: 'Asia/Kolkata'
+  });
+};
+
 const STATUS_ICONS = {
   pending: Clock,
   confirmed: CheckCircle,
@@ -167,10 +183,7 @@ export default function Orders() {
                           Order #{order.id}
                         </h3>
                         <p className="text-neutral-400 text-sm">
-                          {new Date(order.created_at).toLocaleString('en-IN', {
-                            dateStyle: 'medium',
-                            timeStyle: 'short'
-                          })}
+                          {formatOrderDate(order.created_at)}
                         </p>
                       </div>
                       
@@ -251,10 +264,7 @@ export default function Orders() {
                   Order #{selectedOrder.id}
                 </h2>
                 <p className="text-neutral-400 text-sm">
-                  {new Date(selectedOrder.created_at).toLocaleString('en-IN', {
-                    dateStyle: 'long',
-                    timeStyle: 'short'
-                  })}
+                  {formatOrderDate(selectedOrder.created_at, 'long')}
                 </p>
               </div>
               <button
