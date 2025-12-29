@@ -1,13 +1,20 @@
 // site/public/sw.js - Customer Site Service Worker
 // ============================================================================
-// AGGRESSIVE CACHE-CLEAR VERSION - Forces updates on every deploy
-// Version: v4-AGGRESSIVE-20251229
+// CORRECTED VERSION - Fixed icon paths to match actual files
+// Version: v5-FIXED-20251229
 // ============================================================================
 
-const CACHE_NAME = 'hungry-times-v4-20251229-' + Date.now(); // ← TIMESTAMP for uniqueness
-const STATIC_ASSETS = ['/icon-512x512.png', '/badge-72x72.png'];
+const CACHE_NAME = 'hungry-times-v5-20251229-' + Date.now();
 
-console.log('[SW] 🚀 Customer Site Service Worker loading - AGGRESSIVE MODE');
+// ✅ FIXED: Match actual icon filenames in /public folder
+const STATIC_ASSETS = [
+  '/icon-512.png',      // ← Fixed: was /icon-512x512.png
+  '/icon-192.png',
+  '/icon-180.png',
+  '/favicon.ico'
+];
+
+console.log('[SW] 🚀 Customer Site Service Worker loading');
 console.log('[SW] 📦 Cache name:', CACHE_NAME);
 
 // ============================================================================
@@ -15,32 +22,36 @@ console.log('[SW] 📦 Cache name:', CACHE_NAME);
 // ============================================================================
 
 self.addEventListener('install', (event) => {
-  console.log('[SW] 🔧 Installing service worker - FORCE MODE');
+  console.log('[SW] 🔧 Installing service worker');
   
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('[SW] 💾 Pre-caching static assets');
-        return cache.addAll(STATIC_ASSETS);
+        // ✅ Use addAll with error handling
+        return cache.addAll(STATIC_ASSETS).catch(err => {
+          console.warn('[SW] ⚠️ Some assets failed to cache:', err);
+          // Don't fail installation if some assets are missing
+        });
       })
       .then(() => {
-        console.log('[SW] ✅ Static assets cached');
+        console.log('[SW] ✅ Installation complete');
         console.log('[SW] ⚡ FORCE ACTIVATING - Skipping waiting');
-        return self.skipWaiting(); // CRITICAL: Don't wait for old SW to close
+        return self.skipWaiting();
       })
   );
 });
 
 // ============================================================================
-// ACTIVATE EVENT - AGGRESSIVE cache deletion + force reload
+// ACTIVATE EVENT - Clean old caches
 // ============================================================================
 
 self.addEventListener('activate', (event) => {
-  console.log('[SW] ⚡ Activating service worker - AGGRESSIVE MODE');
+  console.log('[SW] ⚡ Activating service worker');
   
   event.waitUntil(
     Promise.all([
-      // Delete ALL old caches aggressively
+      // Delete old caches
       caches.keys().then((cacheNames) => {
         console.log('[SW] 🗑️ Found caches:', cacheNames);
         return Promise.all(
@@ -53,21 +64,20 @@ self.addEventListener('activate', (event) => {
         );
       }),
       
-      // Force claim all clients immediately
+      // Claim all clients
       self.clients.claim()
     ])
     .then(() => {
-      console.log('[SW] ✅ All old caches deleted, clients claimed');
+      console.log('[SW] ✅ Activation complete, clients claimed');
       
-      // Force reload all open clients
+      // Notify clients
       return self.clients.matchAll({ type: 'window', includeUncontrolled: true })
         .then((clients) => {
-          console.log(`[SW] 🔄 Force reloading ${clients.length} client(s)`);
+          console.log(`[SW] 📡 Notifying ${clients.length} client(s)`);
           clients.forEach((client) => {
-            // Send reload message to client
             client.postMessage({
               type: 'SW_UPDATED',
-              message: 'Service worker updated, please refresh',
+              message: 'Service worker updated',
               cacheCleared: true
             });
           });
@@ -77,13 +87,13 @@ self.addEventListener('activate', (event) => {
 });
 
 // ============================================================================
-// FETCH EVENT - Network-first with cache busting
+// FETCH EVENT - Network-first strategy
 // ============================================================================
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Skip API requests
+  // Skip API requests - let them go to network
   if (url.pathname.startsWith('/api/')) {
     return;
   }
@@ -93,8 +103,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // CRITICAL: Add cache-busting for service worker itself
-  if (url.pathname.includes('sw.js') || url.pathname.includes('service-worker.js')) {
+  // Cache-bust service worker itself
+  if (url.pathname.includes('sw.js')) {
     event.respondWith(
       fetch(event.request.url + '?v=' + Date.now(), {
         cache: 'no-store',
@@ -112,10 +122,10 @@ self.addEventListener('fetch', (event) => {
                      url.pathname.endsWith('.html');
   
   const isAsset = /\.(js|css|json)$/i.test(url.pathname);
-  const isMedia = /\.(png|jpg|jpeg|gif|svg|webp|woff|woff2|ttf|eot)$/i.test(url.pathname);
+  const isMedia = /\.(png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf|eot)$/i.test(url.pathname);
 
   if (isDocument || isAsset) {
-    // NETWORK-FIRST for HTML/CSS/JS (always check for updates!)
+    // NETWORK-FIRST for HTML/CSS/JS
     event.respondWith(
       fetch(event.request)
         .then((response) => {
@@ -131,7 +141,7 @@ self.addEventListener('fetch', (event) => {
           return caches.match(event.request)
             .then((cachedResponse) => {
               if (cachedResponse) {
-                console.log('[SW] 📦 Network failed, serving from cache:', url.pathname);
+                console.log('[SW] 📦 Serving from cache:', url.pathname);
                 return cachedResponse;
               }
               return new Response('Offline - please check your connection', {
@@ -180,8 +190,8 @@ self.addEventListener('push', (event) => {
   let notificationData = {
     title: 'Hungry Times',
     body: 'You have a new notification',
-    icon: '/icon-512x512.png',
-    badge: '/badge-72x72.png',
+    icon: '/icon-512.png',
+    badge: '/icon-192.png',
     tag: 'notification',
     data: { url: '/' }
   };
@@ -237,37 +247,60 @@ self.addEventListener('push', (event) => {
 });
 
 // ============================================================================
-// NOTIFICATION CLICK EVENT
+// NOTIFICATION CLICK EVENT - ✅ FIXED for mobile
 // ============================================================================
 
 self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] 🖱️ Notification clicked:', event.notification.tag);
+  console.log('[SW] 🖱️ Notification clicked');
+  console.log('[SW] Tag:', event.notification.tag);
+  console.log('[SW] Data:', event.notification.data);
+  
   event.notification.close();
 
-  const urlToOpen = event.notification.data?.url || '/';
+  // ✅ FIXED: Ensure full URL for mobile browsers
+  let urlToOpen = event.notification.data?.url || '/';
+  
+  // Convert relative URL to absolute
+  if (!urlToOpen.startsWith('http')) {
+    urlToOpen = self.location.origin + urlToOpen;
+  }
+  
   console.log('[SW] 🔗 Opening URL:', urlToOpen);
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
+        console.log(`[SW] 📋 Found ${clientList.length} open window(s)`);
+        
+        // Try to focus existing window
         for (const client of clientList) {
-          if (client.url.includes(location.origin) && 'focus' in client) {
+          const clientOrigin = new URL(client.url).origin;
+          if (clientOrigin === self.location.origin) {
             console.log('[SW] ✅ Focusing existing window');
-            client.focus();
-            if (urlToOpen !== '/') {
+            
+            // Navigate to the URL if different from home
+            if (urlToOpen !== self.location.origin + '/') {
               client.navigate(urlToOpen);
             }
-            return;
+            
+            return client.focus();
           }
         }
         
+        // No window open, open new one
         if (clients.openWindow) {
           console.log('[SW] ✅ Opening new window');
           return clients.openWindow(urlToOpen);
+        } else {
+          console.error('[SW] ❌ clients.openWindow not available');
         }
+      })
+      .catch(err => {
+        console.error('[SW] ❌ Error handling notification click:', err);
       })
   );
 
+  // Notify app
   self.clients.matchAll({ type: 'window' })
     .then((clients) => {
       clients.forEach((client) => {
@@ -292,15 +325,15 @@ self.addEventListener('notificationclose', (event) => {
 // ============================================================================
 
 self.addEventListener('message', (event) => {
-  console.log('[SW] 💬 Message received from app:', event.data?.type);
+  console.log('[SW] 💬 Message from app:', event.data?.type);
 
   if (event.data?.type === 'SKIP_WAITING') {
-    console.log('[SW] ⭐ Skipping waiting, activating new version');
+    console.log('[SW] ⭐ Skipping waiting');
     self.skipWaiting();
   }
 
   if (event.data?.type === 'get-token') {
-    console.log('[SW] 🔑 Requesting auth token');
+    console.log('[SW] 🔑 Token requested');
     const token = localStorage?.getItem?.('customerToken');
     event.ports[0]?.postMessage({ token });
   }
@@ -332,15 +365,14 @@ self.addEventListener('sync', (event) => {
 
 console.log('╔═══════════════════════════════════════════════════╗');
 console.log('[SW] ✅ Customer Site Service Worker Ready');
-console.log('[SW] Version: v4-AGGRESSIVE-20251229');
-console.log('[SW] Cache Strategy: NETWORK-FIRST + AGGRESSIVE CLEAR');
+console.log('[SW] Version: v5-FIXED-20251229');
+console.log('[SW] Cache Strategy: NETWORK-FIRST');
 console.log('[SW] Portal: Customer (hungrytimes.in)');
 console.log('[SW] Features:');
 console.log('     ✅ Push notifications');
 console.log('     ✅ Order status updates');
-console.log('     ✅ AGGRESSIVE cache clearing');
-console.log('     ✅ Force immediate updates');
-console.log('     ✅ Auto-reload on deploy');
+console.log('     ✅ Offline support');
+console.log('     ✅ PWA installation');
 console.log('[SW] Notification types:');
 console.log('     - 📦 Order Status Updates');
 console.log('     - 🛒 Order Confirmation');
