@@ -1,22 +1,22 @@
 // site/public/sw.js - Customer Site Service Worker
 // ============================================================================
-// Simplified version for hungrytimes.in customer portal
-// Features: Push notifications, smart caching, order updates
+// AGGRESSIVE CACHE-CLEAR VERSION - Forces updates on every deploy
+// Version: v4-AGGRESSIVE-20251229
 // ============================================================================
 
-const CACHE_NAME = 'hungry-times-v3-20241220'; // ← INCREMENT THIS ON EVERY DEPLOY!
+const CACHE_NAME = 'hungry-times-v4-20251229-' + Date.now(); // ← TIMESTAMP for uniqueness
 const STATIC_ASSETS = ['/icon-512x512.png', '/badge-72x72.png'];
 
-console.log('[SW] 🚀 Customer Site Service Worker loading');
+console.log('[SW] 🚀 Customer Site Service Worker loading - AGGRESSIVE MODE');
+console.log('[SW] 📦 Cache name:', CACHE_NAME);
 
 // ============================================================================
-// INSTALL EVENT
+// INSTALL EVENT - Force immediate activation
 // ============================================================================
 
 self.addEventListener('install', (event) => {
-  console.log('[SW] 🔧 Installing service worker');
+  console.log('[SW] 🔧 Installing service worker - FORCE MODE');
   
-  // Pre-cache critical assets
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
@@ -25,55 +25,88 @@ self.addEventListener('install', (event) => {
       })
       .then(() => {
         console.log('[SW] ✅ Static assets cached');
-        return self.skipWaiting(); // Activate immediately
+        console.log('[SW] ⚡ FORCE ACTIVATING - Skipping waiting');
+        return self.skipWaiting(); // CRITICAL: Don't wait for old SW to close
       })
   );
 });
 
 // ============================================================================
-// ACTIVATE EVENT
+// ACTIVATE EVENT - AGGRESSIVE cache deletion + force reload
 // ============================================================================
 
 self.addEventListener('activate', (event) => {
-  console.log('[SW] ⚡ Activating service worker');
+  console.log('[SW] ⚡ Activating service worker - AGGRESSIVE MODE');
   
   event.waitUntil(
-    // Delete old caches
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('[SW] 🗑️ Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    Promise.all([
+      // Delete ALL old caches aggressively
+      caches.keys().then((cacheNames) => {
+        console.log('[SW] 🗑️ Found caches:', cacheNames);
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheName !== CACHE_NAME) {
+              console.log('[SW] ❌ DELETING cache:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      }),
+      
+      // Force claim all clients immediately
+      self.clients.claim()
+    ])
     .then(() => {
-      console.log('[SW] ✅ Old caches deleted');
-      return self.clients.claim(); // Take control immediately
+      console.log('[SW] ✅ All old caches deleted, clients claimed');
+      
+      // Force reload all open clients
+      return self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+        .then((clients) => {
+          console.log(`[SW] 🔄 Force reloading ${clients.length} client(s)`);
+          clients.forEach((client) => {
+            // Send reload message to client
+            client.postMessage({
+              type: 'SW_UPDATED',
+              message: 'Service worker updated, please refresh',
+              cacheCleared: true
+            });
+          });
+        });
     })
   );
 });
 
 // ============================================================================
-// FETCH EVENT - Smart Caching Strategy
+// FETCH EVENT - Network-first with cache busting
 // ============================================================================
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Skip API requests (always fetch fresh)
+  // Skip API requests
   if (url.pathname.startsWith('/api/')) {
     return;
   }
 
-  // Skip chrome-extension and other non-http requests
+  // Skip non-http protocols
   if (!url.protocol.startsWith('http')) {
     return;
   }
 
-  // Determine caching strategy based on file type
+  // CRITICAL: Add cache-busting for service worker itself
+  if (url.pathname.includes('sw.js') || url.pathname.includes('service-worker.js')) {
+    event.respondWith(
+      fetch(event.request.url + '?v=' + Date.now(), {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate'
+        }
+      })
+    );
+    return;
+  }
+
+  // Determine file type
   const isDocument = event.request.mode === 'navigate' || 
                      event.request.destination === 'document' ||
                      url.pathname.endsWith('.html');
@@ -86,7 +119,6 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          // Clone and cache the response
           if (response && response.status === 200) {
             const responseToCache = response.clone();
             caches.open(CACHE_NAME).then((cache) => {
@@ -96,14 +128,12 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => {
-          // Network failed, try cache as fallback
           return caches.match(event.request)
             .then((cachedResponse) => {
               if (cachedResponse) {
                 console.log('[SW] 📦 Network failed, serving from cache:', url.pathname);
                 return cachedResponse;
               }
-              // No cache, return offline message
               return new Response('Offline - please check your connection', {
                 status: 503,
                 statusText: 'Service Unavailable',
@@ -113,14 +143,13 @@ self.addEventListener('fetch', (event) => {
         })
     );
   } else if (isMedia) {
-    // CACHE-FIRST for images/fonts (they rarely change)
+    // CACHE-FIRST for images/fonts
     event.respondWith(
       caches.match(event.request)
         .then((cachedResponse) => {
           if (cachedResponse) {
             return cachedResponse;
           }
-          // Not in cache, fetch and cache
           return fetch(event.request)
             .then((response) => {
               if (response && response.status === 200) {
@@ -148,7 +177,6 @@ self.addEventListener('push', (event) => {
     return;
   }
 
-  // Parse push payload
   let notificationData = {
     title: 'Hungry Times',
     body: 'You have a new notification',
@@ -183,7 +211,6 @@ self.addEventListener('push', (event) => {
     console.error('[SW] ❌ Error parsing push data:', error);
   }
 
-  // Show notification
   event.waitUntil(
     self.registration.showNotification(notificationData.title, notificationData)
       .then(() => {
@@ -194,7 +221,7 @@ self.addEventListener('push', (event) => {
       })
   );
 
-  // Notify open clients about the push
+  // Notify open clients
   event.waitUntil(
     self.clients.matchAll({ includeUncontrolled: true, type: 'window' })
       .then((clients) => {
@@ -217,20 +244,16 @@ self.addEventListener('notificationclick', (event) => {
   console.log('[SW] 🖱️ Notification clicked:', event.notification.tag);
   event.notification.close();
 
-  // Get URL from notification data
   const urlToOpen = event.notification.data?.url || '/';
   console.log('[SW] 🔗 Opening URL:', urlToOpen);
 
-  // Try to focus existing window or open new one
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
-        // Check if window already open
         for (const client of clientList) {
           if (client.url.includes(location.origin) && 'focus' in client) {
             console.log('[SW] ✅ Focusing existing window');
             client.focus();
-            // Navigate to URL if needed
             if (urlToOpen !== '/') {
               client.navigate(urlToOpen);
             }
@@ -238,7 +261,6 @@ self.addEventListener('notificationclick', (event) => {
           }
         }
         
-        // Open new window
         if (clients.openWindow) {
           console.log('[SW] ✅ Opening new window');
           return clients.openWindow(urlToOpen);
@@ -246,7 +268,6 @@ self.addEventListener('notificationclick', (event) => {
       })
   );
 
-  // Notify app that notification was clicked
   self.clients.matchAll({ type: 'window' })
     .then((clients) => {
       clients.forEach((client) => {
@@ -273,20 +294,17 @@ self.addEventListener('notificationclose', (event) => {
 self.addEventListener('message', (event) => {
   console.log('[SW] 💬 Message received from app:', event.data?.type);
 
-  // Handle SKIP_WAITING
   if (event.data?.type === 'SKIP_WAITING') {
-    console.log('[SW] ⏭️ Skipping waiting, activating new version');
+    console.log('[SW] ⭐ Skipping waiting, activating new version');
     self.skipWaiting();
   }
 
-  // Handle GET_TOKEN request (for push subscription)
   if (event.data?.type === 'get-token') {
     console.log('[SW] 🔑 Requesting auth token');
     const token = localStorage?.getItem?.('customerToken');
     event.ports[0]?.postMessage({ token });
   }
 
-  // Handle CLEAR_CACHE
   if (event.data?.type === 'clear-cache') {
     console.log('[SW] 🗑️ Clearing cache');
     caches.delete(CACHE_NAME)
@@ -297,7 +315,7 @@ self.addEventListener('message', (event) => {
 });
 
 // ============================================================================
-// SYNC EVENT - Background sync (optional)
+// SYNC EVENT
 // ============================================================================
 
 self.addEventListener('sync', (event) => {
@@ -305,7 +323,6 @@ self.addEventListener('sync', (event) => {
 
   if (event.tag === 'sync-pending-orders') {
     console.log('[SW] 📋 Syncing pending orders');
-    // Can be implemented for offline order submission
   }
 });
 
@@ -313,18 +330,19 @@ self.addEventListener('sync', (event) => {
 // INITIALIZATION COMPLETE
 // ============================================================================
 
-console.log('╔══════════════════════════════════════════════════════╗');
+console.log('╔═══════════════════════════════════════════════════╗');
 console.log('[SW] ✅ Customer Site Service Worker Ready');
-console.log('[SW] Version: v3-20241220');
-console.log('[SW] Cache Strategy: NETWORK-FIRST for HTML/CSS/JS');
+console.log('[SW] Version: v4-AGGRESSIVE-20251229');
+console.log('[SW] Cache Strategy: NETWORK-FIRST + AGGRESSIVE CLEAR');
 console.log('[SW] Portal: Customer (hungrytimes.in)');
 console.log('[SW] Features:');
 console.log('     ✅ Push notifications');
 console.log('     ✅ Order status updates');
-console.log('     ✅ Smart caching (network-first)');
-console.log('     ✅ Auto-update on new deploy');
-console.log('[SW] Supported notification types:');
-console.log('     - 📦 Order Status (accepted, preparing, delivered)');
-console.log('     - 🛒 New Order Confirmation');
+console.log('     ✅ AGGRESSIVE cache clearing');
+console.log('     ✅ Force immediate updates');
+console.log('     ✅ Auto-reload on deploy');
+console.log('[SW] Notification types:');
+console.log('     - 📦 Order Status Updates');
+console.log('     - 🛒 Order Confirmation');
 console.log('     - 💳 Payment Updates');
-console.log('╚══════════════════════════════════════════════════════╝');
+console.log('╚═══════════════════════════════════════════════════╝');
