@@ -11,7 +11,7 @@ import { useCart } from "../context/CartContext";
 import AddToCartModal from "../components/AddToCartModal";
 import CartDrawer from "../components/CartDrawer";
 import GoogleMapsAutocomplete from "../components/GoogleMapsAutocomplete";
-import { ShoppingCart, MapPin, MessageSquare, Loader, Plus, Check, Edit2 } from "lucide-react";
+import { ShoppingCart, MapPin, MessageSquare, Loader, Plus, Check, Edit2, Trash2, X } from "lucide-react";
 
 import API_BASE from '../config/api.js';
 
@@ -53,6 +53,15 @@ export default function Order() {
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [showAddAddressForm, setShowAddAddressForm] = useState(false);
   const [newAddressData, setNewAddressData] = useState({
+    name: '',
+    fullAddress: '',
+    latitude: null,
+    longitude: null
+  });
+
+  // Edit Address State
+  const [editingAddressId, setEditingAddressId] = useState(null);
+  const [editAddressData, setEditAddressData] = useState({
     name: '',
     fullAddress: '',
     latitude: null,
@@ -143,6 +152,134 @@ export default function Order() {
       setNewAddressData({ name: '', fullAddress: '', latitude: null, longitude: null });
       
       alert("Address added successfully!");
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
+  // ============================================================================
+  // DELETE ADDRESS
+  // ============================================================================
+  const handleDeleteAddress = async (addressId) => {
+    if (!confirm('Are you sure you want to delete this address?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('customerToken');
+      const response = await fetch(`${API_BASE}/customer/addresses/${addressId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete address');
+      }
+
+      // Refresh addresses list
+      await fetchAddresses();
+      
+      // If deleted address was selected, clear selection
+      if (selectedAddressId === addressId) {
+        setSelectedAddressId(null);
+      }
+
+      alert('Address deleted successfully!');
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
+  // ============================================================================
+  // START EDITING ADDRESS
+  // ============================================================================
+  const handleStartEdit = (addr) => {
+    setEditingAddressId(addr.id);
+    setEditAddressData({
+      name: addr.name || '',
+      fullAddress: addr.fullAddress,
+      latitude: addr.latitude,
+      longitude: addr.longitude
+    });
+  };
+
+  // ============================================================================
+  // CANCEL EDITING
+  // ============================================================================
+  const handleCancelEdit = () => {
+    setEditingAddressId(null);
+    setEditAddressData({
+      name: '',
+      fullAddress: '',
+      latitude: null,
+      longitude: null
+    });
+  };
+
+  // ============================================================================
+  // SAVE EDITED ADDRESS
+  // ============================================================================
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+
+    if (!editAddressData.fullAddress || !editAddressData.latitude) {
+      alert('Please select a valid address from the map');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('customerToken');
+      const response = await fetch(`${API_BASE}/customer/addresses/${editingAddressId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(editAddressData)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update address');
+      }
+
+      // Refresh addresses list
+      await fetchAddresses();
+      
+      // Exit edit mode
+      handleCancelEdit();
+
+      alert('Address updated successfully!');
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
+  // ============================================================================
+  // SET DEFAULT ADDRESS
+  // ============================================================================
+  const handleSetDefault = async (addressId) => {
+    try {
+      const token = localStorage.getItem('customerToken');
+      const response = await fetch(`${API_BASE}/customer/addresses/${addressId}/default`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to set default address');
+      }
+
+      // Refresh addresses list
+      await fetchAddresses();
+
+      alert('Default address updated!');
     } catch (error) {
       alert(error.message);
     }
@@ -505,63 +642,198 @@ export default function Order() {
                 <>
                   <div className="space-y-3 mb-4">
                     {addresses.map((addr) => {
-                      // Calculate distance for this address
-                      const distance = addr.latitude && addr.longitude
-                        ? calculateDistance(
-                            RESTAURANT_LOCATION.latitude,
-                            RESTAURANT_LOCATION.longitude,
-                            addr.latitude,
-                            addr.longitude
-                          )
-                        : null;
-                      
-                      const withinRange = distance ? distance <= MAX_DELIVERY_RADIUS_KM : true;
+                    // Calculate distance
+                    const distance = addr.latitude && addr.longitude
+                      ? calculateDistance(
+                          RESTAURANT_LOCATION.latitude,
+                          RESTAURANT_LOCATION.longitude,
+                          addr.latitude,
+                          addr.longitude
+                        )
+                      : null;
+                    
+                    const withinRange = distance ? distance <= MAX_DELIVERY_RADIUS_KM : true;
 
-                      return (
-                        <div
-                          key={addr.id}
-                          onClick={() => withinRange && setSelectedAddressId(addr.id)}
-                          className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                            selectedAddressId === addr.id
-                              ? "border-orange-500 bg-orange-500/10"
-                              : withinRange
-                              ? "border-neutral-700 hover:border-neutral-600"
-                              : "border-red-500/50 bg-red-500/5 cursor-not-allowed"
-                          }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <MapPin className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
-                              withinRange ? "text-orange-500" : "text-red-500"
-                            }`} />
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                {addr.name && (
-                                  <span className="text-white font-medium">{addr.name}</span>
-                                )}
-                                {addr.isDefault && (
-                                  <span className="px-2 py-0.5 bg-orange-500 text-white text-xs rounded-full">
-                                    Default
-                                  </span>
+                    // Check if this address is being edited
+                    const isEditing = editingAddressId === addr.id;
+
+                    return (
+                      <div key={addr.id}>
+                        {isEditing ? (
+                          // ============================================================
+                          // EDIT MODE
+                          // ============================================================
+                          <form onSubmit={handleSaveEdit} className="space-y-4 p-4 bg-neutral-800 rounded-lg">
+                            <div className="flex justify-between items-center mb-3">
+                              <h4 className="text-white font-semibold">Edit Address</h4>
+                              <button
+                                type="button"
+                                onClick={handleCancelEdit}
+                                className="text-neutral-400 hover:text-white"
+                              >
+                                <X className="w-5 h-5" />
+                              </button>
+                            </div>
+
+                            <div>
+                              <label className="block text-neutral-300 text-sm mb-2">
+                                Label (Optional)
+                              </label>
+                              <input
+                                type="text"
+                                value={editAddressData.name}
+                                onChange={(e) => setEditAddressData({ ...editAddressData, name: e.target.value })}
+                                placeholder="e.g., Home, Office"
+                                className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-neutral-300 text-sm mb-2">
+                                Address *
+                              </label>
+                              <GoogleMapsAutocomplete
+                                onSelect={(result) => {
+                                  setEditAddressData({
+                                    ...editAddressData,
+                                    fullAddress: result.address,
+                                    latitude: result.latitude,
+                                    longitude: result.longitude
+                                  });
+                                }}
+                                defaultValue={editAddressData.fullAddress}
+                              />
+                            </div>
+
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={handleCancelEdit}
+                                className="flex-1 px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="submit"
+                                className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium"
+                              >
+                                Save Changes
+                              </button>
+                            </div>
+                          </form>
+                        ) : (
+                          // ============================================================
+                          // VIEW MODE
+                          // ============================================================
+                          <div
+                            className={`p-4 rounded-lg border-2 transition-all ${
+                              selectedAddressId === addr.id
+                                ? "border-orange-500 bg-orange-500/10"
+                                : withinRange
+                                ? "border-neutral-700 hover:border-neutral-600"
+                                : "border-red-500/50 bg-red-500/5"
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              {/* Address Icon */}
+                              <MapPin 
+                                className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                                  withinRange ? "text-orange-500" : "text-red-500"
+                                }`} 
+                              />
+                              
+                              {/* Address Details */}
+                              <div 
+                                className="flex-1 min-w-0 cursor-pointer"
+                                onClick={() => withinRange && setSelectedAddressId(addr.id)}
+                              >
+                                <div className="flex items-center gap-2 mb-1">
+                                  {addr.name && (
+                                    <span className="text-white font-medium">{addr.name}</span>
+                                  )}
+                                  {addr.isDefault && (
+                                    <span className="px-2 py-0.5 bg-orange-500 text-white text-xs rounded-full">
+                                      Default
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-sm text-neutral-300">{addr.fullAddress}</p>
+                                {distance && (
+                                  <p className={`text-xs mt-2 ${
+                                    withinRange ? "text-green-400" : "text-red-400"
+                                  }`}>
+                                    📍 {distance.toFixed(1)} km • {withinRange 
+                                      ? "✓ Deliverable" 
+                                      : "⚠ Out of range - Call 8420822919"}
+                                  </p>
                                 )}
                               </div>
-                              <p className="text-sm text-neutral-300">{addr.fullAddress}</p>
-                              {distance && (
-                                <p className={`text-xs mt-2 ${
-                                  withinRange ? "text-green-400" : "text-red-400"
-                                }`}>
-                                  📍 {distance.toFixed(1)} km • {withinRange 
-                                    ? "✓ Deliverable" 
-                                    : "⚠ Out of range - Call 8420822919"}
-                                </p>
-                              )}
+
+                              {/* Action Buttons */}
+                              <div className="flex flex-col gap-2">
+                                {/* Select/Check Button */}
+                                {selectedAddressId === addr.id && withinRange ? (
+                                  <button className="p-2 text-orange-500">
+                                    <Check className="w-5 h-5" />
+                                  </button>
+                                ) : (
+                                  withinRange && (
+                                    <button
+                                      onClick={() => setSelectedAddressId(addr.id)}
+                                      className="p-2 text-neutral-400 hover:text-orange-500 transition-colors"
+                                      title="Select address"
+                                    >
+                                      <Check className="w-5 h-5" />
+                                    </button>
+                                  )
+                                )}
+
+                                {/* Edit Button */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStartEdit(addr);
+                                  }}
+                                  className="p-2 text-neutral-400 hover:text-blue-400 transition-colors"
+                                  title="Edit address"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+
+                                {/* Delete Button (only if not the only address) */}
+                                {addresses.length > 1 && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteAddress(addr.id);
+                                    }}
+                                    className="p-2 text-neutral-400 hover:text-red-400 transition-colors"
+                                    title="Delete address"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+
+                                {/* Set Default Button (only if not already default) */}
+                                {!addr.isDefault && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSetDefault(addr.id);
+                                    }}
+                                    className="p-2 text-xs text-neutral-400 hover:text-orange-400 transition-colors"
+                                    title="Set as default"
+                                  >
+                                    ★
+                                  </button>
+                                )}
+                              </div>
                             </div>
-                            {selectedAddressId === addr.id && withinRange && (
-                              <Check className="w-5 h-5 text-orange-500 flex-shrink-0" />
-                            )}
                           </div>
-                        </div>
-                      );
-                    })}
+                        )}
+                      </div>
+                    );
+                  })}
                   </div>
 
                   {addresses.length < 5 && (
