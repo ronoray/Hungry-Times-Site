@@ -15,6 +15,30 @@ import { ShoppingCart, MapPin, MessageSquare, Loader, Plus, Check, Edit2 } from 
 
 import API_BASE from '../config/api.js';
 
+// Restaurant location for delivery radius calculation
+const RESTAURANT_LOCATION = {
+  latitude: 22.5061956,
+  longitude: 88.3673608
+};
+
+// Maximum delivery radius in km
+const MAX_DELIVERY_RADIUS_KM = 4;
+
+// Calculate distance between two coordinates (Haversine formula)
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) *
+    Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 export default function Order() {
   const navigate = useNavigate();
   const { isAuthenticated, customer } = useAuth();
@@ -151,6 +175,34 @@ export default function Order() {
   const selectedAddress = addresses.find(addr => addr.id === selectedAddressId);
 
   // ============================================================================
+  // VALIDATE DELIVERY AREA
+  // ============================================================================
+  const validateDeliveryArea = () => {
+    const selectedAddress = addresses.find(a => a.id === selectedAddressId);
+    
+    if (!selectedAddress || !selectedAddress.latitude || !selectedAddress.longitude) {
+      return { valid: false, message: "Please select a valid delivery address" };
+    }
+
+    const distance = calculateDistance(
+      RESTAURANT_LOCATION.latitude,
+      RESTAURANT_LOCATION.longitude,
+      selectedAddress.latitude,
+      selectedAddress.longitude
+    );
+
+    if (distance > MAX_DELIVERY_RADIUS_KM) {
+      return {
+        valid: false,
+        distance: distance.toFixed(2),
+        message: `Outside automatic delivery area (${distance.toFixed(1)} km). Please call 8420822919 to place order.`
+      };
+    }
+
+    return { valid: true, distance: distance.toFixed(2) };
+  };
+
+  // ============================================================================
   // ORDER CREATION & PAYMENT HANDLERS
   // ============================================================================
   const handleCreateOrder = async () => {
@@ -217,6 +269,14 @@ export default function Order() {
   };
 
   const handleCODPayment = async () => {
+    // Validate delivery area FIRST
+    const areaCheck = validateDeliveryArea();
+    
+    if (!areaCheck.valid) {
+      setPaymentError(areaCheck.message);
+      alert(areaCheck.message); // Show prominent alert
+      return;
+    }
     setPaymentProcessing(true);
     setPaymentMethod("COD");
     const orderId = await handleCreateOrder();
@@ -256,6 +316,14 @@ export default function Order() {
   };
 
   const handleRazorpayPayment = async () => {
+    // Validate delivery area FIRST
+    const areaCheck = validateDeliveryArea();
+    
+    if (!areaCheck.valid) {
+      setPaymentError(areaCheck.message);
+      alert(areaCheck.message); // Show prominent alert
+      return;
+    }
     if (!window.Razorpay) {
       setPaymentError("Razorpay not loaded");
       return;
@@ -436,39 +504,64 @@ export default function Order() {
               {addresses.length > 0 && !showAddAddressForm && (
                 <>
                   <div className="space-y-3 mb-4">
-                    {addresses.map((addr) => (
-                      <div
-                        key={addr.id}
-                        onClick={() => setSelectedAddressId(addr.id)}
-                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                          selectedAddressId === addr.id
-                            ? 'border-orange-500 bg-orange-500/10'
-                            : 'border-neutral-700 hover:border-neutral-600'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              {addr.name && (
-                                <span className="text-white font-medium">{addr.name}</span>
-                              )}
-                              {addr.isDefault && (
-                                <span className="px-2 py-0.5 bg-orange-500 text-white text-xs rounded-full">
-                                  Default
-                                </span>
+                    {addresses.map((addr) => {
+                      // Calculate distance for this address
+                      const distance = addr.latitude && addr.longitude
+                        ? calculateDistance(
+                            RESTAURANT_LOCATION.latitude,
+                            RESTAURANT_LOCATION.longitude,
+                            addr.latitude,
+                            addr.longitude
+                          )
+                        : null;
+                      
+                      const withinRange = distance ? distance <= MAX_DELIVERY_RADIUS_KM : true;
+
+                      return (
+                        <div
+                          key={addr.id}
+                          onClick={() => withinRange && setSelectedAddressId(addr.id)}
+                          className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                            selectedAddressId === addr.id
+                              ? "border-orange-500 bg-orange-500/10"
+                              : withinRange
+                              ? "border-neutral-700 hover:border-neutral-600"
+                              : "border-red-500/50 bg-red-500/5 cursor-not-allowed"
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <MapPin className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                              withinRange ? "text-orange-500" : "text-red-500"
+                            }`} />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                {addr.name && (
+                                  <span className="text-white font-medium">{addr.name}</span>
+                                )}
+                                {addr.isDefault && (
+                                  <span className="px-2 py-0.5 bg-orange-500 text-white text-xs rounded-full">
+                                    Default
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-neutral-300">{addr.fullAddress}</p>
+                              {distance && (
+                                <p className={`text-xs mt-2 ${
+                                  withinRange ? "text-green-400" : "text-red-400"
+                                }`}>
+                                  📍 {distance.toFixed(1)} km • {withinRange 
+                                    ? "✓ Deliverable" 
+                                    : "⚠ Out of range - Call 8420822919"}
+                                </p>
                               )}
                             </div>
-                            <p className="text-neutral-300 text-sm">{addr.fullAddress}</p>
-                            <p className="text-neutral-500 text-xs mt-1">
-                              📍 {addr.distanceKm} km • {addr.withinServiceArea ? '✓ Deliverable' : '⚠ Out of range'}
-                            </p>
+                            {selectedAddressId === addr.id && withinRange && (
+                              <Check className="w-5 h-5 text-orange-500 flex-shrink-0" />
+                            )}
                           </div>
-                          {selectedAddressId === addr.id && (
-                            <Check className="w-6 h-6 text-orange-500 flex-shrink-0" />
-                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {addresses.length < 5 && (

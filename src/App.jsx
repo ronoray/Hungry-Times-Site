@@ -1,8 +1,9 @@
-// site/src/App.jsx - FIXED: Added notification permission request
-import { useEffect } from "react";
+// site/src/App.jsx - WITH AGGRESSIVE NOTIFICATION MODAL
+import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import NotificationPromptModal from "./components/NotificationPromptModal";
 
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
@@ -67,7 +68,7 @@ async function setupPushNotifications() {
     ]);
     console.log('[Push] ✅ Service worker ready');
 
-    // ✅ FIXED: Request notification permission FIRST
+    // ✅ Check notification permission
     console.log('[Push] 🔔 Checking notification permission...');
     
     if (Notification.permission === 'denied') {
@@ -264,6 +265,9 @@ export async function resubscribeOnLogin() {
 }
 
 export default function App() {
+  // ✅ NEW: State to control notification modal visibility
+  const [showNotificationModal, setShowNotificationModal] = useState(true);
+
   useEffect(() => {
     console.log('[Push] 🚀 App mounted');
     
@@ -291,7 +295,27 @@ export default function App() {
       console.log('[Push] ℹ️ Not logged in, waiting for login');
     }
 
-  }, []);
+    // ✅ NEW: Listen for permission changes to hide modal
+    const handlePermissionChange = () => {
+      console.log('[Push] 🔔 Permission changed, checking...');
+      if (Notification.permission === 'granted') {
+        console.log('[Push] ✅ Permission granted, hiding modal...');
+        setShowNotificationModal(false);
+        setupPushNotifications();
+      }
+    };
+
+    // Poll for permission changes (some browsers don't support permission API)
+    const permissionCheckInterval = setInterval(() => {
+      if (Notification.permission === 'granted' && showNotificationModal) {
+        handlePermissionChange();
+      }
+    }, 2000);
+
+    return () => {
+      clearInterval(permissionCheckInterval);
+    };
+  }, [showNotificationModal]);
 
   return (
     <MenuCategoryProvider>
@@ -299,6 +323,9 @@ export default function App() {
         <CartProvider>
           <LocationProvider>
             <div className="min-h-screen flex flex-col bg-[#0B0B0B] text-white">
+              
+              {/* ✅ NEW: AGGRESSIVE NOTIFICATION PROMPT - Shows immediately */}
+              {showNotificationModal && <NotificationPromptModal />}
               
               {/* Navigation */}
               <Navbar />
