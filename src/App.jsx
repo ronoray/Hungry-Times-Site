@@ -1,4 +1,4 @@
-// site/src/App.jsx - WITH AGGRESSIVE NOTIFICATION MODAL
+// site/src/App.jsx - FIXED: Modal after SW ready, auto-setup on permission grant
 import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import Navbar from "./components/Navbar";
@@ -37,7 +37,8 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 /**
- * Setup push notifications
+ * Setup push notifications - WITHOUT requesting permission
+ * Permission should already be granted before calling this
  */
 async function setupPushNotifications() {
   try {
@@ -46,9 +47,15 @@ async function setupPushNotifications() {
       return false;
     }
 
+    // ✅ Check permission is already granted
+    if (Notification.permission !== 'granted') {
+      console.log('[Push] ℹ️ Permission not granted, skipping push setup');
+      return false;
+    }
+
     console.log('[Push] 🔧 Setting up push notifications');
 
-    // Register service worker
+    // Register service worker (or get existing)
     console.log('[Push] 📝 Registering service worker...');
     const registration = await Promise.race([
       navigator.serviceWorker.register('/sw.js', { scope: '/' }),
@@ -67,27 +74,6 @@ async function setupPushNotifications() {
       )
     ]);
     console.log('[Push] ✅ Service worker ready');
-
-    // ✅ Check notification permission
-    console.log('[Push] 🔔 Checking notification permission...');
-    
-    if (Notification.permission === 'denied') {
-      console.warn('[Push] ⚠️ Notification permission denied');
-      return false;
-    }
-    
-    if (Notification.permission !== 'granted') {
-      console.log('[Push] 📱 Requesting notification permission...');
-      const permission = await Notification.requestPermission();
-      console.log('[Push] Permission result:', permission);
-      
-      if (permission !== 'granted') {
-        console.warn('[Push] ⚠️ User declined notification permission');
-        return false;
-      }
-    }
-    
-    console.log('[Push] ✅ Notification permission: granted');
 
     // Get VAPID key
     console.log('[Push] 🔑 Fetching VAPID key...');
@@ -265,55 +251,74 @@ export async function resubscribeOnLogin() {
 }
 
 export default function App() {
-  // ✅ NEW: State to control notification modal visibility
-  const [showNotificationModal, setShowNotificationModal] = useState(true);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [swReady, setSwReady] = useState(false);
 
   useEffect(() => {
     console.log('[Push] 🚀 App mounted');
     
     // Setup service worker messages
     setupServiceWorkerMessages();
-    
-    // Check if user is logged in
-    const token = localStorage.getItem('customerToken');
-    
-    if (token) {
-      console.log('[Push] 🔑 Customer logged in, setting up push...');
-      
-      setupPushNotifications()
-        .then(success => {
-          if (success) {
-            console.log('[Push] ✅ Push notifications initialized');
-          } else {
-            console.warn('[Push] ⚠️ Push setup failed (non-blocking)');
-          }
-        })
-        .catch(error => {
-          console.warn('[Push] ⚠️ Push error (non-blocking):', error.message);
-        });
-    } else {
-      console.log('[Push] ℹ️ Not logged in, waiting for login');
-    }
 
-    // ✅ NEW: Listen for permission changes to hide modal
-    const handlePermissionChange = () => {
-      console.log('[Push] 🔔 Permission changed, checking...');
-      if (Notification.permission === 'granted') {
-        console.log('[Push] ✅ Permission granted, hiding modal...');
-        setShowNotificationModal(false);
-        setupPushNotifications();
+    // ✅ STEP 1: Register service worker FIRST
+    const initializeApp = async () => {
+      try {
+        if ('serviceWorker' in navigator) {
+          console.log('[Push] 📝 Registering service worker...');
+          await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+          await navigator.serviceWorker.ready;
+          console.log('[Push] ✅ Service worker ready');
+          setSwReady(true);
+
+          // ✅ STEP 2: Check permission status
+          if ('Notification' in window) {
+            const permission = Notification.permission;
+            console.log('[Push] 🔔 Current permission:', permission);
+
+            if (permission === 'granted') {
+              // Permission already granted - setup push immediately
+              console.log('[Push] ✅ Permission already granted, setting up push...');
+              setupPushNotifications();
+            } else if (permission === 'default') {
+              // Not asked yet - show modal
+              console.log('[Push] 📱 Permission not asked, showing modal...');
+              // Wait 1.5s before showing modal (let app settle)
+              setTimeout(() => {
+                setShowNotificationModal(true);
+              }, 1500);
+            } else {
+              // Permission denied
+              console.log('[Push] ⚠️ Permission denied by user');
+            }
+          }
+        }
+      } catch (error) {
+        console.error('[Push] ❌ Initialization error:', error);
       }
     };
 
-    // Poll for permission changes (some browsers don't support permission API)
-    const permissionCheckInterval = setInterval(() => {
-      if (Notification.permission === 'granted' && showNotificationModal) {
-        handlePermissionChange();
+    initializeApp();
+
+    // ✅ STEP 3: Listen for permission changes (when user grants via modal)
+    const checkPermissionInterval = setInterval(() => {
+      if ('Notification' in window && Notification.permission === 'granted' && showNotificationModal) {
+        console.log('[Push] ✅ Permission granted! Hiding modal and setting up push...');
+        setShowNotificationModal(false);
+        
+        // Setup push immediately after permission granted
+        setupPushNotifications()
+          .then(success => {
+            if (success) {
+              console.log('[Push] ✅ Push notifications fully configured');
+            } else {
+              console.warn('[Push] ⚠️ Push setup incomplete (may need login)');
+            }
+          });
       }
-    }, 2000);
+    }, 1000);
 
     return () => {
-      clearInterval(permissionCheckInterval);
+      clearInterval(checkPermissionInterval);
     };
   }, [showNotificationModal]);
 
@@ -324,8 +329,8 @@ export default function App() {
           <LocationProvider>
             <div className="min-h-screen flex flex-col bg-[#0B0B0B] text-white">
               
-              {/* ✅ NEW: AGGRESSIVE NOTIFICATION PROMPT - Shows immediately */}
-              {showNotificationModal && <NotificationPromptModal />}
+              {/* ✅ Show modal only when SW ready and permission needed */}
+              {swReady && showNotificationModal && <NotificationPromptModal />}
               
               {/* Navigation */}
               <Navbar />
