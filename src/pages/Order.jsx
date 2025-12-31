@@ -441,7 +441,7 @@ export default function Order() {
           delivery_latitude: selectedAddr.latitude,
           delivery_longitude: selectedAddr.longitude,
           delivery_instructions: deliveryInstructions,
-          payment_mode: "ONLINE",
+          paymentMethod: "CARD",  // Online payment via Razorpay
           discount: discountAmount,
           offer_id: appliedOffer?.id || null,
           offer_title: appliedOffer?.title || null,
@@ -593,7 +593,7 @@ export default function Order() {
           delivery_latitude: selectedAddr.latitude,
           delivery_longitude: selectedAddr.longitude,
           delivery_instructions: deliveryInstructions,
-          payment_mode: "COD",
+          paymentMethod: "COD",  // Cash on Delivery
           discount: discountAmount,
           offer_id: appliedOffer?.id || null,
           offer_title: appliedOffer?.title || null,
