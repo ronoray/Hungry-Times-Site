@@ -42,6 +42,12 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 }
 
 export default function Order() {
+
+  // Scroll to top when component mounts or cart changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   const navigate = useNavigate();
   const { isAuthenticated, customer } = useAuth();
   const { lines, clearCart, addLine, removeLine } = useCart();
@@ -674,7 +680,7 @@ export default function Order() {
                 return (
                   <div key={idx} className="flex items-start justify-between py-3 border-b border-neutral-700 last:border-0">
                     <div className="flex-1">
-                      <h4 className="text-white font-medium">{line.itemName}</h4>
+                      <h4 className="text-white font-medium">{line.itemName || line.name || "Item"}</h4>
                       <p className="text-sm text-neutral-400">Qty: {line.qty}</p>
                       {line.variants && line.variants.length > 0 && (
                         <p className="text-xs text-neutral-500 mt-1">
@@ -690,7 +696,7 @@ export default function Order() {
                     <div className="text-right ml-4">
                       <p className="text-white font-medium">₹{lineTotal}</p>
                       <button
-                        onClick={() => removeLine(idx)}
+                        onClick={() => removeLine(line.key)}
                         className="text-red-400 hover:text-red-300 text-sm mt-1"
                       >
                         Remove
