@@ -1136,3 +1136,1256 @@
   padding: 0 0.75rem;
   overflow: hidden;
 }
+
+/* =========================================
+   OFFERS BANNER STYLES - Add to Menu.css
+   ========================================= */
+
+/* Banner Container */
+.offers-banner-container {
+  width: 100%;
+  padding: 0 1rem;
+  margin: 2rem auto;
+  max-width: 1400px;
+}
+
+/* Banner Card */
+.offers-banner {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 50%, #dc2626 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 10px 40px rgba(249, 115, 22, 0.3);
+  position: relative;
+  overflow: hidden;
+  animation: bannerPulse 2s ease-in-out infinite;
+}
+
+/* Animated background effect */
+.offers-banner::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  animation: shimmer 3s linear infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+  }
+  100% {
+    transform: translateX(100%) translateY(100%) rotate(45deg);
+  }
+}
+
+@keyframes bannerPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 10px 40px rgba(249, 115, 22, 0.3);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 15px 50px rgba(249, 115, 22, 0.4);
+  }
+}
+
+/* Banner Icon */
+.offers-banner-icon {
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+.sparkle-icon {
+  width: 32px;
+  height: 32px;
+  color: white;
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.2);
+  }
+}
+
+/* Banner Content */
+.offers-banner-content {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.offers-banner-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.3;
+}
+
+.offers-banner-description {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.95);
+  margin: 0 0 0.5rem 0;
+  line-height: 1.4;
+}
+
+.offers-banner-validity {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Banner Badge */
+.offers-banner-badge {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.offers-badge-content {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  padding: 0.75rem 1.25rem;
+  text-align: center;
+  min-width: 80px;
+}
+
+.offers-badge-value {
+  display: block;
+  font-size: 1.75rem;
+  font-weight: 900;
+  color: white;
+  line-height: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.offers-badge-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: white;
+  margin-top: 0.25rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ========================================
+   RESPONSIVE STYLES
+   ======================================== */
+
+/* Tablet */
+@media (max-width: 768px) {
+  .offers-banner-container {
+    padding: 0 0.75rem;
+    margin: 1.5rem auto;
+  }
+
+  .offers-banner {
+    padding: 1.25rem;
+    gap: 0.75rem;
+  }
+
+  .offers-banner-icon {
+    width: 50px;
+    height: 50px;
+  }
+
+  .sparkle-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .offers-banner-title {
+    font-size: 1.1rem;
+  }
+
+  .offers-banner-description {
+    font-size: 0.875rem;
+  }
+
+  .offers-badge-value {
+    font-size: 1.5rem;
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .offers-banner-container {
+    padding: 0 0.5rem;
+    margin: 1rem auto;
+  }
+
+  .offers-banner {
+    flex-direction: column;
+    text-align: center;
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+
+  .offers-banner-icon {
+    width: 56px;
+    height: 56px;
+  }
+
+  .sparkle-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .offers-banner-title {
+    font-size: 1rem;
+  }
+
+  .offers-banner-description {
+    font-size: 0.8125rem;
+  }
+
+  .offers-banner-validity {
+    font-size: 0.6875rem;
+  }
+
+  .offers-badge-content {
+    padding: 0.625rem 1rem;
+    min-width: 70px;
+  }
+
+  .offers-badge-value {
+    font-size: 1.375rem;
+  }
+
+  .offers-badge-label {
+    font-size: 0.6875rem;
+  }
+}
+
+/* Extra small mobile */
+@media (max-width: 360px) {
+  .offers-banner {
+    padding: 0.875rem;
+  }
+
+  .offers-banner-title {
+    font-size: 0.9375rem;
+  }
+
+  .offers-banner-description {
+    font-size: 0.75rem;
+  }
+
+  .offers-banner-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .sparkle-icon {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+/* Dark mode support (if needed) */
+@media (prefers-color-scheme: dark) {
+  .offers-banner {
+    /* Already dark, no changes needed */
+  }
+}
+
+/* Print styles */
+@media print {
+  .offers-banner-container {
+    display: none;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .offers-banner,
+  .sparkle-icon,
+  .offers-banner::before {
+    animation: none;
+  }
+}/* =========================================
+   OFFERS BANNER STYLES - Add to Menu.css
+   ========================================= */
+
+/* Banner Container */
+.offers-banner-container {
+  width: 100%;
+  padding: 0 1rem;
+  margin: 2rem auto;
+  max-width: 1400px;
+}
+
+/* Banner Card */
+.offers-banner {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 50%, #dc2626 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 10px 40px rgba(249, 115, 22, 0.3);
+  position: relative;
+  overflow: hidden;
+  animation: bannerPulse 2s ease-in-out infinite;
+}
+
+/* Animated background effect */
+.offers-banner::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  animation: shimmer 3s linear infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+  }
+  100% {
+    transform: translateX(100%) translateY(100%) rotate(45deg);
+  }
+}
+
+@keyframes bannerPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 10px 40px rgba(249, 115, 22, 0.3);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 15px 50px rgba(249, 115, 22, 0.4);
+  }
+}
+
+/* Banner Icon */
+.offers-banner-icon {
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+.sparkle-icon {
+  width: 32px;
+  height: 32px;
+  color: white;
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.2);
+  }
+}
+
+/* Banner Content */
+.offers-banner-content {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.offers-banner-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.3;
+}
+
+.offers-banner-description {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.95);
+  margin: 0 0 0.5rem 0;
+  line-height: 1.4;
+}
+
+.offers-banner-validity {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Banner Badge */
+.offers-banner-badge {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.offers-badge-content {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  padding: 0.75rem 1.25rem;
+  text-align: center;
+  min-width: 80px;
+}
+
+.offers-badge-value {
+  display: block;
+  font-size: 1.75rem;
+  font-weight: 900;
+  color: white;
+  line-height: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.offers-badge-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: white;
+  margin-top: 0.25rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ========================================
+   RESPONSIVE STYLES
+   ======================================== */
+
+/* Tablet */
+@media (max-width: 768px) {
+  .offers-banner-container {
+    padding: 0 0.75rem;
+    margin: 1.5rem auto;
+  }
+
+  .offers-banner {
+    padding: 1.25rem;
+    gap: 0.75rem;
+  }
+
+  .offers-banner-icon {
+    width: 50px;
+    height: 50px;
+  }
+
+  .sparkle-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .offers-banner-title {
+    font-size: 1.1rem;
+  }
+
+  .offers-banner-description {
+    font-size: 0.875rem;
+  }
+
+  .offers-badge-value {
+    font-size: 1.5rem;
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .offers-banner-container {
+    padding: 0 0.5rem;
+    margin: 1rem auto;
+  }
+
+  .offers-banner {
+    flex-direction: column;
+    text-align: center;
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+
+  .offers-banner-icon {
+    width: 56px;
+    height: 56px;
+  }
+
+  .sparkle-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .offers-banner-title {
+    font-size: 1rem;
+  }
+
+  .offers-banner-description {
+    font-size: 0.8125rem;
+  }
+
+  .offers-banner-validity {
+    font-size: 0.6875rem;
+  }
+
+  .offers-badge-content {
+    padding: 0.625rem 1rem;
+    min-width: 70px;
+  }
+
+  .offers-badge-value {
+    font-size: 1.375rem;
+  }
+
+  .offers-badge-label {
+    font-size: 0.6875rem;
+  }
+}
+
+/* Extra small mobile */
+@media (max-width: 360px) {
+  .offers-banner {
+    padding: 0.875rem;
+  }
+
+  .offers-banner-title {
+    font-size: 0.9375rem;
+  }
+
+  .offers-banner-description {
+    font-size: 0.75rem;
+  }
+
+  .offers-banner-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .sparkle-icon {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+/* Dark mode support (if needed) */
+@media (prefers-color-scheme: dark) {
+  .offers-banner {
+    /* Already dark, no changes needed */
+  }
+}
+
+/* Print styles */
+@media print {
+  .offers-banner-container {
+    display: none;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .offers-banner,
+  .sparkle-icon,
+  .offers-banner::before {
+    animation: none;
+  }
+}
+
+/* =========================================
+   MENU PAGE - ENHANCED MOBILE RESPONSIVE
+   Add to: Menu.css (append to existing file)
+   ========================================= */
+
+/* =========================================
+   OFFERS BANNER - MOBILE RESPONSIVE
+   (Already included but enhanced here)
+   ========================================= */
+
+/* Mobile optimizations for offers banner */
+@media (max-width: 768px) {
+  .offers-banner-container {
+    padding: 0 0.75rem;
+    margin: 1.5rem auto;
+  }
+
+  .offers-banner {
+    padding: 1rem;
+    flex-direction: row;
+    gap: 0.75rem;
+  }
+
+  .offers-banner-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .sparkle-icon {
+    width: 26px;
+    height: 26px;
+  }
+
+  .offers-banner-title {
+    font-size: 1rem;
+    line-height: 1.3;
+  }
+
+  .offers-banner-description {
+    font-size: 0.8125rem;
+    line-height: 1.3;
+  }
+
+  .offers-banner-validity {
+    font-size: 0.6875rem;
+  }
+
+  .offers-badge-value {
+    font-size: 1.375rem;
+  }
+
+  .offers-badge-label {
+    font-size: 0.6875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .offers-banner {
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+    padding: 1rem 0.875rem;
+  }
+
+  .offers-banner-icon {
+    width: 52px;
+    height: 52px;
+  }
+
+  .sparkle-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .offers-banner-content {
+    width: 100%;
+  }
+
+  .offers-banner-title {
+    font-size: 0.9375rem;
+  }
+
+  .offers-banner-description {
+    font-size: 0.75rem;
+  }
+}
+
+/* =========================================
+   MENU ITEMS GRID - ENHANCED MOBILE
+   ========================================= */
+
+/* Better mobile grid */
+@media (max-width: 768px) {
+  .items-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+    padding: 0 0.5rem;
+  }
+
+  /* Menu item cards */
+  .menu-item-card {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.875rem;
+  }
+
+  .menu-item-image {
+    width: 90px;
+    height: 90px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+
+  .menu-item-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .menu-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 0.375rem;
+  }
+
+  .menu-item-name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.3;
+    word-break: break-word;
+  }
+
+  .menu-item-price {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .menu-item-description {
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    margin-bottom: 0.5rem;
+    max-height: 2.8em;
+    overflow: hidden;
+  }
+
+  .menu-item-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .menu-item-badge {
+    font-size: 0.6875rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .add-to-cart-button {
+    padding: 0.5rem 0.875rem;
+    font-size: 0.8125rem;
+    min-width: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .items-grid {
+    gap: 0.875rem;
+    padding: 0 0.375rem;
+  }
+
+  .menu-item-card {
+    padding: 0.75rem;
+  }
+
+  .menu-item-image {
+    width: 80px;
+    height: 80px;
+  }
+
+  .menu-item-name {
+    font-size: 0.875rem;
+  }
+
+  .menu-item-price {
+    font-size: 0.875rem;
+  }
+
+  .menu-item-description {
+    font-size: 0.75rem;
+  }
+
+  .add-to-cart-button {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* =========================================
+   RECOMMENDED ITEMS CAROUSEL - MOBILE
+   ========================================= */
+
+@media (max-width: 768px) {
+  .recommended-carousel {
+    padding: 0 0.5rem;
+  }
+
+  .recommended-item-card {
+    min-width: 200px;
+    max-width: 200px;
+  }
+
+  .recommended-item-image {
+    height: 150px;
+  }
+
+  .recommended-item-name {
+    font-size: 0.875rem;
+  }
+
+  .recommended-item-price {
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .recommended-item-card {
+    min-width: 180px;
+    max-width: 180px;
+  }
+
+  .recommended-item-image {
+    height: 135px;
+  }
+
+  .recommended-item-name {
+    font-size: 0.8125rem;
+  }
+}
+
+/* =========================================
+   CATEGORY SIDEBAR - MOBILE
+   ========================================= */
+
+@media (max-width: 768px) {
+  .categories-sidebar {
+    position: fixed;
+    left: -100%;
+    top: 0;
+    height: 100vh;
+    width: 280px;
+    background: #171717;
+    z-index: 60;
+    transition: left 0.3s ease;
+    overflow-y: auto;
+    padding: 1rem;
+  }
+
+  .categories-sidebar.open {
+    left: 0;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+  }
+
+  .mobile-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 50;
+    display: block;
+  }
+
+  .sidebar-category-btn {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    font-size: 0.9375rem;
+  }
+
+  .subcategory-btn {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* =========================================
+   MENU HERO - MOBILE COMPACT
+   ========================================= */
+
+@media (max-width: 768px) {
+  .menu-hero {
+    height: auto;
+    min-height: 200px;
+  }
+
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .hero-title {
+    font-size: 1.75rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.9375rem;
+  }
+
+  .cta-text {
+    font-size: 0.9375rem;
+  }
+
+  .cta-button {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.9375rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .menu-hero {
+    min-height: 180px;
+  }
+
+  .hero-title {
+    font-size: 1.5rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.875rem;
+  }
+
+  .cta-button {
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* =========================================
+   SUBCATEGORY NAVIGATION - MOBILE
+   ========================================= */
+
+@media (max-width: 768px) {
+  .subcategory-bar {
+    padding: 0.5rem 0.5rem 0.75rem;
+    position: sticky;
+    top: 0;
+    background: #171717;
+    z-index: 10;
+    margin: 0 -0.5rem;
+  }
+
+  .subcategory-scroll {
+    display: flex;
+    overflow-x: auto;
+    gap: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .subcategory-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .subcategory-btn {
+    flex-shrink: 0;
+    padding: 0.5rem 0.875rem;
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+}
+
+/* =========================================
+   SECTION HEADINGS - MOBILE
+   ========================================= */
+
+@media (max-width: 768px) {
+  .section-title {
+    font-size: 1.125rem;
+    padding: 1rem 0.5rem 0.75rem;
+    margin: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .section-title {
+    font-size: 1rem;
+    padding: 0.875rem 0.375rem 0.625rem;
+  }
+}
+
+/* =========================================
+   MODALS - MOBILE RESPONSIVE
+   ========================================= */
+
+@media (max-width: 768px) {
+  /* Image Modal */
+  .image-modal-content {
+    max-width: 95vw;
+    max-height: 85vh;
+    padding: 1rem;
+  }
+
+  .image-modal-close {
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.5rem;
+  }
+
+  /* Description Modal */
+  .description-modal-content {
+    max-width: 90vw;
+    max-height: 80vh;
+    padding: 1rem;
+  }
+
+  .description-modal-title {
+    font-size: 1.125rem;
+  }
+
+  .description-modal-text {
+    font-size: 0.875rem;
+  }
+
+  /* Add to Cart Modal */
+  .add-to-cart-modal {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    max-height: 90vh;
+    border-radius: 16px 16px 0 0;
+    margin: 0;
+  }
+
+  .modal-header {
+    padding: 1rem;
+  }
+
+  .modal-body {
+    padding: 1rem;
+    max-height: calc(90vh - 150px);
+    overflow-y: auto;
+  }
+
+  .modal-footer {
+    padding: 1rem;
+    position: sticky;
+    bottom: 0;
+    background: #262626;
+  }
+}
+
+@media (max-width: 480px) {
+  .add-to-cart-modal {
+    max-height: 95vh;
+  }
+
+  .modal-header {
+    padding: 0.875rem;
+  }
+
+  .modal-body {
+    padding: 0.875rem;
+  }
+
+  .modal-footer {
+    padding: 0.875rem;
+  }
+}
+
+/* =========================================
+   FLOATING CART BUTTON - MOBILE
+   ========================================= */
+
+@media (max-width: 768px) {
+  .floating-cart-button {
+    position: fixed;
+    bottom: 80px; /* Above bottom nav */
+    right: 1rem;
+    z-index: 40;
+    background: #f97316;
+    color: white;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.5);
+    border: none;
+    cursor: pointer;
+  }
+
+  .cart-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #dc2626;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+}
+
+/* =========================================
+   TOUCH OPTIMIZATIONS
+   ========================================= */
+
+/* Larger touch targets on mobile */
+@media (hover: none) and (pointer: coarse) {
+  .menu-item-card,
+  .add-to-cart-button,
+  .subcategory-btn,
+  .sidebar-category-btn {
+    min-height: 44px;
+  }
+
+  .add-to-cart-button {
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* =========================================
+   PERFORMANCE OPTIMIZATIONS
+   ========================================= */
+
+@media (max-width: 768px) {
+  /* Reduce animations on mobile for better performance */
+  .menu-item-card,
+  .recommended-item-card {
+    will-change: auto;
+  }
+
+  /* Optimize images */
+  img {
+    image-rendering: auto;
+  }
+}
+
+/* =========================================
+   LANDSCAPE MODE ON MOBILE
+   ========================================= */
+
+@media (max-width: 768px) and (orientation: landscape) {
+  .menu-hero {
+    min-height: 160px;
+  }
+
+  .hero-title {
+    font-size: 1.5rem;
+  }
+
+  .add-to-cart-modal {
+    max-height: 85vh;
+  }
+}
+
+/* =========================================
+   ACCESSIBILITY ENHANCEMENTS
+   ========================================= */
+
+/* Focus visible for keyboard navigation */
+@media (max-width: 768px) {
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid #f97316;
+    outline-offset: 2px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .categories-sidebar,
+  .add-to-cart-modal,
+  .offers-banner,
+  .sparkle-icon {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .menu-item-card,
+  .address-card,
+  .offers-banner {
+    border-width: 2px;
+  }
+}
+
+/* =========================================
+   VERY SMALL DEVICES (< 360px)
+   ========================================= */
+
+@media (max-width: 360px) {
+  .offers-banner-container {
+    padding: 0 0.5rem;
+  }
+
+  .offers-banner {
+    padding: 0.875rem 0.75rem;
+  }
+
+  .offers-banner-title {
+    font-size: 0.875rem;
+  }
+
+  .offers-banner-description {
+    font-size: 0.6875rem;
+  }
+
+  .menu-item-card {
+    gap: 0.5rem;
+    padding: 0.625rem;
+  }
+
+  .menu-item-image {
+    width: 70px;
+    height: 70px;
+  }
+
+  .menu-item-name {
+    font-size: 0.8125rem;
+  }
+
+  .menu-item-price {
+    font-size: 0.8125rem;
+  }
+
+  .add-to-cart-button {
+    padding: 0.5rem;
+    font-size: 0.6875rem;
+  }
+}
+
+/* =========================================
+   PRINT STYLES
+   ========================================= */
+
+@media print {
+  .offers-banner,
+  .floating-cart-button,
+  .add-to-cart-button,
+  .categories-sidebar,
+  .subcategory-bar {
+    display: none !important;
+  }
+
+  .menu-item-card {
+    break-inside: avoid;
+  }
+}
