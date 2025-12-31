@@ -495,9 +495,9 @@ export default function Order() {
               },
               body: JSON.stringify({
                 orderId,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
               }),
             });
 
@@ -690,7 +690,7 @@ export default function Order() {
                     <div className="text-right ml-4">
                       <p className="text-white font-medium">₹{lineTotal}</p>
                       <button
-                        onClick={() => removeLine(line.key)}
+                        onClick={() => removeLine(idx)}
                         className="text-red-400 hover:text-red-300 text-sm mt-1"
                       >
                         Remove
