@@ -1,8 +1,10 @@
-// site/src/pages/Order.jsx - COMPLETE WITH ADDRESS MANAGEMENT
+// site/src/pages/Order.jsx - COMPLETE WITH OFFERS SYSTEM
 // ✅ Smart address selection (auto-select single, choose from multiple)
 // ✅ Add new address during checkout
 // ✅ Customer instructions field
 // ✅ Redirect to order details after successful payment
+// ✅ Active offers system with automatic discount application
+// ✅ Persistent banner showing active offers
 
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -84,6 +86,38 @@ export default function Order() {
       fetchAddresses();
     }
   }, [isAuthenticated]);
+
+  // ============================================================================
+  // FETCH ACTIVE OFFERS ON LOAD
+  // ============================================================================
+
+  // Active Offers State
+  const [activeOffers, setActiveOffers] = useState([]);
+  const [appliedOffer, setAppliedOffer] = useState(null);
+
+  useEffect(() => {
+    fetchActiveOffers();
+  }, []);
+
+  const fetchActiveOffers = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/offers/active`);
+      if (!response.ok) throw new Error('Failed to fetch offers');
+      
+      const data = await response.json();
+      const offers = data.offers || [];
+      
+      setActiveOffers(offers);
+      
+      const autoOffer = offers.find(o => o.apply_automatically);
+      if (autoOffer) {
+        setAppliedOffer(autoOffer);
+      }
+    } catch (err) {
+      console.error('[Order] Error fetching offers:', err);
+    }
+  };
+
 
   const fetchAddresses = async () => {
     try {
@@ -211,20 +245,13 @@ export default function Order() {
   // ============================================================================
   const handleCancelEdit = () => {
     setEditingAddressId(null);
-    setEditAddressData({
-      name: '',
-      fullAddress: '',
-      latitude: null,
-      longitude: null
-    });
+    setEditAddressData({ name: '', fullAddress: '', latitude: null, longitude: null });
   };
 
   // ============================================================================
   // SAVE EDITED ADDRESS
   // ============================================================================
-  const handleSaveEdit = async (e) => {
-    e.preventDefault();
-
+  const handleSaveEdit = async (addressId) => {
     if (!editAddressData.fullAddress || !editAddressData.latitude) {
       alert('Please select a valid address from the map');
       return;
@@ -232,7 +259,7 @@ export default function Order() {
 
     try {
       const token = localStorage.getItem('customerToken');
-      const response = await fetch(`${API_BASE}/customer/addresses/${editingAddressId}`, {
+      const response = await fetch(`${API_BASE}/customer/addresses/${addressId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -249,8 +276,9 @@ export default function Order() {
       // Refresh addresses list
       await fetchAddresses();
       
-      // Exit edit mode
-      handleCancelEdit();
+      // Clear edit state
+      setEditingAddressId(null);
+      setEditAddressData({ name: '', fullAddress: '', latitude: null, longitude: null });
 
       alert('Address updated successfully!');
     } catch (error) {
@@ -265,7 +293,7 @@ export default function Order() {
     try {
       const token = localStorage.getItem('customerToken');
       const response = await fetch(`${API_BASE}/customer/addresses/${addressId}/default`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -278,7 +306,7 @@ export default function Order() {
 
       // Refresh addresses list
       await fetchAddresses();
-
+      
       alert('Default address updated!');
     } catch (error) {
       alert(error.message);
@@ -286,9 +314,9 @@ export default function Order() {
   };
 
   // ============================================================================
-  // CALCULATIONS
+  // CALCULATE TOTALS WITH DISCOUNT
   // ============================================================================
-  const { cartTotal, gstAmount, finalTotal } = useMemo(() => {
+  const { cartTotal, discountAmount, gstAmount, finalTotal } = useMemo(() => {
     let total = 0;
     lines.forEach((line) => {
       const unitPrice =
@@ -298,13 +326,31 @@ export default function Order() {
       total += unitPrice * (line.qty || 1);
     });
 
-    const gst = Math.round(total * 0.05);
+  // Apply offer discount
+  let discount = 0;
+  if (appliedOffer && total >= (appliedOffer.min_order_value || 0)) {
+    if (appliedOffer.discount_type === 'percent') {
+      discount = total * (appliedOffer.discount_value / 100);
+    } else {
+      discount = appliedOffer.discount_value;
+    }
+    
+    // Apply max discount cap if set
+    if (appliedOffer.max_discount && discount > appliedOffer.max_discount) {
+      discount = appliedOffer.max_discount;
+    }
+  }
+
+    const subtotalAfterDiscount = Math.max(0, total - discount);
+    const gst = Math.round(subtotalAfterDiscount * 0.05);
+    
     return {
       cartTotal: Math.round(total),
+      discountAmount: Math.round(discount),
       gstAmount: gst,
-      finalTotal: Math.round(total + gst),
+      finalTotal: Math.round(subtotalAfterDiscount + gst),
     };
-  }, [lines]);
+  }, [lines, appliedOffer]);
 
   const cartCount = lines.reduce((sum, line) => sum + (line.qty || 1), 0);
 
@@ -331,20 +377,25 @@ export default function Order() {
     if (distance > MAX_DELIVERY_RADIUS_KM) {
       return {
         valid: false,
-        distance: distance.toFixed(2),
-        message: `Outside automatic delivery area (${distance.toFixed(1)} km). Please call 8420822919 to place order.`
+        message: `Sorry, we only deliver within ${MAX_DELIVERY_RADIUS_KM}km radius. Your address is ${distance.toFixed(1)}km away.`
       };
     }
 
-    return { valid: true, distance: distance.toFixed(2) };
+    return { valid: true };
   };
 
   // ============================================================================
-  // ORDER CREATION & PAYMENT HANDLERS
+  // RAZORPAY PAYMENT HANDLER
   // ============================================================================
-  const handleCreateOrder = async () => {
-    if (!isAuthenticated) {
-      setPaymentError("Please login to place an order");
+  const handleRazorpayPayment = async () => {
+    const validation = validateDeliveryArea();
+    if (!validation.valid) {
+      setPaymentError(validation.message);
+      return;
+    }
+
+    if (!selectedAddressId) {
+      setPaymentError("Please select a delivery address");
       return;
     }
 
@@ -353,21 +404,25 @@ export default function Order() {
       return;
     }
 
-    if (!selectedAddressId || !selectedAddress) {
-      setPaymentError("Please select a delivery address");
-      return;
-    }
-
     setPaymentProcessing(true);
     setPaymentError("");
 
-    // ✅ DEBUG: What's in the cart?
-    console.log('[Order] 🛒 Cart lines:', lines);
-    console.log('[Order] 📦 First item:', lines[0]);
-    console.log('[Order] 🔍 Item keys:', Object.keys(lines[0] || {}));
-
     try {
       const token = localStorage.getItem("customerToken");
+      const selectedAddr = addresses.find(a => a.id === selectedAddressId);
+
+      if (!selectedAddr) {
+        throw new Error("Selected address not found");
+      }
+
+      const orderItems = lines.map(line => ({
+        itemName: line.itemName,
+        quantity: line.qty || 1,
+        base_price: line.basePrice || 0,
+        variants: line.variants || [],
+        addons: line.addons || []
+      }));
+
       const response = await fetch(`${API_BASE}/customer/orders`, {
         method: "POST",
         headers: {
@@ -375,624 +430,622 @@ export default function Order() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          items: lines.map(line => ({
-            itemId: line.itemId || line.id || line.item?.id || null,
-            itemName: line.itemName || line.name || line.item?.name || line.title || 'Unknown Item',
-            quantity: line.qty || line.quantity || 1,
-            basePrice: line.basePrice || line.price || 0,
-            variants: line.variants || [],
-            addons: line.addons || []
-          })),
-          deliveryAddressId: selectedAddressId,
-          deliveryAddress: selectedAddress.fullAddress,
-          deliveryInstructions: deliveryInstructions.trim() || null,
-          paymentMethod: paymentMethod || "COD",
+          items: orderItems,
+          delivery_address: selectedAddr.fullAddress,
+          delivery_latitude: selectedAddr.latitude,
+          delivery_longitude: selectedAddr.longitude,
+          delivery_instructions: deliveryInstructions,
+          payment_mode: "ONLINE",
+          discount: discountAmount,
+          offer_id: appliedOffer?.id || null,
+          offer_title: appliedOffer?.title || null,
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Server error: ${response.status}`);
+        console.error("=== ORDER CREATION FAILED ===");
+        console.error("Status:", response.status);
+        console.error("Status Text:", response.statusText);
+        
+        let errorData;
+        try {
+          errorData = await response.json();
+          console.error("Error data:", errorData);
+        } catch (e) {
+          console.error("Could not parse error response");
+          errorData = {};
+        }
+        
+        if (response.status === 401) {
+          throw new Error("Authentication failed. Please logout and login again to continue.");
+        }
+        
+        throw new Error(errorData.error || errorData.message || "Failed to create order");
       }
 
       const data = await response.json();
-      return data.orderId;
-    } catch (error) {
-      console.error("[Order] ❌ Error:", error);
-      setPaymentError(error.message || "Failed to create order");
-      setPaymentProcessing(false);
-      return null;
-    }
-  };
+      const { orderId, razorpayOrderId, razorpayKey } = data;
 
-  const handleCODPayment = async () => {
-    // Validate delivery area FIRST
-    const areaCheck = validateDeliveryArea();
-    
-    if (!areaCheck.valid) {
-      setPaymentError(areaCheck.message);
-      alert(areaCheck.message); // Show prominent alert
-      return;
-    }
-    setPaymentProcessing(true);
-    setPaymentMethod("COD");
-    const orderId = await handleCreateOrder();
-
-    if (!orderId) {
-      setPaymentProcessing(false);
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem("customerToken");
-      const response = await fetch(
-        `${API_BASE}/customer/payments/cod/confirm`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ orderId }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`COD confirmation failed: ${response.status}`);
+      // Load Razorpay SDK if not loaded
+      if (!window.Razorpay) {
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.async = true;
+        document.body.appendChild(script);
+        
+        await new Promise((resolve) => {
+          script.onload = resolve;
+        });
       }
-
-      // Success - redirect to order details
-      clearCart();
-      navigate(`/orders/${orderId}`);
-    } catch (error) {
-      console.error("[Order] ❌ COD Error:", error);
-      setPaymentError(error.message || "Failed to confirm COD payment");
-    } finally {
-      setPaymentProcessing(false);
-    }
-  };
-
-  const handleRazorpayPayment = async () => {
-    // Validate delivery area FIRST
-    const areaCheck = validateDeliveryArea();
-    
-    if (!areaCheck.valid) {
-      setPaymentError(areaCheck.message);
-      alert(areaCheck.message); // Show prominent alert
-      return;
-    }
-    if (!window.Razorpay) {
-      setPaymentError("Razorpay not loaded");
-      return;
-    }
-
-    setPaymentProcessing(true);
-    setPaymentMethod("razorpay");
-    const orderId = await handleCreateOrder();
-
-    if (!orderId) {
-      setPaymentProcessing(false);
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem("customerToken");
-
-      const initResponse = await fetch(
-        `${API_BASE}/customer/payments/razorpay/init`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            orderId,
-            amount: finalTotal,
-            customerName: customer?.name || "Customer",
-            customerPhone: customer?.phone || "",
-            customerEmail: customer?.email || "",
-          }),
-        }
-      );
-
-      if (!initResponse.ok) {
-        throw new Error("Failed to initialize Razorpay");
-      }
-
-      const { razorpayOrderId, razorpayKey } = await initResponse.json();
 
       const options = {
         key: razorpayKey,
         amount: finalTotal * 100,
         currency: "INR",
-        order_id: razorpayOrderId,
         name: "Hungry Times",
-        description: `Order #${orderId}`,
-        handler: async (response) => {
+        description: "Order Payment",
+        order_id: razorpayOrderId,
+        handler: async function (response) {
           try {
-            const verifyResponse = await fetch(
-              `${API_BASE}/customer/payments/razorpay/verify`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                  orderId,
-                  razorpayPaymentId: response.razorpay_payment_id,
-                  razorpayOrderId: response.razorpay_order_id,
-                  razorpaySignature: response.razorpay_signature,
-                }),
-              }
-            );
+            const verifyResponse = await fetch(`${API_BASE}/customer/payments/verify`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                orderId,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
 
             if (!verifyResponse.ok) {
               throw new Error("Payment verification failed");
             }
 
-            // Success - redirect to order details
             clearCart();
-            navigate(`/orders/${orderId}`);
+            navigate(`/my-orders/${orderId}`);
           } catch (error) {
-            console.error("[Order] ❌ Verification Error:", error);
-            setPaymentError(error.message || "Payment verification failed");
+            setPaymentError("Payment verification failed. Please contact support.");
             setPaymentProcessing(false);
           }
         },
+        prefill: {
+          name: customer?.name || "",
+          email: customer?.email || "",
+          contact: customer?.phone || "",
+        },
+        theme: {
+          color: "#f97316",
+        },
         modal: {
-          ondismiss: () => {
-            setPaymentError("Payment cancelled");
+          ondismiss: function () {
             setPaymentProcessing(false);
+            setPaymentError("Payment cancelled");
           },
         },
       };
 
-      const razorpay = new window.Razorpay(options);
-      razorpay.open();
+      const rzp = new window.Razorpay(options);
+      rzp.open();
     } catch (error) {
-      console.error("[Order] ❌ Razorpay Error:", error);
-      setPaymentError(error.message || "Failed to initialize payment");
+      setPaymentError(error.message);
       setPaymentProcessing(false);
     }
   };
 
   // ============================================================================
+  // COD PAYMENT HANDLER
+  // ============================================================================
+  const handleCODPayment = async () => {
+    const validation = validateDeliveryArea();
+    if (!validation.valid) {
+      setPaymentError(validation.message);
+      return;
+    }
+
+    if (!selectedAddressId) {
+      setPaymentError("Please select a delivery address");
+      return;
+    }
+
+    if (lines.length === 0) {
+      setPaymentError("Your cart is empty");
+      return;
+    }
+
+    setPaymentProcessing(true);
+    setPaymentError("");
+
+    try {
+      const token = localStorage.getItem("customerToken");
+      const selectedAddr = addresses.find(a => a.id === selectedAddressId);
+
+      if (!selectedAddr) {
+        throw new Error("Selected address not found");
+      }
+
+      const orderItems = lines.map(line => ({
+        itemName: line.itemName,
+        quantity: line.qty || 1,
+        base_price: line.basePrice || 0,
+        variants: line.variants || [],
+        addons: line.addons || []
+      }));
+
+      const response = await fetch(`${API_BASE}/customer/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          items: orderItems,
+          delivery_address: selectedAddr.fullAddress,
+          delivery_latitude: selectedAddr.latitude,
+          delivery_longitude: selectedAddr.longitude,
+          delivery_instructions: deliveryInstructions,
+          payment_mode: "COD",
+          discount: discountAmount,
+          offer_id: appliedOffer?.id || null,
+          offer_title: appliedOffer?.title || null,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error("=== ORDER CREATION FAILED ===");
+        console.error("Status:", response.status);
+        console.error("Status Text:", response.statusText);
+        
+        let errorData;
+        try {
+          errorData = await response.json();
+          console.error("Error data:", errorData);
+        } catch (e) {
+          console.error("Could not parse error response");
+          errorData = {};
+        }
+        
+        if (response.status === 401) {
+          throw new Error("Authentication failed. Please logout and login again to continue.");
+        }
+        
+        throw new Error(errorData.error || errorData.message || "Failed to create order");
+      }
+
+      const data = await response.json();
+      
+      clearCart();
+      navigate(`/my-orders/${data.orderId}`);
+    } catch (error) {
+      setPaymentError(error.message);
+      setPaymentProcessing(false);
+    }
+  };
+
+  // ============================================================================
+  // PERSISTENT OFFER BANNER COMPONENT
+  // ============================================================================
+
+  // ============================================================================
   // RENDER
   // ============================================================================
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-neutral-900 flex items-center justify-center p-4">
-        <div className="text-center">
-          <h2 className="text-white text-2xl font-bold mb-4">Please Login</h2>
-          <p className="text-neutral-400 mb-6">You need to be logged in to place an order</p>
-          <button
-            onClick={() => navigate('/login')}
-            className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold"
-          >
-            Go to Login
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-neutral-900 pb-32 md:pb-8">
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <h1 className="text-3xl font-bold text-white mb-6">Checkout</h1>
+    <div className="min-h-screen bg-gray-900">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-white mb-6">Place Your Order</h1>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {/* LEFT: Cart Items */}
-          <div className="md:col-span-2 space-y-6">
-            {/* Cart Items */}
-            <div className="bg-neutral-800 rounded-lg p-6">
-              <h2 className="text-white font-bold text-xl mb-4">Your Cart ({cartCount} items)</h2>
-              
-              {lines.length === 0 ? (
-                <div className="text-center py-12 text-neutral-400">
-                  <ShoppingCart className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                  <p>Your cart is empty</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {lines.map((line, idx) => (
-                    <div key={idx} className="flex justify-between items-start border-b border-neutral-700 pb-3">
-                      <div className="flex-1">
-                        <p className="text-white font-medium">{line.name}</p>
-                        <p className="text-neutral-400 text-sm">Qty: {line.qty}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-white font-bold">₹{((line.basePrice || 0) * line.qty)}</p>
+        {/* 🎉 PERSISTENT OFFER BANNER */}
+
+        {/* Empty Cart Message */}
+        {lines.length === 0 && (
+          <div className="bg-neutral-800 rounded-lg p-8 text-center">
+            <ShoppingCart className="w-16 h-16 mx-auto text-neutral-600 mb-4" />
+            <h2 className="text-xl font-bold text-white mb-2">Your cart is empty</h2>
+            <p className="text-neutral-400 mb-6">
+              Add some delicious items from our menu to get started!
+            </p>
+            <button
+              onClick={() => navigate('/menu')}
+              className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg transition-colors"
+            >
+              Browse Menu
+            </button>
+          </div>
+        )}
+
+
+        {/* Cart Items Display */}
+        {lines.length > 0 && (
+          <div className="bg-neutral-800 rounded-lg p-6 mb-6">
+            <h3 className="text-white font-bold text-xl mb-4">
+              Your Cart ({cartCount} items)
+            </h3>
+            <div className="space-y-3">
+              {lines.map((line, idx) => {
+                const unitPrice =
+                  (line.basePrice || 0) +
+                  (line.variants?.reduce((sum, v) => sum + (v.priceDelta || 0), 0) || 0) +
+                  (line.addons?.reduce((sum, a) => sum + (a.priceDelta || 0), 0) || 0);
+                const lineTotal = unitPrice * (line.qty || 1);
+
+                return (
+                  <div key={idx} className="flex items-start justify-between py-3 border-b border-neutral-700 last:border-0">
+                    <div className="flex-1">
+                      <h4 className="text-white font-medium">{line.itemName}</h4>
+                      <p className="text-sm text-neutral-400">Qty: {line.qty}</p>
+                      {line.variants && line.variants.length > 0 && (
+                        <p className="text-xs text-neutral-500 mt-1">
+                          {line.variants.map(v => v.name).join(', ')}
+                        </p>
+                      )}
+                      {line.addons && line.addons.length > 0 && (
+                        <p className="text-xs text-neutral-500">
+                          Add-ons: {line.addons.map(a => a.name).join(', ')}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right ml-4">
+                      <p className="text-white font-medium">₹{lineTotal}</p>
+                      <button
+                        onClick={() => removeLine(line.key)}
+                        className="text-red-400 hover:text-red-300 text-sm mt-1"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Order Form */}
+        {lines.length > 0 && (
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* LEFT: Delivery Details */}
+            <div className="md:col-span-2 space-y-6">
+              {/* Delivery Address */}
+              <div className="bg-neutral-800 rounded-lg p-6">
+                <h3 className="text-white font-bold text-xl mb-4">
+                  <MapPin className="w-5 h-5 inline mr-2" />
+                  Delivery Address
+                </h3>
+
+                {!isAuthenticated ? (
+                  <div className="text-center py-8">
+                    <p className="text-neutral-400 mb-4">
+                      Please login to continue with your order
+                    </p>
+                    <button
+                      onClick={() => navigate('/login')}
+                      className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg transition-colors"
+                    >
+                      Login / Sign Up
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    {addresses.length === 0 && !showAddAddressForm ? (
+                      <div className="text-center py-6">
+                        <p className="text-neutral-400 mb-4">No saved addresses found</p>
                         <button
-                          onClick={() => removeLine(line.key)}
-                          className="text-red-500 text-sm hover:text-red-400"
+                          onClick={() => setShowAddAddressForm(true)}
+                          className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg transition-colors"
                         >
-                          Remove
+                          <Plus className="w-5 h-5 inline mr-2" />
+                          Add Your First Address
                         </button>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ) : (
+                      <>
+                        <div className="space-y-3">
+                          {addresses.map((addr) => {
+                            const isSelected = selectedAddressId === addr.id;
+                            const isEditing = editingAddressId === addr.id;
+
+                            return (
+                              <div
+                                key={addr.id}
+                                className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                                  isSelected
+                                    ? 'border-orange-500 bg-orange-500/10'
+                                    : 'border-neutral-600 hover:border-neutral-500'
+                                }`}
+                              >
+                                {isEditing ? (
+                                  <div className="space-y-3">
+                                    <div>
+                                      <label className="block text-neutral-300 text-sm mb-1">
+                                        Label (Optional)
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={editAddressData.name}
+                                        onChange={(e) => setEditAddressData({ ...editAddressData, name: e.target.value })}
+                                        placeholder="e.g., Home, Office"
+                                        className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-white text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-neutral-300 text-sm mb-1">
+                                        Address *
+                                      </label>
+                                      <GoogleMapsAutocomplete
+                                        onSelect={(result) => {
+                                          setEditAddressData({
+                                            ...editAddressData,
+                                            fullAddress: result.address,
+                                            latitude: result.latitude,
+                                            longitude: result.longitude
+                                          });
+                                        }}
+                                        defaultValue={editAddressData.fullAddress}
+                                      />
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <button
+                                        onClick={handleCancelEdit}
+                                        className="flex-1 px-3 py-1.5 bg-neutral-700 hover:bg-neutral-600 text-white text-sm rounded"
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button
+                                        onClick={() => handleSaveEdit(addr.id)}
+                                        className="flex-1 px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded font-medium"
+                                      >
+                                        Save Changes
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div onClick={() => setSelectedAddressId(addr.id)}>
+                                    <div className="flex items-start justify-between mb-2">
+                                      <div className="flex items-center gap-2">
+                                        {isSelected && (
+                                          <Check className="w-5 h-5 text-orange-500 flex-shrink-0" />
+                                        )}
+                                        <div>
+                                          <div className="flex items-center gap-2">
+                                            {addr.name && (
+                                              <span className="text-white font-medium">{addr.name}</span>
+                                            )}
+                                            {addr.isDefault && (
+                                              <span className="px-2 py-0.5 bg-orange-500/20 text-orange-400 text-xs rounded">
+                                                Default
+                                              </span>
+                                            )}
+                                          </div>
+                                          <p className="text-neutral-300 text-sm mt-1">{addr.fullAddress}</p>
+                                        </div>
+                                      </div>
+                                      <div className="flex gap-1">
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleStartEdit(addr);
+                                          }}
+                                          className="p-2 text-neutral-400 hover:text-blue-400 transition-colors"
+                                          title="Edit"
+                                        >
+                                          <Edit2 className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteAddress(addr.id);
+                                          }}
+                                          className="p-2 text-neutral-400 hover:text-red-400 transition-colors"
+                                          title="Delete"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                        {!addr.isDefault && (
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleSetDefault(addr.id);
+                                            }}
+                                            className="p-2 text-xs text-neutral-400 hover:text-orange-400 transition-colors"
+                                            title="Set as default"
+                                          >
+                                            ★
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {addresses.length < 5 && (
+                          <button
+                            onClick={() => setShowAddAddressForm(true)}
+                            className="w-full py-2 mt-3 border-2 border-dashed border-neutral-600 hover:border-orange-500 text-neutral-400 hover:text-orange-500 rounded-lg font-medium transition-colors"
+                          >
+                            <Plus className="w-5 h-5 inline mr-2" />
+                            Add New Address
+                          </button>
+                        )}
+                      </>
+                    )}
+
+                    {/* Add Address Form */}
+                    {showAddAddressForm && (
+                      <form onSubmit={handleAddNewAddress} className="space-y-4 mt-4 pt-4 border-t border-neutral-700">
+                        <div>
+                          <label className="block text-neutral-300 text-sm mb-2">
+                            Label (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={newAddressData.name}
+                            onChange={(e) => setNewAddressData({ ...newAddressData, name: e.target.value })}
+                            placeholder="e.g., Home, Office"
+                            className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-neutral-300 text-sm mb-2">
+                            Address *
+                          </label>
+                          <GoogleMapsAutocomplete
+                            onSelect={(result) => {
+                              setNewAddressData({
+                                ...newAddressData,
+                                fullAddress: result.address,
+                                latitude: result.latitude,
+                                longitude: result.longitude
+                              });
+                            }}
+                            defaultValue={newAddressData.fullAddress}
+                          />
+                        </div>
+
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowAddAddressForm(false);
+                              setNewAddressData({ name: '', fullAddress: '', latitude: null, longitude: null });
+                            }}
+                            className="flex-1 px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium"
+                          >
+                            Save Address
+                          </button>
+                        </div>
+                      </form>
+                    )}
+
+                    {!selectedAddressId && addresses.length > 0 && !showAddAddressForm && (
+                      <p className="text-red-400 text-sm mt-2">
+                        ⚠ Please select an address to continue
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Special Instructions */}
+              <div className="bg-neutral-800 rounded-lg p-6">
+                <label className="block text-white font-bold text-lg mb-2">
+                  <MessageSquare className="w-5 h-5 inline mr-2" />
+                  Special Instructions (Optional)
+                </label>
+                <textarea
+                  value={deliveryInstructions}
+                  onChange={(e) => {
+                    if (e.target.value.length <= 200) {
+                      setDeliveryInstructions(e.target.value);
+                    }
+                  }}
+                  placeholder="Any special requests? (e.g., extra spicy, no onions, gate code)"
+                  className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-neutral-500"
+                  rows="3"
+                  maxLength={200}
+                />
+                <p className="text-neutral-500 text-xs mt-1 text-right">
+                  {deliveryInstructions.length}/200 characters
+                </p>
+              </div>
             </div>
 
-            {/* Address Selection */}
-            <div className="bg-neutral-800 rounded-lg p-6">
-              <h2 className="text-white font-bold text-xl mb-4 flex items-center gap-2">
-                <MapPin className="w-6 h-6 text-orange-500" />
-                Delivery Address
-              </h2>
+            {/* RIGHT: Order Summary & Payment */}
+            <div className="md:col-span-1">
+              <div className="bg-neutral-800 rounded-lg p-6 sticky top-6">
+                <h3 className="text-white font-bold text-xl mb-4">Order Summary</h3>
+                
+                {/* Price Summary with Discount */}
+                <div className="space-y-2 mb-4">
+                  <div className="flex justify-between text-neutral-400">
+                    <span>Subtotal</span>
+                    <span className="text-white font-medium">₹{cartTotal}</span>
+                  </div>
+                  
+                  {/* 💚 DISCOUNT ROW */}
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between items-center bg-green-500/10 -mx-6 px-6 py-2 rounded">
+                      <span className="text-green-400 font-medium text-sm">
+                        Offer Discount ({appliedOffer?.discount_value}{appliedOffer?.discount_type === 'percent' ? '%' : '₹'})
+                      </span>
+                      <span className="text-green-400 font-bold">- ₹{discountAmount}</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between text-neutral-400">
+                    <span>GST (5%)</span>
+                    <span className="text-white">₹{gstAmount}</span>
+                  </div>
+                  
+                  <div className="border-t border-neutral-700 pt-2 mt-2 flex justify-between">
+                    <span className="text-lg font-bold text-white">Total</span>
+                    <span className="text-xl font-bold text-orange-500">₹{finalTotal}</span>
+                  </div>
+                  
+                  {/* 🎊 SAVINGS MESSAGE */}
+                  {discountAmount > 0 && (
+                    <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-2 text-center mt-2">
+                      <p className="text-green-400 font-semibold text-sm">
+                        🎊 Yay! You saved ₹{discountAmount} on this order!
+                      </p>
+                    </div>
+                  )}
+                </div>
 
-              {addresses.length === 0 && !showAddAddressForm && (
-                <div className="text-center py-8">
-                  <p className="text-neutral-400 mb-4">No saved addresses</p>
+                {paymentError && (
+                  <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-400 text-sm">
+                    {paymentError}
+                  </div>
+                )}
+
+                <div className="space-y-2">
                   <button
-                    onClick={() => setShowAddAddressForm(true)}
-                    className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium"
+                    onClick={handleRazorpayPayment}
+                    disabled={paymentProcessing || lines.length === 0 || !selectedAddressId}
+                    className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors"
                   >
-                    <Plus className="w-5 h-5 inline mr-2" />
-                    Add Address
+                    {paymentProcessing ? (
+                      <>
+                        <Loader className="w-4 h-4 inline animate-spin mr-2" />
+                        Processing...
+                      </>
+                    ) : (
+                      "💳 Pay Online - Razorpay"
+                    )}
+                  </button>
+
+                  <button
+                    onClick={handleCODPayment}
+                    disabled={paymentProcessing || lines.length === 0 || !selectedAddressId}
+                    className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors"
+                  >
+                    {paymentProcessing ? (
+                      <>
+                        <Loader className="w-4 h-4 inline animate-spin mr-2" />
+                        Processing...
+                      </>
+                    ) : (
+                      "💵 Cash on Delivery"
+                    )}
                   </button>
                 </div>
-              )}
-
-              {addresses.length > 0 && !showAddAddressForm && (
-                <>
-                  <div className="space-y-3 mb-4">
-                    {addresses.map((addr) => {
-                    // Calculate distance
-                    const distance = addr.latitude && addr.longitude
-                      ? calculateDistance(
-                          RESTAURANT_LOCATION.latitude,
-                          RESTAURANT_LOCATION.longitude,
-                          addr.latitude,
-                          addr.longitude
-                        )
-                      : null;
-                    
-                    const withinRange = distance ? distance <= MAX_DELIVERY_RADIUS_KM : true;
-
-                    // Check if this address is being edited
-                    const isEditing = editingAddressId === addr.id;
-
-                    return (
-                      <div key={addr.id}>
-                        {isEditing ? (
-                          // ============================================================
-                          // EDIT MODE
-                          // ============================================================
-                          <form onSubmit={handleSaveEdit} className="space-y-4 p-4 bg-neutral-800 rounded-lg">
-                            <div className="flex justify-between items-center mb-3">
-                              <h4 className="text-white font-semibold">Edit Address</h4>
-                              <button
-                                type="button"
-                                onClick={handleCancelEdit}
-                                className="text-neutral-400 hover:text-white"
-                              >
-                                <X className="w-5 h-5" />
-                              </button>
-                            </div>
-
-                            <div>
-                              <label className="block text-neutral-300 text-sm mb-2">
-                                Label (Optional)
-                              </label>
-                              <input
-                                type="text"
-                                value={editAddressData.name}
-                                onChange={(e) => setEditAddressData({ ...editAddressData, name: e.target.value })}
-                                placeholder="e.g., Home, Office"
-                                className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-neutral-300 text-sm mb-2">
-                                Address *
-                              </label>
-                              <GoogleMapsAutocomplete
-                                onSelect={(result) => {
-                                  setEditAddressData({
-                                    ...editAddressData,
-                                    fullAddress: result.address,
-                                    latitude: result.latitude,
-                                    longitude: result.longitude
-                                  });
-                                }}
-                                defaultValue={editAddressData.fullAddress}
-                              />
-                            </div>
-
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                onClick={handleCancelEdit}
-                                className="flex-1 px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg"
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                type="submit"
-                                className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium"
-                              >
-                                Save Changes
-                              </button>
-                            </div>
-                          </form>
-                        ) : (
-                          // ============================================================
-                          // VIEW MODE
-                          // ============================================================
-                          <div
-                            className={`p-4 rounded-lg border-2 transition-all ${
-                              selectedAddressId === addr.id
-                                ? "border-orange-500 bg-orange-500/10"
-                                : withinRange
-                                ? "border-neutral-700 hover:border-neutral-600"
-                                : "border-red-500/50 bg-red-500/5"
-                            }`}
-                          >
-                            <div className="flex items-start gap-3">
-                              {/* Address Icon */}
-                              <MapPin 
-                                className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
-                                  withinRange ? "text-orange-500" : "text-red-500"
-                                }`} 
-                              />
-                              
-                              {/* Address Details */}
-                              <div 
-                                className="flex-1 min-w-0 cursor-pointer"
-                                onClick={() => withinRange && setSelectedAddressId(addr.id)}
-                              >
-                                <div className="flex items-center gap-2 mb-1">
-                                  {addr.name && (
-                                    <span className="text-white font-medium">{addr.name}</span>
-                                  )}
-                                  {addr.isDefault && (
-                                    <span className="px-2 py-0.5 bg-orange-500 text-white text-xs rounded-full">
-                                      Default
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-sm text-neutral-300">{addr.fullAddress}</p>
-                                {distance && (
-                                  <p className={`text-xs mt-2 ${
-                                    withinRange ? "text-green-400" : "text-red-400"
-                                  }`}>
-                                    📍 {distance.toFixed(1)} km • {withinRange 
-                                      ? "✓ Deliverable" 
-                                      : "⚠ Out of range - Call 8420822919"}
-                                  </p>
-                                )}
-                              </div>
-
-                              {/* Action Buttons */}
-                              <div className="flex flex-col gap-2">
-                                {/* Select/Check Button */}
-                                {selectedAddressId === addr.id && withinRange ? (
-                                  <button className="p-2 text-orange-500">
-                                    <Check className="w-5 h-5" />
-                                  </button>
-                                ) : (
-                                  withinRange && (
-                                    <button
-                                      onClick={() => setSelectedAddressId(addr.id)}
-                                      className="p-2 text-neutral-400 hover:text-orange-500 transition-colors"
-                                      title="Select address"
-                                    >
-                                      <Check className="w-5 h-5" />
-                                    </button>
-                                  )
-                                )}
-
-                                {/* Edit Button */}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleStartEdit(addr);
-                                  }}
-                                  className="p-2 text-neutral-400 hover:text-blue-400 transition-colors"
-                                  title="Edit address"
-                                >
-                                  <Edit2 className="w-4 h-4" />
-                                </button>
-
-                                {/* Delete Button (only if not the only address) */}
-                                {addresses.length > 1 && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteAddress(addr.id);
-                                    }}
-                                    className="p-2 text-neutral-400 hover:text-red-400 transition-colors"
-                                    title="Delete address"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                )}
-
-                                {/* Set Default Button (only if not already default) */}
-                                {!addr.isDefault && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleSetDefault(addr.id);
-                                    }}
-                                    className="p-2 text-xs text-neutral-400 hover:text-orange-400 transition-colors"
-                                    title="Set as default"
-                                  >
-                                    ★
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                  </div>
-
-                  {addresses.length < 5 && (
-                    <button
-                      onClick={() => setShowAddAddressForm(true)}
-                      className="w-full py-2 border-2 border-dashed border-neutral-600 hover:border-orange-500 text-neutral-400 hover:text-orange-500 rounded-lg font-medium transition-colors"
-                    >
-                      <Plus className="w-5 h-5 inline mr-2" />
-                      Add New Address
-                    </button>
-                  )}
-                </>
-              )}
-
-              {/* Add Address Form */}
-              {showAddAddressForm && (
-                <form onSubmit={handleAddNewAddress} className="space-y-4">
-                  <div>
-                    <label className="block text-neutral-300 text-sm mb-2">
-                      Label (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={newAddressData.name}
-                      onChange={(e) => setNewAddressData({ ...newAddressData, name: e.target.value })}
-                      placeholder="e.g., Home, Office"
-                      className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-neutral-300 text-sm mb-2">
-                      Address *
-                    </label>
-                    <GoogleMapsAutocomplete
-                      onSelect={(result) => {
-                        setNewAddressData({
-                          ...newAddressData,
-                          fullAddress: result.address,
-                          latitude: result.latitude,
-                          longitude: result.longitude
-                        });
-                      }}
-                      defaultValue={newAddressData.fullAddress}
-                    />
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowAddAddressForm(false);
-                        setNewAddressData({ name: '', fullAddress: '', latitude: null, longitude: null });
-                      }}
-                      className="flex-1 px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium"
-                    >
-                      Save Address
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {!selectedAddressId && addresses.length > 0 && !showAddAddressForm && (
-                <p className="text-red-400 text-sm mt-2">
-                  ⚠ Please select an address to continue
-                </p>
-              )}
-            </div>
-
-            {/* Special Instructions */}
-            <div className="bg-neutral-800 rounded-lg p-6">
-              <label className="block text-white font-bold text-lg mb-2">
-                <MessageSquare className="w-5 h-5 inline mr-2" />
-                Special Instructions (Optional)
-              </label>
-              <textarea
-                value={deliveryInstructions}
-                onChange={(e) => {
-                  if (e.target.value.length <= 200) {
-                    setDeliveryInstructions(e.target.value);
-                  }
-                }}
-                placeholder="Any special requests? (e.g., extra spicy, no onions, gate code)"
-                className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-neutral-500"
-                rows="3"
-                maxLength={200}
-              />
-              <p className="text-neutral-500 text-xs mt-1 text-right">
-                {deliveryInstructions.length}/200 characters
-              </p>
-            </div>
-          </div>
-
-          {/* RIGHT: Order Summary & Payment */}
-          <div className="md:col-span-1">
-            <div className="bg-neutral-800 rounded-lg p-6 sticky top-6">
-              <h3 className="text-white font-bold text-xl mb-4">Order Summary</h3>
-              
-              <div className="space-y-2 mb-4">
-                <div className="flex justify-between text-neutral-400">
-                  <span>Subtotal</span>
-                  <span>₹{cartTotal}</span>
-                </div>
-                <div className="flex justify-between text-neutral-400">
-                  <span>GST (5%)</span>
-                  <span>₹{gstAmount}</span>
-                </div>
-                <div className="border-t border-neutral-700 pt-2 mt-2 flex justify-between text-white font-bold text-lg">
-                  <span>Total</span>
-                  <span className="text-orange-500">₹{finalTotal}</span>
-                </div>
-              </div>
-
-              {paymentError && (
-                <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-400 text-sm">
-                  {paymentError}
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <button
-                  onClick={handleRazorpayPayment}
-                  disabled={paymentProcessing || lines.length === 0 || !selectedAddressId}
-                  className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors"
-                >
-                  {paymentProcessing ? (
-                    <>
-                      <Loader className="w-4 h-4 inline animate-spin mr-2" />
-                      Processing...
-                    </>
-                  ) : (
-                    "💳 Pay Online"
-                  )}
-                </button>
-
-                <button
-                  onClick={handleCODPayment}
-                  disabled={paymentProcessing || lines.length === 0 || !selectedAddressId}
-                  className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors"
-                >
-                  {paymentProcessing ? (
-                    <>
-                      <Loader className="w-4 h-4 inline animate-spin mr-2" />
-                      Processing...
-                    </>
-                  ) : (
-                    "💵 Cash on Delivery"
-                  )}
-                </button>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Mobile cart drawer */}
@@ -1001,6 +1054,7 @@ export default function Order() {
         onClose={() => setCartDrawerOpen(false)}
         lines={lines}
         cartTotal={cartTotal}
+        discountAmount={discountAmount}
         gstAmount={gstAmount}
         finalTotal={finalTotal}
         deliveryAddress={selectedAddress?.fullAddress || ''}

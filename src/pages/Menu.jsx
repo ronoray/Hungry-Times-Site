@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import "./Menu.css";
 import { useCart } from "../context/CartContext";
-import { ShoppingCart, Plus, Check } from "lucide-react";
+import { ShoppingCart, Plus, Check, Tag, Sparkles } from "lucide-react";
 import AddToCartModal from "../components/AddToCartModal";
 import { useMenuCategory } from '../context/MenuCategoryContext';
 
@@ -201,6 +201,10 @@ export default function Menu() {
   const [activeSub, setActiveSub] = useState(null);
   const { sidebarOpen, setSidebarOpen } = useMenuCategory();
 
+  // Active Offers State
+  const [activeOffers, setActiveOffers] = useState([]);
+  const [appliedOffer, setAppliedOffer] = useState(null);
+
   // Helper to check if item has any customization options
   function hasVariantsOrAddons(it, type) {
     const families = (it.families || []).filter((f) => f.type === type);
@@ -281,6 +285,30 @@ export default function Menu() {
   }, []);
 
   const tops = data?.topCategories || [];
+
+  // Fetch active offers
+  useEffect(() => {
+    fetchActiveOffers();
+  }, []);
+
+  const fetchActiveOffers = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/offers/active`);
+      if (!response.ok) throw new Error('Failed to fetch offers');
+      
+      const data = await response.json();
+      const offers = data.offers || [];
+      
+      setActiveOffers(offers);
+      
+      const autoOffer = offers.find(o => o.apply_automatically);
+      if (autoOffer) {
+        setAppliedOffer(autoOffer);
+      }
+    } catch (err) {
+      console.error('[Menu] Error fetching offers:', err);
+    }
+  };
 
   const subs = useMemo(() => {
     const t = tops.find((x) => x.id === activeTop);
@@ -547,6 +575,38 @@ export default function Menu() {
             </div>
           </div>
         </div>
+
+        {/* 🎉 OFFERS BANNER */}
+        {appliedOffer && (
+          <div className="offers-banner-container">
+            <div className="offers-banner">
+              <div className="offers-banner-icon">
+                <Sparkles className="sparkle-icon" />
+              </div>
+              <div className="offers-banner-content">
+                <h3 className="offers-banner-title">{appliedOffer.title}</h3>
+                <p className="offers-banner-description">{appliedOffer.description}</p>
+                {appliedOffer.valid_till && (
+                  <p className="offers-banner-validity">
+                    Valid till: {new Date(appliedOffer.valid_till).toLocaleDateString('en-IN', { 
+                      day: 'numeric', 
+                      month: 'long', 
+                      year: 'numeric' 
+                    })}
+                  </p>
+                )}
+              </div>
+              <div className="offers-banner-badge">
+                <div className="offers-badge-content">
+                  <span className="offers-badge-value">
+                    {appliedOffer.discount_value}{appliedOffer.discount_type === 'percent' ? '%' : '₹'}
+                  </span>
+                  <span className="offers-badge-label">OFF</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Overlay */}
         {sidebarOpen && (

@@ -1,0 +1,550 @@
+/* =========================================
+   ORDER PAGE - COMPLETE MOBILE RESPONSIVE CSS
+   Add to: site/src/index.css or create Order.css
+   ========================================= */
+
+/* ====================
+   BASE ORDER PAGE STYLES
+   ==================== */
+
+.order-page-container {
+  min-height: 100vh;
+  background: #171717;
+  padding-bottom: 80px; /* Space for mobile nav */
+}
+
+.order-page-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+/* ====================
+   CART ITEMS SECTION
+   ==================== */
+
+.cart-items-card {
+  background: #262626;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.cart-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #404040;
+}
+
+.cart-item:last-child {
+  border-bottom: none;
+}
+
+.cart-item-details {
+  flex: 1;
+  min-width: 0; /* Allow text truncation */
+}
+
+.cart-item-name {
+  font-size: 1rem;
+  font-weight: 500;
+  color: white;
+  margin-bottom: 0.25rem;
+  word-break: break-word;
+}
+
+.cart-item-meta {
+  font-size: 0.875rem;
+  color: #a3a3a3;
+}
+
+.cart-item-variants,
+.cart-item-addons {
+  font-size: 0.75rem;
+  color: #737373;
+  margin-top: 0.25rem;
+}
+
+.cart-item-price-section {
+  text-align: right;
+  margin-left: 1rem;
+  flex-shrink: 0;
+}
+
+.cart-item-price {
+  font-size: 1rem;
+  font-weight: 500;
+  color: white;
+  white-space: nowrap;
+}
+
+.cart-item-remove {
+  font-size: 0.875rem;
+  color: #ef4444;
+  margin-top: 0.25rem;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.cart-item-remove:hover {
+  color: #dc2626;
+}
+
+/* ====================
+   ADDRESS SECTION
+   ==================== */
+
+.address-card {
+  border: 2px solid #525252;
+  border-radius: 12px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.address-card.selected {
+  border-color: #f97316;
+  background: rgba(249, 115, 22, 0.1);
+}
+
+.address-card:hover {
+  border-color: #737373;
+}
+
+.address-label {
+  font-weight: 500;
+  color: white;
+  margin-bottom: 0.25rem;
+}
+
+.address-text {
+  color: #d4d4d4;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.address-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.address-distance {
+  color: #ef4444;
+}
+
+.address-deliverable {
+  color: #22c55e;
+}
+
+/* ====================
+   ORDER SUMMARY
+   ==================== */
+
+.order-summary-card {
+  background: #262626;
+  border-radius: 12px;
+  padding: 1.5rem;
+  position: sticky;
+  top: 1rem;
+}
+
+.order-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.order-summary-label {
+  color: #a3a3a3;
+  font-size: 0.875rem;
+}
+
+.order-summary-value {
+  color: white;
+  font-weight: 500;
+}
+
+.order-summary-discount-row {
+  background: rgba(34, 197, 94, 0.1);
+  margin-left: -1rem;
+  margin-right: -1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+}
+
+.order-summary-discount-label {
+  color: #22c55e;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.order-summary-discount-value {
+  color: #22c55e;
+  font-weight: 700;
+}
+
+.order-summary-total-row {
+  border-top: 1px solid #404040;
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.order-summary-total-label {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: white;
+}
+
+.order-summary-total-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f97316;
+}
+
+.savings-message {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 8px;
+  padding: 0.5rem;
+  text-align: center;
+  margin-top: 0.75rem;
+}
+
+.savings-message-text {
+  color: #22c55e;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+/* ====================
+   PAYMENT BUTTONS
+   ==================== */
+
+.payment-button {
+  width: 100%;
+  padding: 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.payment-button-online {
+  background: #f97316;
+  color: white;
+  margin-bottom: 0.75rem;
+}
+
+.payment-button-online:hover:not(:disabled) {
+  background: #ea580c;
+}
+
+.payment-button-cod {
+  background: #22c55e;
+  color: white;
+}
+
+.payment-button-cod:hover:not(:disabled) {
+  background: #16a34a;
+}
+
+.payment-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ====================
+   SPECIAL INSTRUCTIONS
+   ==================== */
+
+.instructions-textarea {
+  width: 100%;
+  background: #404040;
+  border: 1px solid #525252;
+  border-radius: 8px;
+  padding: 0.75rem;
+  color: white;
+  font-size: 0.875rem;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.instructions-textarea::placeholder {
+  color: #737373;
+}
+
+.instructions-textarea:focus {
+  outline: none;
+  border-color: #f97316;
+}
+
+.instructions-counter {
+  text-align: right;
+  font-size: 0.75rem;
+  color: #737373;
+  margin-top: 0.25rem;
+}
+
+/* =========================================
+   MOBILE RESPONSIVE BREAKPOINTS
+   ========================================= */
+
+/* Tablet (768px - 1024px) */
+@media (max-width: 1024px) {
+  .order-page-content {
+    padding: 1.25rem 0.75rem;
+  }
+
+  .order-summary-card {
+    position: relative;
+    top: 0;
+  }
+}
+
+/* Mobile (max-width: 768px) */
+@media (max-width: 768px) {
+  .order-page-content {
+    padding: 1rem 0.5rem;
+  }
+
+  /* Stack layout on mobile */
+  .order-grid {
+    display: block !important;
+  }
+
+  /* Cart items more compact */
+  .cart-items-card {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .cart-item {
+    padding: 0.5rem 0;
+  }
+
+  .cart-item-name {
+    font-size: 0.9375rem;
+  }
+
+  .cart-item-meta {
+    font-size: 0.8125rem;
+  }
+
+  .cart-item-price {
+    font-size: 0.9375rem;
+  }
+
+  /* Address cards */
+  .address-card {
+    padding: 0.875rem;
+  }
+
+  .address-text {
+    font-size: 0.8125rem;
+  }
+
+  /* Order summary - full width on mobile */
+  .order-summary-card {
+    padding: 1.25rem;
+    margin-top: 1rem;
+  }
+
+  .order-summary-row {
+    margin-bottom: 0.625rem;
+  }
+
+  /* Payment buttons larger touch targets */
+  .payment-button {
+    padding: 1.125rem;
+    font-size: 1rem;
+  }
+
+  /* Instructions textarea */
+  .instructions-textarea {
+    font-size: 0.875rem;
+    min-height: 80px;
+  }
+}
+
+/* Small Mobile (max-width: 480px) */
+@media (max-width: 480px) {
+  .order-page-content {
+    padding: 0.75rem 0.5rem;
+  }
+
+  /* Heading sizes */
+  h2, h3 {
+    font-size: 1.125rem !important;
+  }
+
+  /* Cart items very compact */
+  .cart-items-card {
+    padding: 0.875rem;
+    border-radius: 8px;
+  }
+
+  .cart-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .cart-item-price-section {
+    margin-left: 0;
+    text-align: left;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .cart-item-name {
+    font-size: 0.875rem;
+  }
+
+  .cart-item-meta,
+  .cart-item-variants,
+  .cart-item-addons {
+    font-size: 0.75rem;
+  }
+
+  /* Address cards */
+  .address-card {
+    padding: 0.75rem;
+  }
+
+  .address-label {
+    font-size: 0.9375rem;
+  }
+
+  .address-text {
+    font-size: 0.75rem;
+  }
+
+  .address-meta {
+    font-size: 0.6875rem;
+    flex-wrap: wrap;
+  }
+
+  /* Order summary compact */
+  .order-summary-card {
+    padding: 1rem;
+    border-radius: 8px;
+  }
+
+  .order-summary-label,
+  .order-summary-value {
+    font-size: 0.8125rem;
+  }
+
+  .order-summary-total-label {
+    font-size: 1rem;
+  }
+
+  .order-summary-total-value {
+    font-size: 1.125rem;
+  }
+
+  .savings-message-text {
+    font-size: 0.8125rem;
+  }
+
+  /* Payment buttons */
+  .payment-button {
+    padding: 1rem;
+    font-size: 0.9375rem;
+  }
+
+  /* Instructions */
+  .instructions-textarea {
+    font-size: 0.8125rem;
+    padding: 0.625rem;
+  }
+}
+
+/* Extra Small Mobile (max-width: 360px) */
+@media (max-width: 360px) {
+  .order-page-content {
+    padding: 0.5rem;
+  }
+
+  h2, h3 {
+    font-size: 1rem !important;
+  }
+
+  .cart-items-card,
+  .order-summary-card {
+    padding: 0.75rem;
+  }
+
+  .cart-item-name {
+    font-size: 0.8125rem;
+  }
+
+  .payment-button {
+    padding: 0.875rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* =========================================
+   MOBILE-SPECIFIC ENHANCEMENTS
+   ========================================= */
+
+/* Touch-friendly spacing */
+@media (hover: none) and (pointer: coarse) {
+  .cart-item-remove,
+  .address-card,
+  .payment-button {
+    min-height: 44px; /* Apple's recommended touch target */
+  }
+
+  .payment-button {
+    padding: 1.25rem;
+  }
+}
+
+/* Landscape orientation on mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .order-page-content {
+    padding-bottom: 60px;
+  }
+
+  .order-summary-card {
+    position: relative;
+  }
+}
+
+/* Dark mode support (if needed) */
+@media (prefers-color-scheme: dark) {
+  /* Already dark by default */
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .address-card,
+  .payment-button {
+    transition: none;
+  }
+}
+
+/* Print styles */
+@media print {
+  .payment-button,
+  .cart-item-remove {
+    display: none;
+  }
+}
