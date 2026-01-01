@@ -783,6 +783,7 @@ export default function Order() {
                                         Address *
                                       </label>
                                       <GoogleMapsAutocomplete
+                                        key={`edit-${editingAddressId}`}
                                         onSelect={(result) => {
                                           setEditAddressData({
                                             ...editAddressData,
@@ -905,6 +906,7 @@ export default function Order() {
                             Address *
                           </label>
                           <GoogleMapsAutocomplete
+                            key="new-address-form"
                             onSelect={(result) => {
                               setNewAddressData({
                                 ...newAddressData,

@@ -14,6 +14,12 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
   const inputRef = useRef(null);
   const autocompleteRef = useRef(null);
 
+  // Update searchText when defaultValue prop changes
+  useEffect(() => {
+    setSearchText(defaultValue);
+    setHasSelected(false);
+  }, [defaultValue]);
+
   useEffect(() => {
     let checkInterval;
     let timeout;
