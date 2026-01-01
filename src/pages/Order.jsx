@@ -13,6 +13,7 @@ import { useCart } from "../context/CartContext";
 import AddToCartModal from "../components/AddToCartModal";
 import CartDrawer from "../components/CartDrawer";
 import GoogleMapsAutocomplete from "../components/GoogleMapsAutocomplete";
+import AuthModal from "../components/AuthModal";
 import { ShoppingCart, MapPin, MessageSquare, Loader, Plus, Check, Edit2, Trash2, X } from "lucide-react";
 
 import API_BASE from '../config/api.js';
@@ -55,6 +56,7 @@ export default function Order() {
   // UI State
   const [selectedItemForModal, setSelectedItemForModal] = useState(null);
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Address State
   const [addresses, setAddresses] = useState([]);
@@ -727,7 +729,7 @@ export default function Order() {
                       Please login to continue with your order
                     </p>
                     <button
-                      onClick={() => navigate('/login')}
+                      onClick={() => setShowAuthModal(true)}
                       className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg transition-colors"
                     >
                       Login / Sign Up
@@ -1085,6 +1087,17 @@ export default function Order() {
           }}
         />
       )}
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={() => {
+          setShowAuthModal(false);
+          // Refresh addresses after successful login
+          fetchAddresses();
+        }}
+      />
     </div>
   );
 }
