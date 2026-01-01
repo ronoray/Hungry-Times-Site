@@ -44,10 +44,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
 
   const auth = useAuth();
 
-  if (!isOpen) return null;
-
   // ============================================
-  // OTP COOLDOWN TIMER
+  // OTP COOLDOWN TIMER - MUST BE BEFORE EARLY RETURN
   // ============================================
   useEffect(() => {
     if (otpCooldown > 0) {
@@ -61,6 +59,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
 
   // Check for existing cooldown on mount
   useEffect(() => {
+    if (!isOpen) return; // Skip if modal is closed
+    
     const checkCooldown = (key) => {
       const cooldownEnd = localStorage.getItem(key);
       if (cooldownEnd) {
@@ -78,7 +78,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
     } else if (step === STEPS.FORGOT_PASSWORD) {
       checkCooldown('otp_cooldown_forgot');
     }
-  }, [step]);
+  }, [step, isOpen]);
 
   const startOtpCooldown = (type) => {
     const cooldownSeconds = 600; // 10 minutes
@@ -87,6 +87,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
     localStorage.setItem(key, cooldownEnd.toString());
     setOtpCooldown(cooldownSeconds);
   };
+
+  // Early return AFTER all hooks
+  if (!isOpen) return null;
 
   const resetForm = () => {
     setStep(STEPS.LOGIN);
