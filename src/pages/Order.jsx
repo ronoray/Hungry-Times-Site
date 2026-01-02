@@ -14,7 +14,7 @@ import AddToCartModal from "../components/AddToCartModal";
 import CartDrawer from "../components/CartDrawer";
 import GoogleMapsAutocomplete from "../components/GoogleMapsAutocomplete";
 import AuthModal from "../components/AuthModal";
-import { ShoppingCart, MapPin, MessageSquare, Loader, Plus, Check, Edit2, Trash2, X } from "lucide-react";
+import { ShoppingCart, MapPin, MessageSquare, Loader, Plus, Check, Edit2, Trash2, X, AlertCircle } from "lucide-react";
 
 import API_BASE from '../config/api.js';
 
@@ -364,6 +364,40 @@ export default function Order() {
 
   // Get selected address object
   const selectedAddress = addresses.find(addr => addr.id === selectedAddressId);
+
+  // ============================================================================
+  // GET DELIVERY STATUS FOR ANY ADDRESS
+  // ============================================================================
+  const getDeliveryStatus = (address) => {
+    if (!address.latitude || !address.longitude) {
+      return {
+        canDeliver: false,
+        distance: null,
+        message: "No location data - please edit and select from Google Maps"
+      };
+    }
+
+    const distance = calculateDistance(
+      RESTAURANT_LOCATION.latitude,
+      RESTAURANT_LOCATION.longitude,
+      address.latitude,
+      address.longitude
+    );
+
+    if (distance > MAX_DELIVERY_RADIUS_KM) {
+      return {
+        canDeliver: false,
+        distance: distance.toFixed(1),
+        message: `Outside delivery area (${distance.toFixed(1)}km away). Please call +91-8420822919`
+      };
+    }
+
+    return {
+      canDeliver: true,
+      distance: distance.toFixed(1),
+      message: `Within delivery area (${distance.toFixed(1)}km away)`
+    };
+  };
 
   // ============================================================================
   // VALIDATE DELIVERY AREA
@@ -783,7 +817,6 @@ export default function Order() {
                                         Address *
                                       </label>
                                       <GoogleMapsAutocomplete
-                                        key={`edit-${editingAddressId}`}
                                         onSelect={(result) => {
                                           setEditAddressData({
                                             ...editAddressData,
@@ -818,7 +851,7 @@ export default function Order() {
                                           <Check className="w-5 h-5 text-orange-500 flex-shrink-0" />
                                         )}
                                         <div>
-                                          <div className="flex items-center gap-2">
+                                          <div className="flex items-center gap-2 flex-wrap">
                                             {addr.name && (
                                               <span className="text-white font-medium">{addr.name}</span>
                                             )}
@@ -829,6 +862,30 @@ export default function Order() {
                                             )}
                                           </div>
                                           <p className="text-neutral-300 text-sm mt-1">{addr.fullAddress}</p>
+                                          
+                                          {/* Delivery Status Badge */}
+                                          {(() => {
+                                            const status = getDeliveryStatus(addr);
+                                            return (
+                                              <div className={`mt-2 px-2 py-1 rounded text-xs inline-flex items-center gap-1 ${
+                                                status.canDeliver 
+                                                  ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                                                  : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                                              }`}>
+                                                {status.canDeliver ? (
+                                                  <>
+                                                    <Check className="w-3 h-3" />
+                                                    {status.message}
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    <AlertCircle className="w-3 h-3" />
+                                                    {status.message}
+                                                  </>
+                                                )}
+                                              </div>
+                                            );
+                                          })()}
                                         </div>
                                       </div>
                                       <div className="flex gap-1">
@@ -906,7 +963,6 @@ export default function Order() {
                             Address *
                           </label>
                           <GoogleMapsAutocomplete
-                            key="new-address-form"
                             onSelect={(result) => {
                               setNewAddressData({
                                 ...newAddressData,
@@ -1020,6 +1076,32 @@ export default function Order() {
                     {paymentError}
                   </div>
                 )}
+
+                {/* Delivery Area Warning */}
+                {selectedAddress && (() => {
+                  const status = getDeliveryStatus(selectedAddress);
+                  if (!status.canDeliver) {
+                    return (
+                      <div className="mb-4 p-4 bg-red-500/10 border border-red-500/50 rounded-lg">
+                        <div className="flex items-start gap-3">
+                          <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-red-400 font-semibold mb-1">
+                              ⚠️ Outside Delivery Area
+                            </p>
+                            <p className="text-red-300 text-sm mb-2">
+                              {status.message}
+                            </p>
+                            <p className="text-neutral-300 text-sm">
+                              Please call us at <a href="tel:+918420822919" className="text-orange-400 hover:text-orange-300 font-semibold">+91-8420822919</a> to place your order.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
 
                 <div className="space-y-2">
                   <button
