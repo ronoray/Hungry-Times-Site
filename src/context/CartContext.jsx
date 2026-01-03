@@ -39,6 +39,7 @@ export function CartProvider({ children }) {
 
   // ============================================================================
   // ADD LINE - Support both singular and array variants
+  // ✅ CRITICAL FIX: Explicitly preserve ALL fields including itemName
   // ============================================================================
   const addLine = (line) => setLines(prev => {
     // Merge same config
@@ -72,7 +73,19 @@ export function CartProvider({ children }) {
     }
     
     const key = (globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2));
-    return [...prev, { ...line, qty: line.qty || 1, key }];
+    
+    // ✅ CRITICAL FIX: Explicitly construct cart item with ALL required fields
+    // This ensures itemName is preserved from AddToCartModal
+    return [...prev, {
+      key,
+      itemId: line.itemId,
+      itemName: line.itemName || line.name,  // ✅ Primary field
+      name: line.name || line.itemName,      // ✅ Fallback field
+      basePrice: line.basePrice,
+      variants: line.variants || [],
+      addons: line.addons || [],
+      qty: line.qty || 1
+    }];
   });
 
   const removeLine = (key) =>
