@@ -114,11 +114,18 @@ export default function CartDrawer({
                     {/* Quantity Controls */}
                     <div className="flex items-center gap-3 mt-2">
                       <button
-                        onClick={() => updateQty(line.key, Math.max(1, line.qty - 1))}
-                        className="w-8 h-8 bg-neutral-700 rounded hover:bg-neutral-600 active:bg-neutral-500 flex items-center justify-center text-white transition-colors"
-                        aria-label="Decrease quantity"
+                        onClick={() => {
+                          // ✅ UPDATED: Remove item when quantity becomes 0
+                          updateQty(line.key, line.qty - 1);
+                        }}
+                        className={`w-8 h-8 rounded flex items-center justify-center text-white transition-colors ${
+                          line.qty === 1 
+                            ? 'bg-red-600 hover:bg-red-700 active:bg-red-800' 
+                            : 'bg-neutral-700 hover:bg-neutral-600 active:bg-neutral-500'
+                        }`}
+                        aria-label={line.qty === 1 ? 'Remove from cart' : 'Decrease quantity'}
                       >
-                        <Minus className="w-3 h-3" />
+                        {line.qty === 1 ? <Trash2 className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
                       </button>
                       <span className="flex-1 text-center text-white font-semibold text-sm">
                         {line.qty}

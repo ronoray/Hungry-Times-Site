@@ -14,7 +14,7 @@ import AddToCartModal from "../components/AddToCartModal";
 import CartDrawer from "../components/CartDrawer";
 import GoogleMapsAutocomplete from "../components/GoogleMapsAutocomplete";
 import AuthModal from "../components/AuthModal";
-import { ShoppingCart, MapPin, MessageSquare, Loader, Plus, Check, Edit2, Trash2, X, AlertCircle } from "lucide-react";
+import { ShoppingCart, MapPin, MessageSquare, Loader, Plus, Check, Edit2, Trash2, X, AlertCircle, Minus } from "lucide-react";
 
 import API_BASE from '../config/api.js';
 
@@ -51,7 +51,7 @@ export default function Order() {
 
   const navigate = useNavigate();
   const { isAuthenticated, customer } = useAuth();
-  const { lines, clearCart, addLine, removeLine } = useCart();
+  const { lines, clearCart, addLine, removeLine, updateQty } = useCart();
 
   // UI State
   const [selectedItemForModal, setSelectedItemForModal] = useState(null);
@@ -737,27 +737,67 @@ export default function Order() {
                 const lineTotal = unitPrice * (line.qty || 1);
 
                 return (
-                  <div key={idx} className="flex items-start justify-between py-3 border-b border-neutral-700 last:border-0">
-                    <div className="flex-1">
-                      <h4 className="text-white font-medium">{line.itemName || line.name || "Item"}</h4>
-                      <p className="text-sm text-neutral-400">Qty: {line.qty}</p>
-                      {line.variants && line.variants.length > 0 && (
-                        <p className="text-xs text-neutral-500 mt-1">
-                          {line.variants.map(v => v.name).join(', ')}
+                  <div key={idx} className="bg-neutral-800 rounded-lg p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      {/* Item Details */}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-white font-medium text-base">
+                          {line.itemName || line.name || "Item"}
+                        </h4>
+                        <p className="text-sm text-neutral-400 mt-1">
+                          ₹{unitPrice} each
                         </p>
-                      )}
-                      {line.addons && line.addons.length > 0 && (
-                        <p className="text-xs text-neutral-500">
-                          Add-ons: {line.addons.map(a => a.name).join(', ')}
-                        </p>
-                      )}
+                        {line.variants && line.variants.length > 0 && (
+                          <p className="text-xs text-neutral-500 mt-1">
+                            {line.variants.map(v => v.name).join(', ')}
+                          </p>
+                        )}
+                        {line.addons && line.addons.length > 0 && (
+                          <p className="text-xs text-neutral-500">
+                            Add-ons: {line.addons.map(a => a.name).join(', ')}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Price */}
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-white font-bold text-lg">₹{lineTotal}</p>
+                      </div>
                     </div>
-                    <div className="text-right ml-4">
-                      <p className="text-white font-medium">₹{lineTotal}</p>
+
+                    {/* Quantity Controls */}
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-neutral-700">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => updateQty(line.key, line.qty - 1)}
+                          className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
+                            line.qty === 1
+                              ? 'bg-red-600 hover:bg-red-700 active:bg-red-800 text-white'
+                              : 'bg-neutral-700 hover:bg-neutral-600 active:bg-neutral-500 text-white'
+                          }`}
+                          aria-label={line.qty === 1 ? 'Remove from cart' : 'Decrease quantity'}
+                        >
+                          {line.qty === 1 ? <Trash2 className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
+                        </button>
+
+                        <span className="text-white font-semibold text-base min-w-[2rem] text-center">
+                          {line.qty}
+                        </span>
+
+                        <button
+                          onClick={() => updateQty(line.key, line.qty + 1)}
+                          className="w-9 h-9 bg-neutral-700 hover:bg-neutral-600 active:bg-neutral-500 rounded-lg flex items-center justify-center text-white transition-colors"
+                          aria-label="Increase quantity"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+
                       <button
                         onClick={() => removeLine(line.key)}
-                        className="text-red-400 hover:text-red-300 text-sm mt-1"
+                        className="text-red-400 hover:text-red-300 text-sm font-medium transition-colors flex items-center gap-1"
                       >
+                        <Trash2 className="w-4 h-4" />
                         Remove
                       </button>
                     </div>
