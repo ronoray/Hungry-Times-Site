@@ -47,6 +47,36 @@
       defer
     ></script>
 
+    <!-- ✅ Google Analytics - Dynamic Loading -->
+    <script>
+      // Fetch GA config from backend
+      fetch('/api/public/analytics-config')
+        .then(res => res.json())
+        .then(data => {
+          if (data.measurementId) {
+            // Dynamically load Google Analytics
+            const script1 = document.createElement('script');
+            script1.async = true;
+            script1.src = `https://www.googletagmanager.com/gtag/js?id=${data.measurementId}`;
+            document.head.appendChild(script1);
+            
+            const script2 = document.createElement('script');
+            script2.innerHTML = `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${data.measurementId}');
+            `;
+            document.head.appendChild(script2);
+            
+            console.log('[GA] Tracking enabled:', data.measurementId);
+          } else {
+            console.log('[GA] Tracking disabled in admin panel');
+          }
+        })
+        .catch(err => console.log('[GA] Config not available'));
+    </script>
+
     <!-- ✅ Global styles for Google Places dropdown -->
     <style>
       /* Make the Google autocomplete dropdown appear above everything */
