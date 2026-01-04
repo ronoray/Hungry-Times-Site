@@ -192,10 +192,14 @@ export default function Menu() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
-  const { addLine } = useCart();
+  const { 
+     addLine, 
+     getSimpleItemQty, 
+     incrementSimpleItem, 
+     decrementSimpleItem 
+   } = useCart();
   const [selectedItem, setSelectedItem] = useState(null);
   const [showAddToCartModal, setShowAddToCartModal] = useState(false);
-  const [addedItems, setAddedItems] = useState(new Set());
 
   const [activeTop, setActiveTop] = useState(null);
   const [activeSub, setActiveSub] = useState(null);
@@ -429,52 +433,74 @@ export default function Menu() {
             </button>
           )}
 
-          <button
-            onClick={() => {
-              const hasOptions = hasVariantsOrAddons(it, 'variant') || hasVariantsOrAddons(it, 'addon');
-              
-              if (hasOptions) {
-                // Open modal for items with variants/addons
-                setSelectedItem(it);
-                setShowAddToCartModal(true);
-              } else {
-                // Add directly for simple items
-                addLine({
-                  itemId: it.id,
-                  name: it.name,
-                  basePrice: parseFloat(it.basePrice || 0),
-                  variant: null,
-                  addons: [],
-                  qty: 1
-                });
-                
-                // Show success feedback
-                setAddedItems(prev => {
-                  const next = new Set(prev);
-                  next.add(it.id);
-                  return next;
-                });
-                setTimeout(() => {
-                  setAddedItems(prev => {
-                    const next = new Set(prev);
-                    next.delete(it.id);
-                    return next;
-                  });
-                }, 2000);
-              }
-            }}
-            className={`add-to-cart-btn ${addedItems.has(it.id) ? 'added' : ''}`}
-          >
-            {addedItems.has(it.id) ? (
-              <>
-                <Check className="btn-icon" /> Added to Cart
-              </>
-            ) : (
-              <>
+          {/* ✅ NEW: Quantity Controls or Add to Cart Button */}
+          {(() => {
+            const hasOptions = hasVariantsOrAddons(it, 'variant') || hasVariantsOrAddons(it, 'addon');
+            
+            // If item has variants/addons, always show "Customize" button
+            if (hasOptions) {
+              return (
+                <button
+                  onClick={() => {
+                    setSelectedItem(it);
+                    setShowAddToCartModal(true);
+                  }}
+                  className="add-to-cart-btn"
+                >
+                  <Plus className="btn-icon" /> Customize & Add
+                </button>
+              );
+            }
+            
+            // For simple items (no variants/addons), check if already in cart
+            const currentQty = getSimpleItemQty(it.id);
+            
+            if (currentQty > 0) {
+              // Item is in cart - show quantity controls
+              return (
+                <div className="quantity-control">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      decrementSimpleItem(it.id);
+                    }}
+                    className={`quantity-btn ${currentQty === 1 ? 'remove-indicator' : ''}`}
+                    aria-label={currentQty === 1 ? 'Remove from cart' : 'Decrease quantity'}
+                  >
+                    −
+                  </button>
+                  
+                  <div className="quantity-display">
+                    <ShoppingCart className="cart-icon" />
+                    <span>{currentQty}</span>
+                  </div>
+                  
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      incrementSimpleItem(it);
+                    }}
+                    className="quantity-btn"
+                    aria-label="Increase quantity"
+                  >
+                    +
+                  </button>
+                </div>
+              );
+            }
+            
+            // Item not in cart - show Add to Cart button
+            return (
+              <button
+                onClick={() => {
+                  incrementSimpleItem(it);
+                }}
+                className="add-to-cart-btn"
+              >
                 <ShoppingCart className="btn-icon" /> Add to Cart
-              </>
-            )}
-          </button>
+              </button>
+            );
+          })()}
         </div>
 
         {isRecommendedCard && (
