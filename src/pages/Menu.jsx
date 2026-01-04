@@ -256,6 +256,7 @@ export default function Menu() {
   };
 
   const rightPaneRef = useRef(null);
+  const searchResultsRef = useRef(null);
 
   // Fetch menu data
   useEffect(() => {
@@ -339,19 +340,13 @@ export default function Menu() {
     tops.forEach((topCat) => {
       topCat.subcategories?.forEach((subCat) => {
         const items = subCat.items || [];
+        
+        // FIXED: Only include items where the ITEM NAME matches the query
         const matched = items.filter(item => {
-          // Search in item name
-          if (item.name?.toLowerCase().includes(query)) return true;
-          
-          // Search in top category name
-          if (topCat.name?.toLowerCase().includes(query)) return true;
-          
-          // Search in subcategory name
-          if (subCat.name?.toLowerCase().includes(query)) return true;
-          
-          return false;
+          return item.name?.toLowerCase().includes(query);
         });
         
+        // Only add subcategory if it has matching items
         if (matched.length > 0) {
           results.push({
             topCategory: topCat,
@@ -385,6 +380,22 @@ export default function Menu() {
     // When searching, return subcategories from global search results
     return globalSearchResults?.map(result => result.subCategory) || [];
   }, [subs, searchQuery, globalSearchResults]);
+
+  // Auto-scroll to search results when search query changes
+  useEffect(() => {
+    if (!searchQuery || !searchResultsRef.current) return;
+    
+    // Debounce: only scroll after user stops typing for 500ms
+    const timeoutId = setTimeout(() => {
+      searchResultsRef.current?.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+      });
+    }, 500);
+    
+    // Cleanup: cancel scroll if user continues typing
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, globalSearchResults]);
 
   // Collect all recommended items
   const recommendedItems = useMemo(() => {
@@ -796,7 +807,7 @@ export default function Menu() {
                 {filteredSubs.length > 0 ? (
                   <>
                     {searchQuery && (
-                      <div className="search-results-header">
+                      <div className="search-results-header" ref={searchResultsRef}>
                         <p>
                           Found {globalSearchResults?.reduce((sum, r) => sum + r.items.length, 0) || 0} item
                           {(globalSearchResults?.reduce((sum, r) => sum + r.items.length, 0) || 0) !== 1 ? 's' : ''} across{' '}
