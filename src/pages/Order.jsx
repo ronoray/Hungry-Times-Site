@@ -458,14 +458,18 @@ export default function Order() {
       }
 
       const orderItems = lines.map(line => ({
-        itemName: line.itemName,
+        itemName: line.itemName || line.name,  // ✅ Add fallback
         quantity: line.qty || 1,
         base_price: line.basePrice || 0,
+        basePrice: line.basePrice || 0,  // ✅ Include both formats
         variants: line.variants || [],
         addons: line.addons || []
       }));
 
-      const response = await fetch(`${API_BASE}/customer/orders`, {
+      // ✅ STEP 1: INITIATE order (creates Razorpay order only, NO database order yet!)
+      console.log('🔄 Step 1: Initiating payment...');
+      
+      const response = await fetch(`${API_BASE}/customer/orders/initiate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -477,7 +481,6 @@ export default function Order() {
           delivery_latitude: selectedAddr.latitude,
           delivery_longitude: selectedAddr.longitude,
           delivery_instructions: deliveryInstructions,
-          paymentMethod: "CARD",  // Online payment via Razorpay
           discount: discountAmount,
           offer_id: appliedOffer?.id || null,
           offer_title: appliedOffer?.title || null,
@@ -485,28 +488,28 @@ export default function Order() {
       });
 
       if (!response.ok) {
-        console.error("=== ORDER CREATION FAILED ===");
+        console.error("=== INITIATE FAILED ===");
         console.error("Status:", response.status);
-        console.error("Status Text:", response.statusText);
         
         let errorData;
         try {
           errorData = await response.json();
           console.error("Error data:", errorData);
         } catch (e) {
-          console.error("Could not parse error response");
           errorData = {};
         }
         
         if (response.status === 401) {
-          throw new Error("Authentication failed. Please logout and login again to continue.");
+          throw new Error("Authentication failed. Please logout and login again.");
         }
         
-        throw new Error(errorData.error || errorData.message || "Failed to create order");
+        throw new Error(errorData.error || "Failed to initiate payment");
       }
 
       const data = await response.json();
-      const { orderId, razorpayOrderId, razorpayKey } = data;
+      const { razorpayOrderId, razorpayKey, amount } = data;
+
+      console.log('✅ Step 1 complete: Razorpay order created:', razorpayOrderId);
 
       // Load Razorpay SDK if not loaded
       if (!window.Razorpay) {
@@ -520,15 +523,21 @@ export default function Order() {
         });
       }
 
+      // ✅ STEP 2: Open Razorpay modal
+      console.log('🔄 Step 2: Opening Razorpay...');
+      
       const options = {
         key: razorpayKey,
-        amount: finalTotal * 100,
+        amount: amount * 100,
         currency: "INR",
         name: "Hungry Times",
         description: "Order Payment",
         order_id: razorpayOrderId,
-        handler: async function (response) {
+        handler: async function (paymentResponse) {
           try {
+            // ✅ STEP 3: VERIFY payment and CREATE database order
+            console.log('🔄 Step 3: Verifying payment and creating order...');
+            
             const verifyResponse = await fetch(`${API_BASE}/customer/payments/verify`, {
               method: "POST",
               headers: {
@@ -536,21 +545,31 @@ export default function Order() {
                 Authorization: `Bearer ${token}`,
               },
               body: JSON.stringify({
-                orderId,
-                razorpayOrderId: response.razorpay_order_id,
-                razorpayPaymentId: response.razorpay_payment_id,
-                razorpaySignature: response.razorpay_signature,
+                razorpayOrderId: paymentResponse.razorpay_order_id,
+                razorpayPaymentId: paymentResponse.razorpay_payment_id,
+                razorpaySignature: paymentResponse.razorpay_signature,
               }),
             });
 
             if (!verifyResponse.ok) {
-              throw new Error("Payment verification failed");
+              const errorData = await verifyResponse.json();
+              throw new Error(errorData.error || "Payment verification failed");
             }
 
+            const result = await verifyResponse.json();
+            
+            console.log('✅ Payment verified! Order created:', result.orderId);
+
+            // ✅ NOW order exists in database
             clearCart();
-            navigate(`/my-orders/${orderId}`);
+            navigate(`/my-orders/${result.orderId}`);
+            
           } catch (error) {
-            setPaymentError("Payment verification failed. Please contact support.");
+            console.error('❌ Verification error:', error);
+            setPaymentError(
+              `Payment verification failed. ` +
+              `If money was deducted, contact support with payment ID: ${paymentResponse.razorpay_payment_id}`
+            );
             setPaymentProcessing(false);
           }
         },
@@ -564,15 +583,19 @@ export default function Order() {
         },
         modal: {
           ondismiss: function () {
+            // ✅ User cancelled - no order created!
+            console.log('⚠️ Payment cancelled by user');
             setPaymentProcessing(false);
-            setPaymentError("Payment cancelled");
+            setPaymentError("Payment cancelled. No order was created.");
           },
         },
       };
 
       const rzp = new window.Razorpay(options);
       rzp.open();
+      
     } catch (error) {
+      console.error('❌ Payment error:', error);
       setPaymentError(error.message);
       setPaymentProcessing(false);
     }
