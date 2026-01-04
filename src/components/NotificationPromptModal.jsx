@@ -1,7 +1,9 @@
 // site/src/components/NotificationPromptModal.jsx
 // ============================================================================
-// AGGRESSIVE NOTIFICATION PERMISSION PROMPT - Full Screen Modal
-// Shows immediately when user visits site (if permission not granted)
+// MOBILE-RESPONSIVE NOTIFICATION PERMISSION PROMPT
+// ✅ Fully responsive for mobile and desktop
+// ✅ Proper scrolling on small screens
+// ✅ Touch-friendly buttons
 // ============================================================================
 
 import { useState, useEffect } from 'react';
@@ -97,88 +99,106 @@ export default function NotificationPromptModal() {
 
   return (
     <>
-      {/* Full-screen backdrop */}
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-fadeIn">
+      {/* Full-screen backdrop with proper scrolling */}
+      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[9999] overflow-y-auto animate-fadeIn">
         
-        {/* Modal content */}
-        <div className="bg-gradient-to-br from-orange-600 via-orange-500 to-orange-600 rounded-3xl p-8 max-w-md w-full text-center text-white shadow-2xl transform animate-scaleIn">
+        {/* Centered container with padding for safe scrolling */}
+        <div className="min-h-screen flex items-center justify-center p-4 sm:p-6">
           
-          {/* Animated bell icon */}
-          <div className="relative mb-6">
-            <div className="absolute inset-0 bg-white/20 rounded-full blur-xl animate-pulse"></div>
-            <div className="relative bg-white/20 rounded-full w-24 h-24 flex items-center justify-center mx-auto backdrop-blur-sm">
-              <Bell className="w-12 h-12 animate-bounce" />
+          {/* Modal content - responsive sizing */}
+          <div className="bg-gradient-to-br from-orange-600 via-orange-500 to-orange-600 rounded-2xl sm:rounded-3xl p-6 sm:p-8 max-w-md w-full text-center text-white shadow-2xl my-4 transform animate-scaleIn">
+            
+            {/* Close button - mobile friendly */}
+            <button
+              onClick={handleDismiss}
+              className="absolute top-4 right-4 sm:top-6 sm:right-6 text-white/80 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+            
+            {/* Animated bell icon - responsive sizing */}
+            <div className="relative mb-4 sm:mb-6">
+              <div className="absolute inset-0 bg-white/20 rounded-full blur-xl animate-pulse"></div>
+              <div className="relative bg-white/20 rounded-full w-16 h-16 sm:w-24 sm:h-24 flex items-center justify-center mx-auto backdrop-blur-sm">
+                <Bell className="w-8 h-8 sm:w-12 sm:h-12 animate-bounce" />
+              </div>
             </div>
+            
+            {/* Main heading - responsive text */}
+            <h2 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3 leading-tight px-2">
+              Never Miss an Update!
+            </h2>
+            
+            {/* Subheading - responsive text */}
+            <p className="text-white/95 mb-4 sm:mb-6 text-base sm:text-lg font-medium px-2">
+              Enable notifications to track your order in real-time
+            </p>
+            
+            {/* Benefits list - responsive spacing */}
+            <div className="space-y-2 sm:space-y-3 mb-6 sm:mb-8 text-left bg-white/10 rounded-xl sm:rounded-2xl p-4 sm:p-6 backdrop-blur-sm">
+              
+              {/* Order Confirmed */}
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <span className="text-xl sm:text-2xl">✅</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm sm:text-base">Order Confirmed</p>
+                  <p className="text-white/80 text-xs sm:text-sm">Get instant confirmation</p>
+                </div>
+              </div>
+              
+              {/* Being Prepared */}
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <span className="text-xl sm:text-2xl">👨‍🍳</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm sm:text-base">Being Prepared</p>
+                  <p className="text-white/80 text-xs sm:text-sm">Know when cooking starts</p>
+                </div>
+              </div>
+              
+              {/* Out for Delivery */}
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <span className="text-xl sm:text-2xl">🚚</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm sm:text-base">Out for Delivery</p>
+                  <p className="text-white/80 text-xs sm:text-sm">Track your delivery</p>
+                </div>
+              </div>
+              
+              {/* Delivered */}
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <span className="text-xl sm:text-2xl">🎉</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm sm:text-base">Delivered!</p>
+                  <p className="text-white/80 text-xs sm:text-sm">Enjoy your meal</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Enable button - mobile touch-friendly */}
+            <button
+              onClick={handleEnable}
+              className="w-full bg-white text-orange-600 font-bold py-3 sm:py-4 px-4 sm:px-6 rounded-xl hover:bg-white/95 active:scale-95 transition-all text-base sm:text-lg shadow-lg mb-3 sm:mb-4"
+            >
+              🔔 Enable Notifications Now
+            </button>
+            
+            {/* Dismiss button - mobile touch-friendly */}
+            <button
+              onClick={handleDismiss}
+              className="text-white/80 hover:text-white transition-colors text-sm font-medium py-2 px-4"
+            >
+              I'll do this later
+            </button>
           </div>
-          
-          {/* Main heading */}
-          <h2 className="text-3xl font-bold mb-3 leading-tight">
-            Never Miss an Update!
-          </h2>
-          
-          {/* Subheading */}
-          <p className="text-white/95 mb-6 text-lg font-medium">
-            Enable notifications to track your order in real-time
-          </p>
-          
-          {/* Benefits list */}
-          <div className="space-y-3 mb-8 text-left bg-white/10 rounded-2xl p-6 backdrop-blur-sm">
-            <div className="flex items-center gap-4">
-              <div className="flex-shrink-0 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                <span className="text-2xl">✅</span>
-              </div>
-              <div>
-                <p className="font-semibold text-base">Order Confirmed</p>
-                <p className="text-white/80 text-sm">Get instant confirmation</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="flex-shrink-0 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                <span className="text-2xl">👨‍🍳</span>
-              </div>
-              <div>
-                <p className="font-semibold text-base">Being Prepared</p>
-                <p className="text-white/80 text-sm">Know when cooking starts</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="flex-shrink-0 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                <span className="text-2xl">🚚</span>
-              </div>
-              <div>
-                <p className="font-semibold text-base">Out for Delivery</p>
-                <p className="text-white/80 text-sm">Track your delivery</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="flex-shrink-0 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                <span className="text-2xl">🎉</span>
-              </div>
-              <div>
-                <p className="font-semibold text-base">Delivered!</p>
-                <p className="text-white/80 text-sm">Enjoy your meal</p>
-              </div>
-            </div>
-          </div>
-          
-          {/* Enable button */}
-          <button
-            onClick={handleEnable}
-            className="w-full bg-white text-orange-600 font-bold py-4 px-6 rounded-xl hover:bg-white/95 active:scale-95 transition-all text-lg shadow-lg mb-4"
-          >
-            🔔 Enable Notifications Now
-          </button>
-          
-          {/* Dismiss button */}
-          <button
-            onClick={handleDismiss}
-            className="text-white/80 hover:text-white transition-colors text-sm font-medium"
-          >
-            I'll do this later
-          </button>
         </div>
       </div>
 
@@ -192,7 +212,7 @@ export default function NotificationPromptModal() {
         @keyframes scaleIn {
           from { 
             opacity: 0;
-            transform: scale(0.9);
+            transform: scale(0.95);
           }
           to { 
             opacity: 1;
