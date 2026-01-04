@@ -385,13 +385,13 @@ export default function Menu() {
   useEffect(() => {
     if (!searchQuery || !searchResultsRef.current) return;
     
-    // Debounce: only scroll after user stops typing for 500ms
+    // Debounce: only scroll after user stops typing for 700ms
     const timeoutId = setTimeout(() => {
       searchResultsRef.current?.scrollIntoView({ 
         behavior: 'smooth', 
         block: 'start' 
       });
-    }, 500);
+    }, 700);
     
     // Cleanup: cancel scroll if user continues typing
     return () => clearTimeout(timeoutId);
