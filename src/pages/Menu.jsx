@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import "./Menu.css";
 import { useCart } from "../context/CartContext";
-import { ShoppingCart, Plus, Check, Tag, Sparkles } from "lucide-react";
+import { ShoppingCart, Plus, Check, Tag, Sparkles, Search, X } from "lucide-react";
 import AddToCartModal from "../components/AddToCartModal";
 import { useMenuCategory } from '../context/MenuCategoryContext';
 
@@ -205,6 +205,9 @@ export default function Menu() {
   const [activeSub, setActiveSub] = useState(null);
   const { sidebarOpen, setSidebarOpen } = useMenuCategory();
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+
   // Active Offers State
   const [activeOffers, setActiveOffers] = useState([]);
   const [appliedOffer, setAppliedOffer] = useState(null);
@@ -324,6 +327,64 @@ export default function Menu() {
     subs.forEach((sc) => map.set(sc.id, sc.items || []));
     return map;
   }, [subs]);
+
+  // Global search across ALL categories
+  const globalSearchResults = useMemo(() => {
+    if (!searchQuery.trim()) return null;
+    
+    const query = searchQuery.toLowerCase();
+    const results = [];
+    
+    // Search through ALL top categories and their subcategories
+    tops.forEach((topCat) => {
+      topCat.subcategories?.forEach((subCat) => {
+        const items = subCat.items || [];
+        const matched = items.filter(item => {
+          // Search in item name
+          if (item.name?.toLowerCase().includes(query)) return true;
+          
+          // Search in top category name
+          if (topCat.name?.toLowerCase().includes(query)) return true;
+          
+          // Search in subcategory name
+          if (subCat.name?.toLowerCase().includes(query)) return true;
+          
+          return false;
+        });
+        
+        if (matched.length > 0) {
+          results.push({
+            topCategory: topCat,
+            subCategory: subCat,
+            items: matched
+          });
+        }
+      });
+    });
+    
+    return results;
+  }, [tops, searchQuery]);
+
+  // When searching, use global results; otherwise use current category
+  const filteredItemsBySub = useMemo(() => {
+    if (!searchQuery.trim()) return itemsBySub;
+    
+    // Convert global search results to Map format
+    const filtered = new Map();
+    globalSearchResults?.forEach(result => {
+      filtered.set(result.subCategory.id, result.items);
+    });
+    
+    return filtered;
+  }, [itemsBySub, searchQuery, globalSearchResults]);
+
+  // Filtered subcategories
+  const filteredSubs = useMemo(() => {
+    if (!searchQuery.trim()) return subs;
+    
+    // When searching, return subcategories from global search results
+    return globalSearchResults?.map(result => result.subCategory) || [];
+  }, [subs, searchQuery, globalSearchResults]);
 
   // Collect all recommended items
   const recommendedItems = useMemo(() => {
@@ -602,6 +663,29 @@ export default function Menu() {
           </div>
         </div>
 
+        {/* 🔍 SEARCH BAR */}
+        <div className="search-bar-container">
+          <div className="search-bar">
+            <Search className="search-icon" size={20} />
+            <input
+              type="text"
+              placeholder="Search menu items or categories..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="search-clear"
+                aria-label="Clear search"
+              >
+                <X size={20} />
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* 🎉 OFFERS BANNER */}
         {appliedOffer && (
           <div className="offers-banner-container">
@@ -667,8 +751,8 @@ export default function Menu() {
             {/* Right Pane */}
             <div className="menu-main" ref={rightPaneRef}>
               <section>
-                {/* Recommended Section */}
-                {recommendedItems.length > 0 && (
+                {/* Recommended Section - Hidden during search */}
+                {!searchQuery && recommendedItems.length > 0 && (
                   <div className="recommended-section">
                     <div className="recommended-header">
                       <span className="star-icon">⭐</span>
@@ -694,7 +778,7 @@ export default function Menu() {
                 {/* Subcategory Navigation */}
                 <nav className="subcategory-bar">
                   <div className="subcategory-scroll">
-                    {subs.map((sc) => (
+                    {filteredSubs.map((sc) => (
                       <button
                         key={sc.id}
                         className={`subcategory-btn ${
@@ -709,20 +793,61 @@ export default function Menu() {
                 </nav>
 
                 {/* Regular sections */}
-                {subs.map((sc) => (
-                  <div key={sc.id} data-sub={sc.id} className="menu-section">
-                    <h2 className="section-title">{sc.name}</h2>
-                    <div className="items-grid">
-                      {(itemsBySub.get(sc.id) || []).map((it) => (
-                        <MenuItemCard
-                          key={it.id}
-                          it={it}
-                          isRecommendedCard={false}
-                        />
-                      ))}
-                    </div>
+                {filteredSubs.length > 0 ? (
+                  <>
+                    {searchQuery && (
+                      <div className="search-results-header">
+                        <p>
+                          Found {globalSearchResults?.reduce((sum, r) => sum + r.items.length, 0) || 0} item
+                          {(globalSearchResults?.reduce((sum, r) => sum + r.items.length, 0) || 0) !== 1 ? 's' : ''} across{' '}
+                          {filteredItemsBySub.size} {filteredItemsBySub.size === 1 ? 'category' : 'categories'}
+                        </p>
+                      </div>
+                    )}
+                    {searchQuery ? (
+                      // Search results with category context
+                      globalSearchResults?.map((result) => (
+                        <div key={result.subCategory.id} data-sub={result.subCategory.id} className="menu-section">
+                          <div className="section-title-with-breadcrumb">
+                            <span className="category-breadcrumb">{result.topCategory.name}</span>
+                            <h2 className="section-title">{result.subCategory.name}</h2>
+                          </div>
+                          <div className="items-grid">
+                            {result.items.map((it) => (
+                              <MenuItemCard
+                                key={it.id}
+                                it={it}
+                                isRecommendedCard={false}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      // Normal view - current category only
+                      filteredSubs.map((sc) => (
+                        <div key={sc.id} data-sub={sc.id} className="menu-section">
+                          <h2 className="section-title">{sc.name}</h2>
+                          <div className="items-grid">
+                            {(filteredItemsBySub.get(sc.id) || []).map((it) => (
+                              <MenuItemCard
+                                key={it.id}
+                                it={it}
+                                isRecommendedCard={false}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </>
+                ) : searchQuery ? (
+                  <div className="search-empty-state">
+                    <Search size={48} />
+                    <h3>No items found</h3>
+                    <p>Try searching for something else</p>
                   </div>
-                ))}
+                ) : null}
               </section>
             </div>
           </div>
