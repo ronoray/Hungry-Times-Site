@@ -13,7 +13,7 @@
   margin: 0 !important;
   padding: 0 !important;
   text-align: left !important;
-  overflow-x: hidden !important;
+  /* REMOVED: overflow-x: hidden - this breaks position: sticky! */
 }
 
 .menu-page button {
@@ -106,13 +106,27 @@
   top: 64px; /* Below fixed navbar */
   z-index: 100;
   background: var(--color-bg);
-  padding: 1rem;
+  padding: 1rem 0;
   border-bottom: 1px solid var(--color-border);
 }
 
 .search-bar {
-  max-width: 800px;
+  max-width: 1440px;
   margin: 0 auto;
+  padding: 0 2rem; /* Match menu-container padding */
+  display: grid;
+  grid-template-columns: 280px 1fr; /* Match menu-layout grid */
+  gap: 2.5rem; /* Match menu-layout gap */
+  align-items: center;
+}
+
+.search-bar > :first-child {
+  /* Empty spacer for sidebar column */
+  grid-column: 1;
+}
+
+.search-bar-input-wrapper {
+  grid-column: 2; /* Align with content column */
   position: relative;
   display: flex;
   align-items: center;
@@ -124,7 +138,7 @@
   transition: border-color 0.2s;
 }
 
-.search-bar:focus-within {
+.search-bar-input-wrapper:focus-within {
   border-color: var(--color-accent);
 }
 
@@ -235,6 +249,17 @@
   }
   
   .search-bar {
+    grid-template-columns: 1fr; /* Single column on mobile */
+    gap: 0;
+    padding: 0;
+  }
+
+  .search-bar > :first-child {
+    display: none; /* Hide sidebar spacer on mobile */
+  }
+
+  .search-bar-input-wrapper {
+    grid-column: 1;
     padding: 0.625rem 0.875rem;
   }
   
@@ -544,14 +569,21 @@
 }
 
 /* Subcategories */
+/* Subcategories */
 .subcategory-bar {
-  background: rgba(15, 23, 42, 0.95) !important;
+  position: -webkit-sticky !important; /* Safari */
+  position: sticky !important;
+  top: 144px !important; /* 64px navbar + ~80px search bar */
+  z-index: 90 !important;
+  background: rgba(15, 23, 42, 0.98) !important;
   border: 1px solid #334155 !important;
   border-radius: 1rem !important;
   padding: 1rem !important;
   margin-bottom: 2rem !important;
   backdrop-filter: blur(20px) !important;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3) !important;
+  /* Ensure sticky works */
+  align-self: flex-start !important;
 }
 
 .subcategory-scroll {
@@ -2327,12 +2359,16 @@
 
 @media (max-width: 768px) {
   .subcategory-bar {
-    padding: 0.5rem 0.5rem 0.75rem;
-    position: sticky;
-    top: 0;
-    background: #171717;
-    z-index: 10;
-    margin: 0 -0.5rem;
+    position: sticky !important;
+    top: calc(64px + 76px) !important; /* navbar + mobile search bar */
+    padding: 0.5rem 0.5rem 0.75rem !important;
+    background: rgba(15, 23, 42, 0.98) !important;
+    margin: 0 -0.5rem 1.5rem -0.5rem !important;
+    backdrop-filter: blur(20px) !important;
+    border-top: 1px solid #334155 !important;
+    border-bottom: 1px solid #334155 !important;
+    border-radius: 0 !important;
+    z-index: 90 !important;
   }
 
   .subcategory-scroll {

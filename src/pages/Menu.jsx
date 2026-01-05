@@ -413,7 +413,20 @@ export default function Menu() {
   const scrollToSub = (subId) => {
     setActiveSub(subId);
     const el = rightPaneRef.current?.querySelector(`[data-sub="${subId}"]`);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (el) {
+      // Calculate offset for sticky subcategory bar + search bar
+      const subcategoryBarHeight = 60; // Approximate height of subcategory bar
+      const searchBarHeight = 80; // Approximate height of search bar
+      const totalOffset = subcategoryBarHeight + searchBarHeight + 10; // 10px extra padding
+      
+      const elementPosition = el.getBoundingClientRect().top + window.scrollY;
+      const offsetPosition = elementPosition - totalOffset;
+      
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth"
+      });
+    }
   };
 
   const handleCategoryClick = (tcId, firstSubId) => {
@@ -677,23 +690,26 @@ export default function Menu() {
         {/* 🔍 SEARCH BAR */}
         <div className="search-bar-container">
           <div className="search-bar">
-            <Search className="search-icon" size={20} />
-            <input
-              type="text"
-              placeholder="Search menu items or categories..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="search-input"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="search-clear"
-                aria-label="Clear search"
-              >
-                <X size={20} />
-              </button>
-            )}
+            <div></div> {/* Empty spacer for sidebar column */}
+            <div className="search-bar-input-wrapper">
+              <Search className="search-icon" size={20} />
+              <input
+                type="text"
+                placeholder="Search menu items or categories..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="search-input"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="search-clear"
+                  aria-label="Clear search"
+                >
+                  <X size={20} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -786,22 +802,24 @@ export default function Menu() {
                   </div>
                 )}
 
-                {/* Subcategory Navigation */}
-                <nav className="subcategory-bar">
-                  <div className="subcategory-scroll">
-                    {filteredSubs.map((sc) => (
-                      <button
-                        key={sc.id}
-                        className={`subcategory-btn ${
-                          sc.id === activeSub ? "active" : ""
-                        }`}
-                        onClick={() => scrollToSub(sc.id)}
-                      >
-                        {sc.name}
-                      </button>
-                    ))}
-                  </div>
-                </nav>
+                {/* Subcategory Navigation - Sticky after recommendations, hidden during search */}
+                {!searchQuery && (
+                  <nav className="subcategory-bar">
+                    <div className="subcategory-scroll">
+                      {filteredSubs.map((sc) => (
+                        <button
+                          key={sc.id}
+                          className={`subcategory-btn ${
+                            sc.id === activeSub ? "active" : ""
+                          }`}
+                          onClick={() => scrollToSub(sc.id)}
+                        >
+                          {sc.name}
+                        </button>
+                      ))}
+                    </div>
+                  </nav>
+                )}
 
                 {/* Regular sections */}
                 {filteredSubs.length > 0 ? (
