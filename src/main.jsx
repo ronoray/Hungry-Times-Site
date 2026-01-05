@@ -18,6 +18,7 @@ import Order from "./pages/Order";
 import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
 import OrderDetails from "./pages/OrderDetails";
+import OrderSuccess from "./pages/OrderSuccess";
 // Note: Orders.jsx doesn't exist - removed import
 
 const router = createBrowserRouter(
@@ -36,6 +37,7 @@ const router = createBrowserRouter(
         { path: "orders", element: <Orders /> },
         { path: "orders/:orderId", element: <OrderDetails /> },
         { path: "my-orders/:orderId", element: <OrderDetails /> },
+        { path: "order-success/:orderId", element: <OrderSuccess /> },
         { path: "profile", element: <Profile /> },
         // Note: Orders route removed - page doesn't exist yet
         { path: "gallery", element: <Gallery /> },
