@@ -140,7 +140,7 @@ export default function OrderDetails() {
           </div>
           <p className="text-sm opacity-90">
             {order.status === 'pending' && 'Your order is being reviewed by the restaurant'}
-            {order.status === 'confirmed' && 'Your order has been confirmed and will be prepared soon'}
+            {order.status === 'confirmed' && '🎉 Your order has been accepted by the restaurant! Estimated delivery: 30-40 minutes'}
             {order.status === 'preparing' && 'Our chefs are preparing your delicious meal'}
             {order.status === 'out_for_delivery' && 'Your order is on its way!'}
             {order.status === 'delivered' && 'Your order has been delivered. Enjoy!'}

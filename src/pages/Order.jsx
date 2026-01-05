@@ -560,9 +560,9 @@ export default function Order() {
             
             console.log('✅ Payment verified! Order created:', result.orderId);
 
-            // ✅ NOW order exists in database
+            // ✅ Navigate to success page
             clearCart();
-            navigate(`/my-orders/${result.orderId}`);
+            navigate(`/order-success/${result.orderId}?type=online`);
             
           } catch (error) {
             console.error('❌ Verification error:', error);
@@ -682,8 +682,11 @@ export default function Order() {
 
       const data = await response.json();
       
+      console.log('✅ COD Order created:', data.orderId);
+      
+      // ✅ Navigate to success page
       clearCart();
-      navigate(`/my-orders/${data.orderId}`);
+      navigate(`/order-success/${data.orderId}?type=cod`);
     } catch (error) {
       setPaymentError(error.message);
       setPaymentProcessing(false);
