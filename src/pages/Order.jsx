@@ -538,7 +538,7 @@ export default function Order() {
             // ✅ STEP 3: VERIFY payment and CREATE database order
             console.log('🔄 Step 3: Verifying payment and creating order...');
             
-            const verifyResponse = await fetch(`${API_BASE}/customer/payments/verify`, {
+            const verifyResponse = await fetch(`${API_BASE}/customer/payments/razorpay/verify`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
