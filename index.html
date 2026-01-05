@@ -49,8 +49,8 @@
 
     <!-- ✅ Google Analytics - Dynamic Loading -->
     <script>
-      // Fetch GA config from backend
-      fetch('/api/public/analytics-config')
+      // Fetch GA config from backend (using absolute URL to work on all subdomains)
+      fetch('https://hungrytimes.in/api/public/analytics-config')
         .then(res => res.json())
         .then(data => {
           if (data.measurementId) {
