@@ -1,5 +1,5 @@
 // src/components/AuthModal.jsx - COMPLETE AUTH FLOW WITH PASSWORD CONFIRMATION
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Phone, Lock, User, Mail, MapPin, Check, AlertCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import GoogleMapsAutocomplete from './GoogleMapsAutocomplete';
@@ -43,6 +43,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
   const [otpCooldownTimer, setOtpCooldownTimer] = useState(null);
 
   const auth = useAuth();
+  // Ref for scrollable container
+  const scrollContainerRef = useRef(null);
 
   // ============================================
   // OTP COOLDOWN TIMER - MUST BE BEFORE EARLY RETURN
@@ -79,6 +81,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
       checkCooldown('otp_cooldown_forgot');
     }
   }, [step, isOpen]);
+  // Scroll to top when step changes
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+  }, [step]);
 
   const startOtpCooldown = (type) => {
     const cooldownSeconds = 600; // 10 minutes
@@ -1204,6 +1212,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
 
         {/* Scrollable Content Area */}
         <div 
+          ref={scrollContainerRef}
           className="flex-1 overflow-y-auto overscroll-contain px-6 pt-8 pb-24 md:px-8 md:pb-8" 
           style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'thin' }}
         >
