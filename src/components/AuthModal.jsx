@@ -1204,8 +1204,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
 
         {/* Scrollable Content Area */}
         <div 
-          className="flex-1 overflow-y-auto overscroll-contain px-6 py-8 md:px-8" 
-          style={{ WebkitOverflowScrolling: 'touch' }}
+          className="flex-1 overflow-y-auto overscroll-contain px-6 pt-8 pb-24 md:px-8 md:pb-8" 
+          style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'thin' }}
         >
           {renderStep()}
         </div>
