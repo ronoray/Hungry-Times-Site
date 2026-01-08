@@ -81,15 +81,43 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
       checkCooldown('otp_cooldown_forgot');
     }
   }, [step, isOpen]);
-  // Scroll to top when step changes - with delay for DOM rendering
+  // Scroll to top when step changes - with multiple attempts to override autofocus
   useEffect(() => {
-    const scrollTimer = setTimeout(() => {
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTop = 0;
-        scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    }, 100);
-    return () => clearTimeout(scrollTimer);
+    // Immediate scroll
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+
+    // Multiple delayed scrolls to override address field autofocus
+    const scrollTimers = [
+      setTimeout(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = 0;
+          scrollContainerRef.current.scrollTo({ top: 0, behavior: 'instant' });
+        }
+      }, 50),
+      setTimeout(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = 0;
+          scrollContainerRef.current.scrollTo({ top: 0, behavior: 'instant' });
+        }
+      }, 150),
+      setTimeout(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = 0;
+          scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 300),
+      // Final aggressive scroll after keyboard might open (mobile)
+      setTimeout(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = 0;
+          scrollContainerRef.current.scrollTo({ top: 0, behavior: 'instant' });
+        }
+      }, 500)
+    ];
+
+    return () => scrollTimers.forEach(timer => clearTimeout(timer));
   }, [step]);
 
   const startOtpCooldown = (type) => {
