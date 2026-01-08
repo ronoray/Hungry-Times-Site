@@ -1,4 +1,4 @@
-// src/main.jsx - COMPLETE: SW registration + PWA install handler + All existing functionality
+// src/main.jsx - FIXED: Automatic prompt restored + manual trigger option
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
@@ -21,7 +21,7 @@ import OrderDetails from "./pages/OrderDetails";
 import OrderSuccess from "./pages/OrderSuccess";
 
 // ============================================================================
-// ✅ CRITICAL PWA FIX: Register Service Worker BEFORE React renders
+// ✅ Service Worker Registration
 // ============================================================================
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -42,22 +42,26 @@ if ('serviceWorker' in navigator) {
 }
 
 // ============================================================================
-// ✅ PWA Install Prompt Handler (for mobile "Add to Home Screen")
+// ✅ FIXED: PWA Install Prompt - Allows Chrome's automatic prompt
 // ============================================================================
 let deferredPrompt = null;
 
 window.addEventListener('beforeinstallprompt', (e) => {
   console.log('[PWA] 📱 Install prompt available');
-  e.preventDefault();
+  
+  // ✅ Just capture the prompt for manual trigger later
+  // DON'T call e.preventDefault() - let Chrome show automatic prompt
   deferredPrompt = e;
   
-  // Dispatch custom event for components to listen
+  // Dispatch custom event for components that want to show custom install button
   window.dispatchEvent(new CustomEvent('pwa-install-available', { 
     detail: { prompt: e } 
   }));
+  
+  // Chrome will show the prompt automatically now (restored old behavior)
 });
 
-// Export function to trigger install (can be called from any component)
+// Manual trigger function (for custom install buttons if needed)
 window.triggerPWAInstall = async () => {
   if (!deferredPrompt) {
     console.warn('[PWA] ⚠️ Install prompt not available');
@@ -79,7 +83,7 @@ window.addEventListener('appinstalled', () => {
 });
 
 // ============================================================================
-// Router Configuration (unchanged from original)
+// Router Configuration
 // ============================================================================
 const router = createBrowserRouter(
   [
@@ -120,7 +124,7 @@ const router = createBrowserRouter(
 );
 
 // ============================================================================
-// React Rendering (unchanged from original)
+// React Rendering
 // ============================================================================
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
