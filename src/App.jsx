@@ -1,4 +1,4 @@
-// site/src/App.jsx - FIXED: Modal after SW ready, auto-setup on permission grant
+// site/src/App.jsx - COMPLETE: All push notification logic preserved, SW registration moved to main.jsx
 import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import Navbar from "./components/Navbar";
@@ -55,24 +55,15 @@ async function setupPushNotifications() {
 
     console.log('[Push] 🔧 Setting up push notifications');
 
-    // Register service worker (or get existing)
-    console.log('[Push] 📝 Registering service worker...');
+    // ✅ Wait for service worker ready (registered in main.jsx)
+    console.log('[Push] 🔍 Waiting for service worker from main.jsx...');
     const registration = await Promise.race([
-      navigator.serviceWorker.register('/sw.js', { scope: '/' }),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('SW registration timeout')), 5000)
-      )
-    ]);
-    
-    console.log('[Push] ✅ Service worker registered');
-
-    // Wait for ready
-    await Promise.race([
       navigator.serviceWorker.ready,
       new Promise((_, reject) => 
         setTimeout(() => reject(new Error('SW ready timeout')), 5000)
       )
     ]);
+    
     console.log('[Push] ✅ Service worker ready');
 
     // Get VAPID key
@@ -255,22 +246,21 @@ export default function App() {
   const [swReady, setSwReady] = useState(false);
 
   useEffect(() => {
-    console.log('[Push] 🚀 App mounted');
+    console.log('[Push] 🚀 App mounted - waiting for SW from main.jsx');
     
     // Setup service worker messages
     setupServiceWorkerMessages();
 
-    // ✅ STEP 1: Register service worker FIRST
-    const initializeApp = async () => {
+    // ✅ Wait for SW to be ready (registered in main.jsx)
+    const initializePushNotifications = async () => {
       try {
         if ('serviceWorker' in navigator) {
-          console.log('[Push] 📝 Registering service worker...');
-          await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+          // Wait for SW ready (registered in main.jsx)
           await navigator.serviceWorker.ready;
-          console.log('[Push] ✅ Service worker ready');
+          console.log('[Push] ✅ Service worker ready from main.jsx');
           setSwReady(true);
 
-          // ✅ STEP 2: Check permission status
+          // ✅ Check permission status
           if ('Notification' in window) {
             const permission = Notification.permission;
             console.log('[Push] 🔔 Current permission:', permission);
@@ -280,9 +270,8 @@ export default function App() {
               console.log('[Push] ✅ Permission already granted, setting up push...');
               setupPushNotifications();
             } else if (permission === 'default') {
-              // Not asked yet - show modal
+              // Not asked yet - show modal after 1.5s
               console.log('[Push] 📱 Permission not asked, showing modal...');
-              // Wait 1.5s before showing modal (let app settle)
               setTimeout(() => {
                 setShowNotificationModal(true);
               }, 1500);
@@ -297,9 +286,9 @@ export default function App() {
       }
     };
 
-    initializeApp();
+    initializePushNotifications();
 
-    // ✅ STEP 3: Listen for permission changes (when user grants via modal)
+    // ✅ Listen for permission changes (when user grants via modal)
     const checkPermissionInterval = setInterval(() => {
       if ('Notification' in window && Notification.permission === 'granted' && showNotificationModal) {
         console.log('[Push] ✅ Permission granted! Hiding modal and setting up push...');

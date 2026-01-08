@@ -1,4 +1,4 @@
-// src/main.jsx - CORRECTED: Removed duplicate AuthProvider + Fixed missing Orders import
+// src/main.jsx - COMPLETE: SW registration + PWA install handler + All existing functionality
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
@@ -19,8 +19,68 @@ import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
 import OrderDetails from "./pages/OrderDetails";
 import OrderSuccess from "./pages/OrderSuccess";
-// Note: Orders.jsx doesn't exist - removed import
 
+// ============================================================================
+// ✅ CRITICAL PWA FIX: Register Service Worker BEFORE React renders
+// ============================================================================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js', { scope: '/' })
+      .then((registration) => {
+        console.log('[SW] ✅ Registered from main.jsx:', registration.scope);
+        
+        // Check for updates every 60 seconds
+        setInterval(() => {
+          registration.update();
+        }, 60000);
+      })
+      .catch((error) => {
+        console.error('[SW] ❌ Registration failed:', error);
+      });
+  });
+}
+
+// ============================================================================
+// ✅ PWA Install Prompt Handler (for mobile "Add to Home Screen")
+// ============================================================================
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  console.log('[PWA] 📱 Install prompt available');
+  e.preventDefault();
+  deferredPrompt = e;
+  
+  // Dispatch custom event for components to listen
+  window.dispatchEvent(new CustomEvent('pwa-install-available', { 
+    detail: { prompt: e } 
+  }));
+});
+
+// Export function to trigger install (can be called from any component)
+window.triggerPWAInstall = async () => {
+  if (!deferredPrompt) {
+    console.warn('[PWA] ⚠️ Install prompt not available');
+    return false;
+  }
+  
+  deferredPrompt.prompt();
+  const result = await deferredPrompt.userChoice;
+  console.log('[PWA] User choice:', result.outcome);
+  
+  deferredPrompt = null;
+  return result.outcome === 'accepted';
+};
+
+// Listen for successful installation
+window.addEventListener('appinstalled', () => {
+  console.log('[PWA] ✅ App successfully installed');
+  deferredPrompt = null;
+});
+
+// ============================================================================
+// Router Configuration (unchanged from original)
+// ============================================================================
 const router = createBrowserRouter(
   [
     {
@@ -39,7 +99,6 @@ const router = createBrowserRouter(
         { path: "my-orders/:orderId", element: <OrderDetails /> },
         { path: "order-success/:orderId", element: <OrderSuccess /> },
         { path: "profile", element: <Profile /> },
-        // Note: Orders route removed - page doesn't exist yet
         { path: "gallery", element: <Gallery /> },
         { path: "testimonials", element: <Testimonials /> },
         { path: "feedback", element: <Feedback /> },
@@ -60,8 +119,9 @@ const router = createBrowserRouter(
   }
 );
 
-// ✅ FIXED: Removed duplicate AuthProvider
-// AuthProvider is already in App.jsx, no need to wrap again here
+// ============================================================================
+// React Rendering (unchanged from original)
+// ============================================================================
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <RouterProvider router={router} />
