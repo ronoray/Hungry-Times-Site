@@ -81,11 +81,15 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
       checkCooldown('otp_cooldown_forgot');
     }
   }, [step, isOpen]);
-  // Scroll to top when step changes
+  // Scroll to top when step changes - with delay for DOM rendering
   useEffect(() => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = 0;
-    }
+    const scrollTimer = setTimeout(() => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = 0;
+        scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }, 100);
+    return () => clearTimeout(scrollTimer);
   }, [step]);
 
   const startOtpCooldown = (type) => {

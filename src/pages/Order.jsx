@@ -139,7 +139,24 @@ export default function Order() {
       if (!response.ok) throw new Error("Failed to fetch addresses");
 
       const data = await response.json();
-      const fetchedAddresses = data.addresses || [];
+      let fetchedAddresses = data.addresses || [];
+      
+      // ✅ LEGACY FALLBACK: If customer_addresses is empty but customer has legacy address
+      if (fetchedAddresses.length === 0 && customer?.address && customer?.latitude && customer?.longitude) {
+        console.log('[Order] No addresses in customer_addresses table, using legacy address from customer profile');
+        
+        // Create a pseudo-address from legacy customer fields
+        fetchedAddresses = [{
+          id: 'legacy',
+          name: 'My Address',
+          fullAddress: customer.address,
+          latitude: customer.latitude,
+          longitude: customer.longitude,
+          isDefault: true,
+          isLegacy: true
+        }];
+      }
+      
       setAddresses(fetchedAddresses);
 
       // Auto-select if only one address
@@ -894,16 +911,16 @@ export default function Order() {
                                         defaultValue={editAddressData.fullAddress}
                                       />
                                     </div>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2 pt-2">
                                       <button
                                         onClick={handleCancelEdit}
-                                        className="flex-1 px-3 py-1.5 bg-neutral-700 hover:bg-neutral-600 text-white text-sm rounded"
+                                        className="flex-1 px-4 py-3 md:py-2 bg-neutral-700 hover:bg-neutral-600 text-white text-base md:text-sm rounded-lg font-medium"
                                       >
                                         Cancel
                                       </button>
                                       <button
                                         onClick={() => handleSaveEdit(addr.id)}
-                                        className="flex-1 px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded font-medium"
+                                        className="flex-1 px-4 py-3 md:py-2 bg-orange-500 hover:bg-orange-600 text-white text-base md:text-sm rounded-lg font-semibold"
                                       >
                                         Save Changes
                                       </button>
@@ -924,6 +941,11 @@ export default function Order() {
                                             {addr.isDefault && (
                                               <span className="px-2 py-0.5 bg-orange-500/20 text-orange-400 text-xs rounded">
                                                 Default
+                                              </span>
+                                            )}
+                                            {addr.isLegacy && (
+                                              <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded" title="This is your registration address. Add more addresses below.">
+                                                Primary
                                               </span>
                                             )}
                                           </div>
@@ -955,26 +977,30 @@ export default function Order() {
                                         </div>
                                       </div>
                                       <div className="flex gap-1">
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleStartEdit(addr);
-                                          }}
-                                          className="p-2 text-neutral-400 hover:text-blue-400 transition-colors"
-                                          title="Edit"
-                                        >
-                                          <Edit2 className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteAddress(addr.id);
-                                          }}
-                                          className="p-2 text-neutral-400 hover:text-red-400 transition-colors"
-                                          title="Delete"
-                                        >
-                                          <Trash2 className="w-4 h-4" />
-                                        </button>
+                                        {!addr.isLegacy && (
+                                          <>
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleStartEdit(addr);
+                                              }}
+                                              className="p-3 md:p-2 text-neutral-400 hover:text-blue-400 transition-colors"
+                                              title="Edit"
+                                            >
+                                              <Edit2 className="w-5 h-5 md:w-4 md:h-4" />
+                                            </button>
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteAddress(addr.id);
+                                              }}
+                                              className="p-3 md:p-2 text-neutral-400 hover:text-red-400 transition-colors"
+                                              title="Delete"
+                                            >
+                                              <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
+                                            </button>
+                                          </>
+                                        )}
                                         {!addr.isDefault && (
                                           <button
                                             onClick={(e) => {
