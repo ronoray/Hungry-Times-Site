@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Hungry Times — Chinese-Continental in Kolkata</title>
+    <title>Hungry Times – Chinese-Continental in Kolkata</title>
     <meta
       name="description"
       content="Hungry Times: Chinese-Continental fusion in Kolkata. Order online, reserve a table, and explore our signature dishes."
@@ -11,10 +11,10 @@
     <meta property="og:title" content="Hungry Times" />
     <meta
       property="og:description"
-      content="Order Chinese-Continental fusion. Kolkata’s cozy dining experience."
+      content="Order Chinese-Continental fusion. Kolkata's cozy dining experience."
     />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://hungrytimes.co.in" />
+    <meta property="og:url" content="https://home.hungrytimes.in" />
     <meta property="og:image" content="/og-image.jpg" />
 
     <!-- ✅ favicon and icons -->
@@ -47,10 +47,10 @@
       defer
     ></script>
 
-    <!-- ✅ Google Analytics - Dynamic Loading -->
+    <!-- ✅ Google Analytics - Dynamic Loading - FIXED: Relative URL -->
     <script>
-      // Fetch GA config from backend (using absolute URL to work on all subdomains)
-      fetch('https://hungrytimes.in/api/public/analytics-config')
+      // ✅ FIXED: Use relative URL instead of absolute cross-domain URL
+      fetch('/api/public/analytics-config')
         .then(res => res.json())
         .then(data => {
           if (data.measurementId) {
