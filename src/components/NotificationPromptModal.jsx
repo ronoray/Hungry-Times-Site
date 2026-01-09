@@ -1,9 +1,9 @@
 // site/src/components/NotificationPromptModal.jsx
 // ============================================================================
-// MOBILE-RESPONSIVE NOTIFICATION PERMISSION PROMPT
+// ELEGANT NOTIFICATION PERMISSION PROMPT - CHARCOAL & GOLD THEME
+// ✅ Sophisticated dark design matching site palette
+// ✅ Gold accents for highlights
 // ✅ Fully responsive for mobile and desktop
-// ✅ Proper scrolling on small screens
-// ✅ Touch-friendly buttons
 // ============================================================================
 
 import { useState, useEffect } from 'react';
@@ -99,110 +99,124 @@ export default function NotificationPromptModal() {
 
   return (
     <>
-      {/* Full-screen backdrop with proper scrolling */}
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[9999] overflow-y-auto animate-fadeIn">
+      {/* Dark backdrop with subtle blur */}
+      <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[9999] overflow-y-auto animate-fadeIn">
         
-        {/* Centered container with padding for safe scrolling */}
+        {/* Centered container */}
         <div className="min-h-screen flex items-center justify-center p-4 sm:p-6">
           
-          {/* Modal content - responsive sizing */}
-          <div className="bg-gradient-to-br from-orange-600 via-orange-500 to-orange-600 rounded-2xl sm:rounded-3xl p-6 sm:p-8 max-w-md w-full text-center text-white shadow-2xl my-4 transform animate-scaleIn">
+          {/* Modal content - Elegant dark design with gold accents */}
+          <div className="relative bg-gradient-to-br from-neutral-900 via-[#0B0B0B] to-neutral-900 border border-[#D4AF37]/20 rounded-2xl sm:rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl shadow-black/50 my-4 transform animate-scaleIn">
             
-            {/* Close button - mobile friendly */}
-            <button
-              onClick={handleDismiss}
-              className="absolute top-4 right-4 sm:top-6 sm:right-6 text-white/80 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
-              aria-label="Close"
-            >
-              <X className="w-5 h-5 sm:w-6 sm:h-6" />
-            </button>
+            {/* Subtle gold glow effect */}
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-[#D4AF37]/10 via-transparent to-[#D4AF37]/10 rounded-2xl sm:rounded-3xl blur-xl opacity-50"></div>
             
-            {/* Animated bell icon - responsive sizing */}
-            <div className="relative mb-4 sm:mb-6">
-              <div className="absolute inset-0 bg-white/20 rounded-full blur-xl animate-pulse"></div>
-              <div className="relative bg-white/20 rounded-full w-16 h-16 sm:w-24 sm:h-24 flex items-center justify-center mx-auto backdrop-blur-sm">
-                <Bell className="w-8 h-8 sm:w-12 sm:h-12 animate-bounce" />
+            {/* Content wrapper */}
+            <div className="relative">
+              
+              {/* Close button - elegant hover effect */}
+              <button
+                onClick={handleDismiss}
+                className="absolute top-0 right-0 text-neutral-400 hover:text-[#D4AF37] p-2 rounded-full hover:bg-neutral-800/50 transition-all duration-300"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+              
+              {/* Bell icon with gold accent */}
+              <div className="relative mb-4 sm:mb-6">
+                {/* Pulsing glow */}
+                <div className="absolute inset-0 bg-[#D4AF37]/20 rounded-full blur-2xl animate-pulse"></div>
+                {/* Icon container */}
+                <div className="relative bg-gradient-to-br from-neutral-800 to-neutral-900 border-2 border-[#D4AF37]/30 rounded-full w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mx-auto backdrop-blur-sm">
+                  <Bell className="w-8 h-8 sm:w-10 sm:h-10 text-[#D4AF37] animate-bounce" />
+                </div>
               </div>
+              
+              {/* Main heading - Gold accent */}
+              <h2 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3 leading-tight px-2 bg-gradient-to-r from-white via-[#D4AF37] to-white bg-clip-text text-transparent">
+                Stay Updated
+              </h2>
+              
+              {/* Subheading - Softer white */}
+              <p className="text-neutral-300 mb-4 sm:mb-6 text-base sm:text-lg font-medium px-2">
+                Enable notifications for real-time order updates
+              </p>
+              
+              {/* Benefits list - Dark elegant cards */}
+              <div className="space-y-2 sm:space-y-3 mb-6 sm:mb-8 text-left bg-neutral-800/40 border border-neutral-700/50 rounded-xl sm:rounded-2xl p-4 sm:p-5 backdrop-blur-sm">
+                
+                {/* Order Confirmed */}
+                <div className="flex items-center gap-3 sm:gap-4 group hover:bg-neutral-800/60 p-2 rounded-lg transition-colors">
+                  <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-[#D4AF37]/20 to-neutral-800 border border-[#D4AF37]/30 rounded-full flex items-center justify-center">
+                    <span className="text-lg sm:text-xl">✅</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm sm:text-base text-white group-hover:text-[#D4AF37] transition-colors">Order Confirmed</p>
+                    <p className="text-neutral-400 text-xs sm:text-sm">Instant confirmation alert</p>
+                  </div>
+                </div>
+                
+                {/* Being Prepared */}
+                <div className="flex items-center gap-3 sm:gap-4 group hover:bg-neutral-800/60 p-2 rounded-lg transition-colors">
+                  <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-[#D4AF37]/20 to-neutral-800 border border-[#D4AF37]/30 rounded-full flex items-center justify-center">
+                    <span className="text-lg sm:text-xl">👨‍🍳</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm sm:text-base text-white group-hover:text-[#D4AF37] transition-colors">Being Prepared</p>
+                    <p className="text-neutral-400 text-xs sm:text-sm">Track cooking progress</p>
+                  </div>
+                </div>
+                
+                {/* Out for Delivery */}
+                <div className="flex items-center gap-3 sm:gap-4 group hover:bg-neutral-800/60 p-2 rounded-lg transition-colors">
+                  <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-[#D4AF37]/20 to-neutral-800 border border-[#D4AF37]/30 rounded-full flex items-center justify-center">
+                    <span className="text-lg sm:text-xl">🚚</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm sm:text-base text-white group-hover:text-[#D4AF37] transition-colors">Out for Delivery</p>
+                    <p className="text-neutral-400 text-xs sm:text-sm">Live delivery updates</p>
+                  </div>
+                </div>
+                
+                {/* Delivered */}
+                <div className="flex items-center gap-3 sm:gap-4 group hover:bg-neutral-800/60 p-2 rounded-lg transition-colors">
+                  <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-[#D4AF37]/20 to-neutral-800 border border-[#D4AF37]/30 rounded-full flex items-center justify-center">
+                    <span className="text-lg sm:text-xl">🎉</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm sm:text-base text-white group-hover:text-[#D4AF37] transition-colors">Delivered</p>
+                    <p className="text-neutral-400 text-xs sm:text-sm">Enjoy your meal!</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Enable button - Gold gradient */}
+              <button
+                onClick={handleEnable}
+                className="w-full bg-gradient-to-r from-[#D4AF37] via-[#F0C674] to-[#D4AF37] text-black font-bold py-3 sm:py-4 px-4 sm:px-6 rounded-xl hover:shadow-lg hover:shadow-[#D4AF37]/30 active:scale-95 transition-all duration-300 text-base sm:text-lg mb-3 sm:mb-4"
+              >
+                🔔 Enable Notifications
+              </button>
+              
+              {/* Dismiss button - Subtle */}
+              <button
+                onClick={handleDismiss}
+                className="text-neutral-400 hover:text-neutral-200 transition-colors text-sm font-medium py-2 px-4"
+              >
+                Maybe later
+              </button>
+              
+              {/* Privacy note */}
+              <p className="text-neutral-500 text-xs mt-4">
+                We respect your privacy. Unsubscribe anytime.
+              </p>
             </div>
-            
-            {/* Main heading - responsive text */}
-            <h2 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3 leading-tight px-2">
-              Never Miss an Update!
-            </h2>
-            
-            {/* Subheading - responsive text */}
-            <p className="text-white/95 mb-4 sm:mb-6 text-base sm:text-lg font-medium px-2">
-              Enable notifications to track your order in real-time
-            </p>
-            
-            {/* Benefits list - responsive spacing */}
-            <div className="space-y-2 sm:space-y-3 mb-6 sm:mb-8 text-left bg-white/10 rounded-xl sm:rounded-2xl p-4 sm:p-6 backdrop-blur-sm">
-              
-              {/* Order Confirmed */}
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-full flex items-center justify-center">
-                  <span className="text-xl sm:text-2xl">✅</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm sm:text-base">Order Confirmed</p>
-                  <p className="text-white/80 text-xs sm:text-sm">Get instant confirmation</p>
-                </div>
-              </div>
-              
-              {/* Being Prepared */}
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-full flex items-center justify-center">
-                  <span className="text-xl sm:text-2xl">👨‍🍳</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm sm:text-base">Being Prepared</p>
-                  <p className="text-white/80 text-xs sm:text-sm">Know when cooking starts</p>
-                </div>
-              </div>
-              
-              {/* Out for Delivery */}
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-full flex items-center justify-center">
-                  <span className="text-xl sm:text-2xl">🚚</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm sm:text-base">Out for Delivery</p>
-                  <p className="text-white/80 text-xs sm:text-sm">Track your delivery</p>
-                </div>
-              </div>
-              
-              {/* Delivered */}
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-full flex items-center justify-center">
-                  <span className="text-xl sm:text-2xl">🎉</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm sm:text-base">Delivered!</p>
-                  <p className="text-white/80 text-xs sm:text-sm">Enjoy your meal</p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Enable button - mobile touch-friendly */}
-            <button
-              onClick={handleEnable}
-              className="w-full bg-white text-orange-600 font-bold py-3 sm:py-4 px-4 sm:px-6 rounded-xl hover:bg-white/95 active:scale-95 transition-all text-base sm:text-lg shadow-lg mb-3 sm:mb-4"
-            >
-              🔔 Enable Notifications Now
-            </button>
-            
-            {/* Dismiss button - mobile touch-friendly */}
-            <button
-              onClick={handleDismiss}
-              className="text-white/80 hover:text-white transition-colors text-sm font-medium py-2 px-4"
-            >
-              I'll do this later
-            </button>
           </div>
         </div>
       </div>
 
-      {/* Animations */}
+      {/* Smooth animations */}
       <style jsx>{`
         @keyframes fadeIn {
           from { opacity: 0; }
@@ -212,7 +226,7 @@ export default function NotificationPromptModal() {
         @keyframes scaleIn {
           from { 
             opacity: 0;
-            transform: scale(0.95);
+            transform: scale(0.92);
           }
           to { 
             opacity: 1;
@@ -221,11 +235,11 @@ export default function NotificationPromptModal() {
         }
         
         .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out;
+          animation: fadeIn 0.4s ease-out;
         }
         
         .animate-scaleIn {
-          animation: scaleIn 0.4s ease-out;
+          animation: scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
       `}</style>
     </>
