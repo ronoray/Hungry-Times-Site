@@ -4,6 +4,7 @@ import { Outlet } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import NotificationPromptModal from "./components/NotificationPromptModal";
+import PWAInstallPrompt from "./components/PWAInstallPrompt";
 
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
@@ -320,6 +321,9 @@ export default function App() {
               
               {/* ✅ Show modal only when SW ready and permission needed */}
               {swReady && showNotificationModal && <NotificationPromptModal />}
+              
+              {/* PWA Install Prompt */}
+              <PWAInstallPrompt />
               
               {/* Navigation */}
               <Navbar />
