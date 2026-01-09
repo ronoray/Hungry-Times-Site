@@ -1,9 +1,6 @@
-// src/components/PWAInstallPrompt.jsx
+// src/components/PWAInstallPrompt.jsx - DEBUGGING VERSION
 // ============================================================================
-// ELEGANT PWA INSTALL PROMPT - CHARCOAL & GOLD THEME
-// ✅ Sophisticated dark design matching site palette
-// ✅ Gold accents for highlights
-// ✅ Fully responsive for mobile and desktop
+// EXTENSIVE LOGGING to diagnose why banner doesn't appear
 // ============================================================================
 
 import { useState, useEffect } from 'react';
@@ -14,48 +11,82 @@ export default function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   useEffect(() => {
+    console.log('[PWA Install Debug] 🔧 Component mounted');
+    
+    // Check session storage immediately
+    const dismissed = sessionStorage.getItem('pwa-prompt-dismissed');
+    console.log('[PWA Install Debug] 📦 Session storage check:', dismissed ? 'DISMISSED' : 'not dismissed');
+    
+    // Check if already installed
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    console.log('[PWA Install Debug] 📱 Standalone mode:', isStandalone);
+    
+    if (isStandalone) {
+      console.log('[PWA Install Debug] ⚠️ Already installed - won\'t show banner');
+      return;
+    }
+
     // Listen for the install prompt event
     const handler = (e) => {
-      console.log('[PWA Install] Prompt available');
+      console.log('[PWA Install Debug] ✅ beforeinstallprompt event FIRED!');
       setDeferredPrompt(e);
       
-      // Show custom prompt after 5 seconds (adjust as needed)
+      // Show custom prompt after 5 seconds
+      console.log('[PWA Install Debug] ⏱️ Setting timeout for 5 seconds...');
       setTimeout(() => {
-        // Check if user is logged in or on specific pages
-        // For now, show to everyone
+        console.log('[PWA Install Debug] ⏰ Timeout complete! Checking conditions...');
+        
+        // Re-check session storage
+        const nowDismissed = sessionStorage.getItem('pwa-prompt-dismissed');
+        console.log('[PWA Install Debug] 📦 Session storage re-check:', nowDismissed ? 'DISMISSED - WON\'T SHOW' : 'not dismissed - will show');
+        
+        if (nowDismissed) {
+          console.log('[PWA Install Debug] ❌ BLOCKED: Session storage has dismissal timestamp');
+          return;
+        }
+        
+        console.log('[PWA Install Debug] 🎯 All checks passed - showing banner NOW!');
         setShowPrompt(true);
-      }, 5000); // Show after 5 seconds
+      }, 5000);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
 
-    // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      console.log('[PWA Install] Already installed');
-      setShowPrompt(false);
-    }
-
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    return () => {
+      console.log('[PWA Install Debug] 🧹 Component unmounting');
+      window.removeEventListener('beforeinstallprompt', handler);
+    };
   }, []);
 
+  // Monitor showPrompt state changes
+  useEffect(() => {
+    console.log('[PWA Install Debug] 🔄 showPrompt state changed to:', showPrompt);
+  }, [showPrompt]);
+
   const handleInstall = async () => {
+    console.log('[PWA Install Debug] 🖱️ Install button clicked');
+    
     if (!deferredPrompt) {
-      console.warn('[PWA Install] No prompt available');
-      // Fallback: inform user about menu option
-      alert('To install this app, tap the menu (⋮) and select "Add to Home screen"');
+      console.warn('[PWA Install Debug] ⚠️ No deferred prompt available');
+      alert('To install this app:\n\n1. Tap the menu (⋮) at top-right\n2. Select "Add to Home screen" or "Install app"\n3. Tap "Install" to confirm');
+      setShowPrompt(false);
       return;
     }
 
+    console.log('[PWA Install Debug] 📱 Showing browser install prompt...');
+    
     // Show the prompt
     deferredPrompt.prompt();
     
     // Wait for user choice
     const result = await deferredPrompt.userChoice;
     
-    console.log('[PWA Install] User choice:', result.outcome);
+    console.log('[PWA Install Debug] 👤 User choice:', result.outcome);
     
     if (result.outcome === 'accepted') {
-      console.log('[PWA Install] User accepted');
+      console.log('[PWA Install Debug] ✅ User ACCEPTED installation');
+    } else {
+      console.log('[PWA Install Debug] ❌ User DECLINED installation');
     }
     
     // Clear the prompt
@@ -64,24 +95,33 @@ export default function PWAInstallPrompt() {
   };
 
   const handleDismiss = () => {
+    console.log('[PWA Install Debug] ✖️ User dismissed banner');
     setShowPrompt(false);
-    // Remember dismissal for this session
-    sessionStorage.setItem('pwa-prompt-dismissed', 'true');
+    const timestamp = Date.now().toString();
+    sessionStorage.setItem('pwa-prompt-dismissed', timestamp);
+    console.log('[PWA Install Debug] 📦 Saved dismissal timestamp:', timestamp);
   };
 
-  // Don't show if dismissed in this session
+  // Check if dismissed in session
   if (sessionStorage.getItem('pwa-prompt-dismissed')) {
+    console.log('[PWA Install Debug] 🚫 RENDER BLOCKED: Session storage has dismissal');
     return null;
   }
 
   if (!showPrompt) {
+    console.log('[PWA Install Debug] 🚫 RENDER BLOCKED: showPrompt =', showPrompt);
     return null;
   }
+
+  console.log('[PWA Install Debug] 🎨 RENDERING BANNER NOW!');
 
   return (
     <>
       {/* Mobile Banner - Bottom - Elegant dark design */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-neutral-900 via-[#0B0B0B] to-neutral-900 border-t-2 border-[#D4AF37]/30 text-white p-4 shadow-2xl z-50 md:hidden animate-slide-up backdrop-blur-md">
+      <div 
+        className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-neutral-900 via-[#0B0B0B] to-neutral-900 border-t-2 border-[#D4AF37]/30 text-white p-4 shadow-2xl z-[9999] md:hidden animate-slide-up backdrop-blur-md"
+        style={{ zIndex: 9999 }}
+      >
         {/* Subtle gold glow at top */}
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent"></div>
         
@@ -126,7 +166,10 @@ export default function PWAInstallPrompt() {
       </div>
 
       {/* Desktop Card - Bottom Right - Elegant dark design */}
-      <div className="hidden md:block fixed bottom-6 right-6 bg-gradient-to-br from-neutral-900 via-[#0B0B0B] to-neutral-900 border border-[#D4AF37]/20 rounded-2xl shadow-2xl shadow-black/50 p-6 max-w-sm z-50 animate-slide-up backdrop-blur-md">
+      <div 
+        className="hidden md:block fixed bottom-6 right-6 bg-gradient-to-br from-neutral-900 via-[#0B0B0B] to-neutral-900 border border-[#D4AF37]/20 rounded-2xl shadow-2xl shadow-black/50 p-6 max-w-sm z-[9999] animate-slide-up backdrop-blur-md"
+        style={{ zIndex: 9999 }}
+      >
         {/* Subtle gold glow effect */}
         <div className="absolute -inset-0.5 bg-gradient-to-r from-[#D4AF37]/10 via-transparent to-[#D4AF37]/10 rounded-2xl blur-xl opacity-50"></div>
         
@@ -186,9 +229,9 @@ export default function PWAInstallPrompt() {
             </button>
           </div>
           
-          {/* Privacy note */}
+          {/* Debug info */}
           <p className="text-neutral-500 text-xs mt-3 text-center">
-            Install for the best experience
+            ✅ Ready to install
           </p>
         </div>
       </div>
