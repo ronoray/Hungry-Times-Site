@@ -10,3 +10,19 @@ yarn-debug.log*
 yarn-error.log*
 .vscode/
 .idea/
+
+
+# Backup folders
+backup/
+*.backup
+# Test files
+*test*.html
+*diagnostic*.html
+# Sensitive files
+*password*.txt
+.env.txt
+# Old/temporary files
+*.old
+*.bak
+*_old*
+*_backup*

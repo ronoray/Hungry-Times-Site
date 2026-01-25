@@ -106,21 +106,21 @@ export default function NotificationPromptModal() {
         <div className="min-h-screen flex items-center justify-center p-4 sm:p-6">
           
           {/* Modal content - Elegant dark design with gold accents */}
-          <div className="relative bg-gradient-to-br from-neutral-900 via-[#0B0B0B] to-neutral-900 border border-[#D4AF37]/20 rounded-2xl sm:rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl shadow-black/50 my-4 transform animate-scaleIn">
+          <div className="relative bg-gradient-to-br from-neutral-900 via-[#0B0B0B] to-neutral-900 border border-[#D4AF37]/20 rounded-2xl sm:rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl shadow-black/50 my-4 transform animate-scaleIn overflow-hidden">
             
             {/* Subtle gold glow effect */}
             <div className="absolute -inset-0.5 bg-gradient-to-r from-[#D4AF37]/10 via-transparent to-[#D4AF37]/10 rounded-2xl sm:rounded-3xl blur-xl opacity-50"></div>
             
             {/* Content wrapper */}
-            <div className="relative">
+            <div className="relative overflow-hidden">
               
               {/* Close button - elegant hover effect */}
               <button
                 onClick={handleDismiss}
-                className="absolute top-0 right-0 text-neutral-400 hover:text-[#D4AF37] p-2 rounded-full hover:bg-neutral-800/50 transition-all duration-300"
+                className="absolute -top-2 -right-2 z-10 text-neutral-400 hover:text-[#D4AF37] p-3 sm:p-2 rounded-full hover:bg-neutral-800/50 transition-all duration-300 touch-manipulation"
                 aria-label="Close"
               >
-                <X className="w-5 h-5 sm:w-6 sm:h-6" />
+                <X className="w-6 h-6 sm:w-6 sm:h-6" />
               </button>
               
               {/* Bell icon with gold accent */}
@@ -134,7 +134,7 @@ export default function NotificationPromptModal() {
               </div>
               
               {/* Main heading - Gold accent */}
-              <h2 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3 leading-tight px-2 bg-gradient-to-r from-white via-[#D4AF37] to-white bg-clip-text text-transparent">
+              <h2 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3 leading-tight px-2 bg-gradient-to-r from-white via-[#D4AF37] to-white bg-clip-text text-transparent break-words">
                 Stay Updated
               </h2>
               
@@ -144,7 +144,7 @@ export default function NotificationPromptModal() {
               </p>
               
               {/* Benefits list - Dark elegant cards */}
-              <div className="space-y-2 sm:space-y-3 mb-6 sm:mb-8 text-left bg-neutral-800/40 border border-neutral-700/50 rounded-xl sm:rounded-2xl p-4 sm:p-5 backdrop-blur-sm">
+              <div className="space-y-2 sm:space-y-3 mb-6 sm:mb-8 text-left bg-neutral-800/40 border border-neutral-700/50 rounded-xl sm:rounded-2xl p-4 sm:p-5 backdrop-blur-sm overflow-hidden">
                 
                 {/* Order Confirmed */}
                 <div className="flex items-center gap-3 sm:gap-4 group hover:bg-neutral-800/60 p-2 rounded-lg transition-colors">
