@@ -212,6 +212,15 @@ export default function Menu() {
   const [activeOffers, setActiveOffers] = useState([]);
   const [appliedOffer, setAppliedOffer] = useState(null);
 
+  // Track items that were just added (for success animation)
+  const [addedItems, setAddedItems] = useState(new Set());
+
+  // Global online ordering state
+  const [acceptingOnlineOrders, setAcceptingOnlineOrders] = useState(true);
+  const [orderingDisabledMessage, setOrderingDisabledMessage] = useState(
+    "Online ordering is currently unavailable. Please try again later."
+  );
+
   // Helper to check if item has any customization options
   function hasVariantsOrAddons(it, type) {
     const families = (it.families || []).filter((f) => f.type === type);
@@ -274,6 +283,9 @@ export default function Menu() {
         if (!alive) return;
 
         setData(json);
+        // Extract global ordering status
+        setAcceptingOnlineOrders(json.acceptingOnlineOrders !== false);
+        setOrderingDisabledMessage(json.onlineOrdersDisabledMessage || "");
 
         const t0 = json?.topCategories?.[0]?.id ?? null;
         const s0 = json?.topCategories?.[0]?.subcategories?.[0]?.id ?? null;
@@ -462,10 +474,18 @@ export default function Menu() {
     // Use ONLY the API-provided imageUrl (already normalized on the server)
     const imageUrl = it.imageUrl || null;
 
+    // Check if item is disabled
+    const isDisabled = !acceptingOnlineOrders || it.effectiveDisabled;
+    
     return (
       <article
         key={it.id}
-        className={isRecommendedCard ? "recommended-item-card" : "menu-item-card"}
+        className={`${isRecommendedCard ? "recommended-item-card" : "menu-item-card"} ${isDisabled ? "item-disabled" : ""}`}
+        style={{ 
+          opacity: isDisabled ? 0.6 : 1,
+          filter: isDisabled ? 'grayscale(0.5)' : 'none',
+          pointerEvents: isDisabled ? 'none' : 'auto'
+        }}
       >
         <div className="item-header">
           <div className="item-name-wrapper">
@@ -475,6 +495,10 @@ export default function Menu() {
             className={`item-price ${
               isRecommendedCard ? "item-price-large" : ""
             }`}
+            style={{
+              textDecoration: isDisabled ? 'line-through' : 'none',
+              color: isDisabled ? '#999' : ''
+            }}
           >
             ₹{Number(it.basePrice || 0).toFixed(0)}
           </span>
@@ -500,6 +524,22 @@ export default function Menu() {
               <span className="read-more-inline">… Read more</span>
             )}
           </p>
+        )}
+
+        {/* Disabled Message */}
+        {isDisabled && it.disabledMessage && (
+          <div style={{
+            color: '#ef4444',
+            fontSize: '0.875rem',
+            fontWeight: 600,
+            marginTop: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px'
+          }}>
+            <span>⚠️</span>
+            <span>{it.disabledMessage}</span>
+          </div>
         )}
 
         <div className="item-actions">
@@ -531,8 +571,10 @@ export default function Menu() {
                     setShowAddToCartModal(true);
                   }}
                   className="add-to-cart-btn"
+                  disabled={isDisabled}
+                  style={{ opacity: isDisabled ? 0.5 : 1, cursor: isDisabled ? 'not-allowed' : 'pointer' }}
                 >
-                  <Plus className="btn-icon" /> Customize & Add
+                  <Plus className="btn-icon" /> {isDisabled ? 'Unavailable' : 'Customize & Add'}
                 </button>
               );
             }
@@ -540,8 +582,8 @@ export default function Menu() {
             // For simple items (no variants/addons), check if already in cart
             const currentQty = getSimpleItemQty(it.id);
             
-            if (currentQty > 0) {
-              // Item is in cart - show quantity controls
+            if (currentQty > 0 && !isDisabled) {
+              // Item is in cart - show quantity controls (only if not disabled)
               return (
                 <div className="quantity-control">
                   <button
@@ -574,15 +616,40 @@ export default function Menu() {
               );
             }
             
+            // If item is disabled but was in cart, show unavailable message
+            if (currentQty > 0 && isDisabled) {
+              return (
+                <div style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#fee2e2',
+                  color: '#dc2626',
+                  borderRadius: '8px',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  textAlign: 'center'
+                }}>
+                  Currently Unavailable
+                </div>
+              );
+            }
+            
             // Item not in cart - show Add to Cart button
             return (
               <button
                 onClick={() => {
-                  incrementSimpleItem(it);
+                  if (!isDisabled) {
+                    incrementSimpleItem(it);
+                  }
                 }}
                 className="add-to-cart-btn"
+                disabled={isDisabled}
+                style={{ 
+                  opacity: isDisabled ? 0.5 : 1, 
+                  cursor: isDisabled ? 'not-allowed' : 'pointer',
+                  backgroundColor: isDisabled ? '#9ca3af' : ''
+                }}
               >
-                <ShoppingCart className="btn-icon" /> Add to Cart
+                <ShoppingCart className="btn-icon" /> {isDisabled ? 'Unavailable' : 'Add to Cart'}
               </button>
             );
           })()}
@@ -630,6 +697,50 @@ export default function Menu() {
   // ========================
   return (
     <div className="menu-page-wrapper">
+      {/* ================================================ */}
+      {/* GLOBAL ORDERING DISABLED BANNER */}
+      {/* ================================================ */}
+      {!acceptingOnlineOrders && (
+        <div style={{
+          background: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)',
+          borderBottom: '3px solid #7f1d1d',
+          padding: '20px',
+          textAlign: 'center',
+          position: 'sticky',
+          top: 0,
+          zIndex: 1000,
+          boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+        }}>
+          <div style={{
+            maxWidth: '800px',
+            margin: '0 auto',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '16px',
+            flexWrap: 'wrap'
+          }}>
+            <span style={{ fontSize: '32px' }}>🛑</span>
+            <div style={{ textAlign: 'left', flex: '1', minWidth: '250px' }}>
+              <h3 style={{ 
+                fontSize: '20px', 
+                fontWeight: 'bold', 
+                color: 'white',
+                marginBottom: '8px'
+              }}>
+                Online Ordering Currently Unavailable
+              </h3>
+              <p style={{ 
+                color: 'rgba(255,255,255,0.9)',
+                fontSize: '16px',
+                margin: 0
+              }}>
+                {orderingDisabledMessage}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="menu-page">
         {/* Hero */}
         <div className="menu-hero menu-hero-mobile-compact">
@@ -763,12 +874,16 @@ export default function Menu() {
                       key={tc.id}
                       className={`sidebar-category-btn ${
                         tc.id === activeTop ? "active" : ""
-                      }`}
+                      } ${tc.isDisabled ? "disabled-category" : ""}`}
                       onClick={() =>
                         handleCategoryClick(tc.id, tc.subcategories?.[0]?.id)
                       }
+                      style={{
+                        opacity: tc.isDisabled ? 0.5 : 1,
+                        textDecoration: tc.isDisabled ? 'line-through' : 'none'
+                      }}
                     >
-                      {tc.name}
+                      {tc.isDisabled && '🚫 '}{tc.name}
                     </button>
                   ))}
                 </nav>
@@ -838,8 +953,25 @@ export default function Menu() {
                       globalSearchResults?.map((result) => (
                         <div key={result.subCategory.id} data-sub={result.subCategory.id} className="menu-section">
                           <div className="section-title-with-breadcrumb">
-                            <span className="category-breadcrumb">{result.topCategory.name}</span>
-                            <h2 className="section-title">{result.subCategory.name}</h2>
+                            <span 
+                              className="category-breadcrumb"
+                              style={{
+                                opacity: result.topCategory.isDisabled ? 0.5 : 1,
+                                textDecoration: result.topCategory.isDisabled ? 'line-through' : 'none'
+                              }}
+                            >
+                              {result.topCategory.isDisabled && '🚫 '}{result.topCategory.name}
+                            </span>
+                            <h2 
+                              className="section-title"
+                              style={{
+                                opacity: result.subCategory.isDisabled ? 0.5 : 1,
+                                textDecoration: result.subCategory.isDisabled ? 'line-through' : 'none',
+                                color: result.subCategory.isDisabled ? '#999' : ''
+                              }}
+                            >
+                              {result.subCategory.isDisabled && '🚫 '}{result.subCategory.name}
+                            </h2>
                           </div>
                           <div className="items-grid">
                             {result.items.map((it) => (
@@ -856,7 +988,26 @@ export default function Menu() {
                       // Normal view - current category only
                       filteredSubs.map((sc) => (
                         <div key={sc.id} data-sub={sc.id} className="menu-section">
-                          <h2 className="section-title">{sc.name}</h2>
+                          <h2 
+                            className="section-title" 
+                            style={{
+                              opacity: sc.isDisabled ? 0.5 : 1,
+                              textDecoration: sc.isDisabled ? 'line-through' : 'none',
+                              color: sc.isDisabled ? '#999' : ''
+                            }}
+                          >
+                            {sc.isDisabled && '🚫 '}{sc.name}
+                            {sc.isDisabled && (
+                              <span style={{
+                                marginLeft: '12px',
+                                fontSize: '0.875rem',
+                                color: '#ef4444',
+                                fontWeight: 600
+                              }}>
+                                (Temporarily Unavailable)
+                              </span>
+                            )}
+                          </h2>
                           <div className="items-grid">
                             {(filteredItemsBySub.get(sc.id) || []).map((it) => (
                               <MenuItemCard
