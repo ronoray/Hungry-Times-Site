@@ -448,7 +448,7 @@ export default function Menu() {
     // Apply veg filter
     const filtered = new Map();
     base.forEach((items, subId) => {
-      const vegItems = items.filter(it => it.isVeg === true);
+      const vegItems = items.filter(it => it.isVeg === true || it.isVeg === 1 || it.is_veg === 1);
       if (vegItems.length > 0) filtered.set(subId, vegItems);
     });
     return filtered;

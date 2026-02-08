@@ -6,6 +6,7 @@ import Footer from "./components/Footer";
 import NotificationPromptModal from "./components/NotificationPromptModal";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 
+import ErrorBoundary from "./components/ErrorBoundary";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import { LocationProvider } from "./context/LocationContext";
@@ -334,7 +335,9 @@ export default function App() {
 
               {/* Main Content */}
               <main className="flex-1">
-                <Outlet />
+                <ErrorBoundary>
+                  <Outlet />
+                </ErrorBoundary>
               </main>
 
               {/* Footer */}
