@@ -3,8 +3,39 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Package, Clock, CheckCircle, XCircle, Truck, ChefHat, AlertCircle } from 'lucide-react';
+import { useCart } from '../context/CartContext';
+import { useToast } from '../components/Toast';
+import { Package, Clock, CheckCircle, XCircle, Truck, ChefHat, AlertCircle, RefreshCw, Filter } from 'lucide-react';
 import API_BASE from '../config/api.js';
+
+// Date grouping helper
+const getDateGroup = (dateString) => {
+  if (!dateString) return 'Earlier';
+  const utcDate = dateString.includes('Z') || dateString.includes('+')
+    ? dateString
+    : dateString.replace(' ', 'T') + 'Z';
+  const date = new Date(utcDate);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+  const weekAgo = new Date(today); weekAgo.setDate(weekAgo.getDate() - 7);
+
+  if (date >= today) return 'Today';
+  if (date >= yesterday) return 'Yesterday';
+  if (date >= weekAgo) return 'This Week';
+  return 'Earlier';
+};
+
+const FILTER_TABS = [
+  { key: 'all', label: 'All' },
+  { key: 'active', label: 'Active' },
+  { key: 'delivered', label: 'Delivered' },
+  { key: 'cancelled', label: 'Cancelled' },
+];
+
+const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'out_for_delivery'];
+const DONE_STATUSES = ['delivered'];
+const CANCELLED_STATUSES = ['cancelled', 'rejected'];
 
 // Helper to format date in IST, forcing UTC interpretation
 const formatOrderDate = (dateString, style = 'medium') => {
@@ -45,12 +76,54 @@ const STATUS_COLORS = {
 export default function Orders() {
   const { isAuthenticated, customer, token } = useAuth();
   const navigate = useNavigate();
+  const { addLine, clearCart } = useCart();
+  const showToast = useToast();
+
+  const handleReorder = (order) => {
+    const items = parseItems(order.items_json);
+    clearCart();
+    items.forEach(item => {
+      addLine({
+        itemId: item.itemId,
+        itemName: item.itemName,
+        name: item.itemName,
+        basePrice: item.basePrice || 0,
+        variants: (item.variants || []).map(v => ({
+          id: v.id, name: v.name, priceDelta: v.priceDelta || v.price || 0,
+        })),
+        addons: (item.addons || []).map(a => ({
+          id: a.id, name: a.name, priceDelta: a.priceDelta || a.price || 0,
+        })),
+        qty: item.quantity || 1,
+      });
+    });
+    showToast('Items added to cart', 'success');
+    navigate('/order');
+  };
   
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  // Filter + group orders
+  const filteredOrders = orders.filter(o => {
+    if (statusFilter === 'all') return true;
+    if (statusFilter === 'active') return ACTIVE_STATUSES.includes(o.status);
+    if (statusFilter === 'delivered') return DONE_STATUSES.includes(o.status);
+    if (statusFilter === 'cancelled') return CANCELLED_STATUSES.includes(o.status);
+    return true;
+  });
+
+  const groupedOrders = filteredOrders.reduce((groups, order) => {
+    const group = getDateGroup(order.created_at);
+    if (!groups[group]) groups[group] = [];
+    groups[group].push(order);
+    return groups;
+  }, {});
+  const DATE_GROUP_ORDER = ['Today', 'Yesterday', 'This Week', 'Earlier'];
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -149,6 +222,25 @@ export default function Orders() {
           </p>
         </div>
 
+        {/* Status Filter Tabs */}
+        {orders.length > 0 && (
+          <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+            {FILTER_TABS.map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setStatusFilter(tab.key)}
+                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors border ${
+                  statusFilter === tab.key
+                    ? 'bg-orange-600 text-white border-orange-600'
+                    : 'bg-neutral-900 text-neutral-400 border-neutral-700 hover:border-neutral-500'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Orders List */}
         {orders.length === 0 ? (
           <div className="text-center py-20">
@@ -164,9 +256,24 @@ export default function Orders() {
               Browse Menu
             </button>
           </div>
+        ) : filteredOrders.length === 0 ? (
+          <div className="text-center py-12">
+            <Filter className="w-12 h-12 text-neutral-600 mx-auto mb-3" />
+            <p className="text-neutral-400">No {statusFilter} orders</p>
+            <button
+              onClick={() => setStatusFilter('all')}
+              className="mt-3 text-orange-500 hover:text-orange-400 text-sm font-medium"
+            >
+              Show all orders
+            </button>
+          </div>
         ) : (
-          <div className="space-y-4">
-            {orders.map((order) => {
+          <div className="space-y-6">
+            {DATE_GROUP_ORDER.filter(g => groupedOrders[g]).map(group => (
+              <div key={group}>
+                <h2 className="text-neutral-500 text-sm font-semibold uppercase tracking-wider mb-3">{group}</h2>
+                <div className="space-y-4">
+            {groupedOrders[group].map((order) => {
               const StatusIcon = STATUS_ICONS[order.status] || Clock;
               const items = parseItems(order.items_json);
               
@@ -216,14 +323,15 @@ export default function Orders() {
                     </div>
 
                     {/* Order Details */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-neutral-800">
+                    <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-neutral-800">
+                      <div>
+                        <p className="text-neutral-500 text-xs mb-1">Total</p>
+                        <p className="text-orange-500 font-bold text-lg">₹{order.total}</p>
+                      </div>
                       <div>
                         <p className="text-neutral-500 text-xs mb-1">Payment</p>
                         <p className="text-white font-medium">{order.payment_mode}</p>
-                        {/* ✅ Auto-show paid for delivered COD orders */}
                         {order.status === 'delivered' ? (
-                            <p className="text-xs text-green-500">✓ Paid</p>
-                        ) : order.status === 'delivered' && order.payment_status === 'paid' ? (
                             <p className="text-xs text-green-500">✓ Paid</p>
                         ) : order.status === 'cancelled' || order.status === 'rejected' ? (
                             <p className="text-xs text-neutral-500">N/A</p>
@@ -233,12 +341,18 @@ export default function Orders() {
                             <p className="text-xs text-yellow-500">Payment Pending</p>
                         )}
                       </div>             
-                      <div className="md:text-right">
+                      <div className="ml-auto flex items-center gap-3">
+                        {(order.status === 'delivered' || order.status === 'cancelled') && (
+                          <button
+                            onClick={() => handleReorder(order)}
+                            className="flex items-center gap-1.5 text-green-500 hover:text-green-400 text-sm font-medium"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5" />
+                            Reorder
+                          </button>
+                        )}
                         <button
-                          onClick={() => {
-                            setSelectedOrder(order);
-                            setShowDetailModal(true);
-                          }}
+                          onClick={() => navigate(`/orders/${order.id}`)}
                           className="text-orange-500 hover:text-orange-400 text-sm font-medium"
                         >
                           View Details →
@@ -249,6 +363,9 @@ export default function Orders() {
                 </div>
               );
             })}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

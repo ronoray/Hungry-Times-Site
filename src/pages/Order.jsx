@@ -13,8 +13,10 @@ import { useCart } from "../context/CartContext";
 import AddToCartModal from "../components/AddToCartModal";
 import CartDrawer from "../components/CartDrawer";
 import GoogleMapsAutocomplete from "../components/GoogleMapsAutocomplete";
+import { loadRazorpay } from "../utils/scriptLoaders";
 import AuthModal from "../components/AuthModal";
-import { ShoppingCart, MapPin, MessageSquare, Loader, Plus, Check, Edit2, Trash2, X, AlertCircle, Minus } from "lucide-react";
+import { ShoppingCart, MapPin, MessageSquare, Loader, Plus, Check, Edit2, Trash2, X, AlertCircle, Minus, Truck } from "lucide-react";
+import { useToast } from "../components/Toast";
 
 import API_BASE from '../config/api.js';
 
@@ -25,7 +27,16 @@ const RESTAURANT_LOCATION = {
 };
 
 // Maximum delivery radius in km
-const MAX_DELIVERY_RADIUS_KM = 4;
+const MAX_DELIVERY_RADIUS_KM = 5;
+
+// Delivery charge tiers
+function calculateDeliveryCharge(distanceKm) {
+  if (distanceKm == null) return 0;
+  if (distanceKm <= 3) return 0;
+  if (distanceKm <= 4) return 30;
+  if (distanceKm <= 5) return 50;
+  return -1; // outside service area
+}
 
 // Calculate distance between two coordinates (Haversine formula)
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -52,6 +63,7 @@ export default function Order() {
   const navigate = useNavigate();
   const { isAuthenticated, customer } = useAuth();
   const { lines, clearCart, addLine, removeLine, updateQty } = useCart();
+  const showToast = useToast();
 
   // UI State
   const [selectedItemForModal, setSelectedItemForModal] = useState(null);
@@ -181,7 +193,7 @@ export default function Order() {
     e.preventDefault();
 
     if (!newAddressData.fullAddress || !newAddressData.latitude) {
-      alert("Please select a valid address from the map");
+      showToast("Please select a valid address from the map", "warning");
       return;
     }
 
@@ -210,9 +222,9 @@ export default function Order() {
       setShowAddAddressForm(false);
       setNewAddressData({ name: '', fullAddress: '', latitude: null, longitude: null });
       
-      alert("Address added successfully!");
+      showToast("Address added successfully!", "success");
     } catch (error) {
-      alert(error.message);
+      showToast(error.message, "error");
     }
   };
 
@@ -246,9 +258,9 @@ export default function Order() {
         setSelectedAddressId(null);
       }
 
-      alert('Address deleted successfully!');
+      showToast('Address deleted', 'success');
     } catch (error) {
-      alert(error.message);
+      showToast(error.message, 'error');
     }
   };
 
@@ -305,9 +317,9 @@ export default function Order() {
       setEditingAddressId(null);
       setEditAddressData({ name: '', fullAddress: '', latitude: null, longitude: null });
 
-      alert('Address updated successfully!');
+      showToast('Address updated', 'success');
     } catch (error) {
-      alert(error.message);
+      showToast(error.message, 'error');
     }
   };
 
@@ -332,55 +344,11 @@ export default function Order() {
       // Refresh addresses list
       await fetchAddresses();
       
-      alert('Default address updated!');
+      showToast('Default address updated', 'success');
     } catch (error) {
-      alert(error.message);
+      showToast(error.message, 'error');
     }
   };
-
-  // ============================================================================
-  // CALCULATE TOTALS WITH DISCOUNT
-  // ============================================================================
-  const { cartTotal, discountAmount, gstAmount, finalTotal } = useMemo(() => {
-    let total = 0;
-    lines.forEach((line) => {
-      const unitPrice =
-        (line.basePrice || 0) +
-        (line.variants?.reduce((sum, v) => sum + (v.priceDelta || 0), 0) || 0) +
-        (line.addons?.reduce((sum, a) => sum + (a.priceDelta || 0), 0) || 0);
-      total += unitPrice * (line.qty || 1);
-    });
-
-  // Apply offer discount
-  let discount = 0;
-  if (appliedOffer && total >= (appliedOffer.min_order_value || 0)) {
-    if (appliedOffer.discount_type === 'percent') {
-      discount = total * (appliedOffer.discount_value / 100);
-    } else {
-      discount = appliedOffer.discount_value;
-    }
-    
-    // Apply max discount cap if set
-    if (appliedOffer.max_discount && discount > appliedOffer.max_discount) {
-      discount = appliedOffer.max_discount;
-    }
-  }
-
-    const subtotalAfterDiscount = Math.max(0, total - discount);
-    const gst = Math.round(subtotalAfterDiscount * 0.05);
-    
-    return {
-      cartTotal: Math.round(total),
-      discountAmount: Math.round(discount),
-      gstAmount: gst,
-      finalTotal: Math.round(subtotalAfterDiscount + gst),
-    };
-  }, [lines, appliedOffer]);
-
-  const cartCount = lines.reduce((sum, line) => sum + (line.qty || 1), 0);
-
-  // Get selected address object
-  const selectedAddress = addresses.find(addr => addr.id === selectedAddressId);
 
   // ============================================================================
   // GET DELIVERY STATUS FOR ANY ADDRESS
@@ -405,16 +373,74 @@ export default function Order() {
       return {
         canDeliver: false,
         distance: distance.toFixed(1),
+        deliveryCharge: -1,
         message: `Outside delivery area (${distance.toFixed(1)}km away). Please call +91-8420822919`
       };
     }
 
+    const charge = calculateDeliveryCharge(distance);
     return {
       canDeliver: true,
       distance: distance.toFixed(1),
-      message: `Within delivery area (${distance.toFixed(1)}km away)`
+      deliveryCharge: charge,
+      message: charge === 0
+        ? `Free delivery (${distance.toFixed(1)}km away)`
+        : `Delivery: ₹${charge} (${distance.toFixed(1)}km away)`
     };
   };
+
+  // ============================================================================
+  // CALCULATE TOTALS WITH DISCOUNT
+  // ============================================================================
+  // Compute delivery charge for selected address
+  const deliveryStatus = useMemo(() => {
+    const addr = addresses.find(a => a.id === selectedAddressId);
+    if (!addr) return null;
+    return getDeliveryStatus(addr);
+  }, [addresses, selectedAddressId]);
+
+  const deliveryCharge = deliveryStatus?.deliveryCharge > 0 ? deliveryStatus.deliveryCharge : 0;
+
+  const { cartTotal, discountAmount, gstAmount, finalTotal } = useMemo(() => {
+    let total = 0;
+    lines.forEach((line) => {
+      const unitPrice =
+        (line.basePrice || 0) +
+        (line.variants?.reduce((sum, v) => sum + (v.priceDelta || 0), 0) || 0) +
+        (line.addons?.reduce((sum, a) => sum + (a.priceDelta || 0), 0) || 0);
+      total += unitPrice * (line.qty || 1);
+    });
+
+  // Apply offer discount
+  let discount = 0;
+  if (appliedOffer && total >= (appliedOffer.min_order_value || 0)) {
+    if (appliedOffer.discount_type === 'percent') {
+      discount = total * (appliedOffer.discount_value / 100);
+    } else {
+      discount = appliedOffer.discount_value;
+    }
+
+    // Apply max discount cap if set
+    if (appliedOffer.max_discount && discount > appliedOffer.max_discount) {
+      discount = appliedOffer.max_discount;
+    }
+  }
+
+    const subtotalAfterDiscount = Math.max(0, total - discount);
+    const gst = Math.round(subtotalAfterDiscount * 0.05);
+
+    return {
+      cartTotal: Math.round(total),
+      discountAmount: Math.round(discount),
+      gstAmount: gst,
+      finalTotal: Math.round(subtotalAfterDiscount + gst + deliveryCharge),
+    };
+  }, [lines, appliedOffer, deliveryCharge]);
+
+  const cartCount = lines.reduce((sum, line) => sum + (line.qty || 1), 0);
+
+  // Get selected address object
+  const selectedAddress = addresses.find(addr => addr.id === selectedAddressId);
 
   // ============================================================================
   // VALIDATE DELIVERY AREA
@@ -499,6 +525,7 @@ export default function Order() {
           delivery_longitude: selectedAddr.longitude,
           delivery_instructions: deliveryInstructions,
           discount: discountAmount,
+          delivery_charge: deliveryCharge,
           offer_id: appliedOffer?.id || null,
           offer_title: appliedOffer?.title || null,
         }),
@@ -529,16 +556,7 @@ export default function Order() {
       console.log('✅ Step 1 complete: Razorpay order created:', razorpayOrderId);
 
       // Load Razorpay SDK if not loaded
-      if (!window.Razorpay) {
-        const script = document.createElement("script");
-        script.src = "https://checkout.razorpay.com/v1/checkout.js";
-        script.async = true;
-        document.body.appendChild(script);
-        
-        await new Promise((resolve) => {
-          script.onload = resolve;
-        });
-      }
+      await loadRazorpay();
 
       // ✅ STEP 2: Open Razorpay modal
       console.log('🔄 Step 2: Opening Razorpay...');
@@ -650,7 +668,7 @@ export default function Order() {
       }
 
       const orderItems = lines.map(line => ({
-        itemName: line.itemName,
+        itemName: line.itemName || line.name,
         quantity: line.qty || 1,
         base_price: line.basePrice || 0,
         variants: line.variants || [],
@@ -671,6 +689,7 @@ export default function Order() {
           delivery_instructions: deliveryInstructions,
           paymentMethod: "COD",  // Cash on Delivery
           discount: discountAmount,
+          delivery_charge: deliveryCharge,
           offer_id: appliedOffer?.id || null,
           offer_title: appliedOffer?.title || null,
         }),
@@ -1147,7 +1166,24 @@ export default function Order() {
                     <span>GST (5%)</span>
                     <span className="text-white">₹{gstAmount}</span>
                   </div>
-                  
+
+                  {/* Delivery Charge */}
+                  <div className="flex justify-between text-neutral-400">
+                    <span className="flex items-center gap-1.5">
+                      <Truck className="w-3.5 h-3.5" />
+                      Delivery
+                    </span>
+                    {deliveryCharge > 0 ? (
+                      <span className="text-white">₹{deliveryCharge}</span>
+                    ) : (
+                      <span className="text-green-400 font-medium">FREE</span>
+                    )}
+                  </div>
+                  {/* Free delivery upsell */}
+                  {deliveryStatus && deliveryCharge > 0 && Number(deliveryStatus.distance) <= 4 && (
+                    <p className="text-xs text-green-400 text-right">Free delivery within 3km</p>
+                  )}
+
                   <div className="border-t border-neutral-700 pt-2 mt-2 flex justify-between">
                     <span className="text-lg font-bold text-white">Total</span>
                     <span className="text-xl font-bold text-orange-500">₹{finalTotal}</span>

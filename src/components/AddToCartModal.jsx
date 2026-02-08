@@ -7,7 +7,7 @@
 // ✅ Close X button always visible
 // ✅ Mobile responsive
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { X, Plus, Minus, ShoppingCart, AlertCircle } from "lucide-react";
 
 const CDN_BASE = import.meta.env.VITE_CDN_BASE || "http://localhost:5000";
@@ -295,6 +295,55 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
   };
 
   // ============================================================================
+  // SWIPE-TO-DISMISS (mobile only)
+  // ============================================================================
+
+  const sheetRef = useRef(null);
+  const dragStartY = useRef(null);
+  const dragDelta = useRef(0);
+  const [sheetTranslateY, setSheetTranslateY] = useState(0);
+  const [sheetAnimating, setSheetAnimating] = useState(true); // for slide-up entrance
+
+  useEffect(() => {
+    // Trigger slide-up entrance
+    setSheetTranslateY(0);
+    setSheetAnimating(true);
+  }, [isOpen]);
+
+  const handleTouchStart = useCallback((e) => {
+    // Only start drag from the drag indicator area (top 32px)
+    const rect = sheetRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const touchY = e.touches[0].clientY;
+    if (touchY - rect.top > 32) return; // Only drag from top handle
+    dragStartY.current = touchY;
+    dragDelta.current = 0;
+    setSheetAnimating(false);
+  }, []);
+
+  const handleTouchMove = useCallback((e) => {
+    if (dragStartY.current === null) return;
+    const delta = e.touches[0].clientY - dragStartY.current;
+    if (delta < 0) return; // Don't allow dragging up
+    dragDelta.current = delta;
+    setSheetTranslateY(delta);
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (dragStartY.current === null) return;
+    dragStartY.current = null;
+    setSheetAnimating(true);
+    if (dragDelta.current > 120) {
+      // Dismiss
+      setSheetTranslateY(window.innerHeight);
+      setTimeout(onClose, 200);
+    } else {
+      setSheetTranslateY(0);
+    }
+    dragDelta.current = 0;
+  }, [onClose]);
+
+  // ============================================================================
   // RENDER: MAIN MODAL
   // ============================================================================
 
@@ -304,9 +353,22 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
       onClick={onClose}
     >
       <div
+        ref={sheetRef}
         className="bg-neutral-900 w-full md:max-w-2xl rounded-t-2xl md:rounded-2xl relative flex flex-col overflow-hidden h-[85vh] md:h-auto md:max-h-[85vh]"
+        style={{
+          transform: `translateY(${sheetTranslateY}px)`,
+          transition: sheetAnimating ? 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)' : 'none',
+        }}
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
+        {/* DRAG INDICATOR (mobile) */}
+        <div className="md:hidden flex justify-center pt-2 pb-1 cursor-grab active:cursor-grabbing">
+          <div className="w-10 h-1 bg-neutral-600 rounded-full" />
+        </div>
+
         {/* CLOSE BUTTON - ALWAYS VISIBLE */}
         <button
           onClick={onClose}
@@ -334,7 +396,7 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
           )}
 
           {/* ALL MODAL CONTENT STARTS HERE */}
-          <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-24 md:pb-6">
+          <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-4">
 
             {/* TITLE & DESCRIPTION */}
             <div className="pr-12">
@@ -646,22 +708,25 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
             )}
           </div>
 
+        </div>
+      </div>
+
+        {/* STICKY FOOTER — outside scroll area */}
+        <div className="shrink-0 border-t border-neutral-700 bg-neutral-900 p-4 md:p-4 space-y-3">
           {/* VALIDATION ERROR MESSAGE */}
           {validationError && (
-            <div className="bg-red-500/10 border-2 border-red-500 rounded-lg p-4 flex items-start gap-3">
+            <div className="bg-red-500/10 border-2 border-red-500 rounded-lg p-3 flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-red-500 font-semibold text-sm md:text-base whitespace-pre-line">
-                  {validationError.message}
-                </p>
-              </div>
+              <p className="text-red-500 font-semibold text-sm whitespace-pre-line">
+                {validationError.message}
+              </p>
             </div>
           )}
 
           {/* ADD TO CART BUTTON */}
           <button
             onClick={handleAdd}
-            className="w-full py-4 md:py-3 h-12 md:h-auto bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 text-white font-bold rounded-lg md:rounded-xl shadow-lg hover:shadow-xl transition-all text-base md:text-sm flex items-center justify-center gap-2"
+            className="w-full py-4 md:py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all text-base flex items-center justify-center gap-2"
             aria-label="Add item to cart"
           >
             <ShoppingCart className="w-5 h-5" />
@@ -669,9 +734,8 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
               Add {quantity} to Cart — ₹{finalTotal.toFixed(0)}
             </span>
           </button>
-        </div> 
-      </div>   
-    </div>     
-  </div>       
+        </div>
+    </div>
+  </div>
   );
 }

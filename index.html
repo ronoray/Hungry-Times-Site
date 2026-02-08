@@ -37,44 +37,37 @@
     <meta name="msapplication-TileColor" content="#0B0B0B" />
     <meta name="theme-color" content="#0B0B0B" />
 
-    <!-- ✅ Razorpay Payment Gateway -->
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <!-- Preconnect to third-party origins (hint only, no blocking) -->
+    <link rel="preconnect" href="https://checkout.razorpay.com" crossorigin />
+    <link rel="preconnect" href="https://maps.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+    <link rel="preconnect" href="https://cdn.hungrytimes.in" crossorigin />
 
-    <!-- ✅ Google Maps best-practice loading -->
-    <script
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC1OsnZiTXao9VqePa8npp1CLVBTzCMXSM&libraries=places&loading=async"
-      async
-      defer
-    ></script>
-
-    <!-- ✅ Google Analytics - Dynamic Loading - FIXED: Relative URL -->
+    <!-- GA loaded after first interaction or after 3s idle -->
     <script>
-      // ✅ FIXED: Use relative URL instead of absolute cross-domain URL
-      fetch('/api/public/analytics-config')
-        .then(res => res.json())
-        .then(data => {
-          if (data.measurementId) {
-            // Dynamically load Google Analytics
-            const script1 = document.createElement('script');
-            script1.async = true;
-            script1.src = `https://www.googletagmanager.com/gtag/js?id=${data.measurementId}`;
-            document.head.appendChild(script1);
-            
-            const script2 = document.createElement('script');
-            script2.innerHTML = `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', '${data.measurementId}');
-            `;
-            document.head.appendChild(script2);
-            
-            console.log('[GA] Tracking enabled:', data.measurementId);
-          } else {
-            console.log('[GA] Tracking disabled in admin panel');
-          }
-        })
-        .catch(err => console.log('[GA] Config not available'));
+      function loadGA() {
+        if (window.__gaLoaded) return;
+        window.__gaLoaded = true;
+        fetch('/api/public/analytics-config')
+          .then(function(r){return r.json()})
+          .then(function(d){
+            if (!d.measurementId) return;
+            var s=document.createElement('script');
+            s.async=true;
+            s.src='https://www.googletagmanager.com/gtag/js?id='+d.measurementId;
+            document.head.appendChild(s);
+            window.dataLayer=window.dataLayer||[];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js',new Date());
+            gtag('config',d.measurementId);
+          })
+          .catch(function(){});
+      }
+      // Defer GA: load on first interaction or after 3s
+      ['click','scroll','keydown','touchstart'].forEach(function(e){
+        document.addEventListener(e,loadGA,{once:true,passive:true});
+      });
+      setTimeout(loadGA,3000);
     </script>
 
     <!-- ✅ Global styles for Google Places dropdown -->

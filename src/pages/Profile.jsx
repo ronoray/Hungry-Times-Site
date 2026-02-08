@@ -8,9 +8,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { 
-  User, MapPin, Phone, Mail, Edit2, Plus, Trash2, 
-  Save, X, Check, AlertCircle, LogOut, Key 
+import {
+  User, MapPin, Phone, Mail, Edit2, Plus, Trash2,
+  Save, X, Check, AlertCircle, LogOut, Key,
+  Share2, Gift, Heart, HelpCircle, Package
 } from 'lucide-react';
 import GoogleMapsAutocomplete from '../components/GoogleMapsAutocomplete';
 
@@ -53,6 +54,9 @@ export default function Profile() {
     confirmPassword: ''
   });
 
+  // Referral state
+  const [referralCode, setReferralCode] = useState(null);
+
   // UI state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -73,6 +77,8 @@ export default function Profile() {
       
       // Load addresses from new endpoint
       loadAddresses();
+      // Load referral code
+      loadReferralCode();
     }
   }, [customer, isAuthenticated, navigate]);
 
@@ -117,6 +123,30 @@ export default function Profile() {
         }]);
       }
     }
+  };
+
+  const loadReferralCode = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/referrals?phone=${customer?.phone}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const codes = data.codes || [];
+        // Find most recent pending or active code
+        const active = codes.find(c => c.status === 'active' || c.status === 'pending');
+        if (active) setReferralCode(active);
+      }
+    } catch (err) {
+      console.error('Load referral error:', err);
+    }
+  };
+
+  const handleShareReferral = () => {
+    if (!referralCode) return;
+    const msg = `Order from Hungry Times and get 15% off! Use my referral code: ${referralCode.code}. Order now at hungrytimes.in/offers`;
+    const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank');
   };
 
   // ============================================
@@ -827,6 +857,61 @@ export default function Profile() {
           ) : (
             <p className="text-gray-400">••••••••</p>
           )}
+        </div>
+
+        {/* Referral Code Section */}
+        {referralCode && (
+          <div className="bg-neutral-800 rounded-lg p-6 mb-6">
+            <h2 className="text-xl font-semibold text-white flex items-center gap-2 mb-4">
+              <Gift className="w-5 h-5 text-orange-500" />
+              Your Referral Code
+            </h2>
+            <div className="bg-neutral-900 rounded-lg p-4 mb-4 text-center">
+              <p className="text-3xl font-mono font-bold text-orange-500 tracking-widest mb-1">
+                {referralCode.code}
+              </p>
+              <p className="text-xs text-neutral-400">
+                Status: <span className={referralCode.status === 'active' ? 'text-green-400' : 'text-yellow-400'}>
+                  {referralCode.status.toUpperCase()}
+                </span>
+              </p>
+            </div>
+            <p className="text-sm text-neutral-400 mb-4">
+              Share this code with friends. They get 15% off their first order, and you get 15% off your next!
+            </p>
+            <button
+              onClick={handleShareReferral}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium"
+            >
+              <Share2 className="w-5 h-5" />
+              Share via WhatsApp
+            </button>
+          </div>
+        )}
+
+        {/* Quick Links */}
+        <div className="bg-neutral-800 rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold text-white flex items-center gap-2 mb-4">
+            Quick Links
+          </h2>
+          <div className="space-y-2">
+            <button onClick={() => navigate('/orders')} className="w-full flex items-center gap-3 px-4 py-3 bg-neutral-700/50 hover:bg-neutral-700 rounded-lg transition-colors text-left">
+              <Package className="w-5 h-5 text-orange-500" />
+              <span className="text-white">My Orders</span>
+            </button>
+            <button onClick={() => navigate('/menu')} className="w-full flex items-center gap-3 px-4 py-3 bg-neutral-700/50 hover:bg-neutral-700 rounded-lg transition-colors text-left">
+              <Heart className="w-5 h-5 text-red-500" />
+              <span className="text-white">My Favorites</span>
+            </button>
+            <button onClick={() => navigate('/offers')} className="w-full flex items-center gap-3 px-4 py-3 bg-neutral-700/50 hover:bg-neutral-700 rounded-lg transition-colors text-left">
+              <Gift className="w-5 h-5 text-green-500" />
+              <span className="text-white">Offers & Referrals</span>
+            </button>
+            <button onClick={() => navigate('/feedback')} className="w-full flex items-center gap-3 px-4 py-3 bg-neutral-700/50 hover:bg-neutral-700 rounded-lg transition-colors text-left">
+              <HelpCircle className="w-5 h-5 text-blue-500" />
+              <span className="text-white">Feedback & Support</span>
+            </button>
+          </div>
         </div>
 
         {/* Logout Button - PRESERVED */}

@@ -1,3 +1,19 @@
 User-agent: *
 Allow: /
-Sitemap: https://hungrytimes.co.in/sitemap.xml
+Disallow: /order
+Disallow: /orders
+Disallow: /orders/*
+Disallow: /order-success
+Disallow: /order-success/*
+Disallow: /profile
+Disallow: /api/
+
+Allow: /api/public/
+
+Sitemap: https://hungrytimes.in/sitemap.xml
+
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+User-agent: SemrushBot
+Crawl-delay: 10

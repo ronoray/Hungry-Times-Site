@@ -3,23 +3,29 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  
-  // ============================================================================
-  // ✅ CRITICAL FOR PWA: Ensure public files are copied to dist/
-  // ============================================================================
+
   publicDir: 'public',
-  
+
   build: {
-    // Copy all files from public/ to dist/ (includes sw.js, site.webmanifest, icons)
     copyPublicDir: true,
-    
+
     rollupOptions: {
       input: {
         main: './index.html'
+      },
+      output: {
+        manualChunks: {
+          // React core (~140 KB)
+          'vendor-react': ['react', 'react-dom'],
+          // Router (~30 KB)
+          'vendor-router': ['react-router-dom'],
+          // Icons (~tree-shaken per page)
+          'vendor-icons': ['lucide-react'],
+        }
       }
     }
   },
-  
+
   server: {
     host: true,
     port: 5174,
@@ -28,7 +34,6 @@ export default defineConfig({
         target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
-        // optional: clearer errors if backend is down
         configure: (proxy) => {
           proxy.on('error', (err) => {
             console.error('[VITE PROXY ERROR] /api → http://localhost:5000', err?.code || err?.message)
@@ -46,11 +51,6 @@ export default defineConfig({
         secure: true
       }
     }
-  },
-
-  // prebundle heroicons to avoid deps warnings
-  optimizeDeps: {
-    include: ['@heroicons/react/24/outline'],
   },
 
   preview: {

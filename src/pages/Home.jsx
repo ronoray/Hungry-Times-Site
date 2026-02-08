@@ -1,9 +1,51 @@
 import { Link } from 'react-router-dom'
 import { BRAND } from '../lib/constants'
+import SEOHead from '../components/SEOHead'
+import StructuredData from '../components/StructuredData'
+
+const RESTAURANT_SCHEMA = {
+  "@context": "https://schema.org",
+  "@type": ["Restaurant", "FoodEstablishment"],
+  "@id": "https://hungrytimes.in/#restaurant",
+  "name": "Hungry Times",
+  "url": "https://hungrytimes.in",
+  "logo": "https://hungrytimes.in/hungry-times-logo.png",
+  "image": "https://hungrytimes.in/banner.png",
+  "description": "Order delicious food online from Hungry Times. Indian, Chinese & Continental cuisine with fast delivery in Kolkata.",
+  "telephone": "+91-8420822919",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "Selimpur, Ballygunge",
+    "addressLocality": "Kolkata",
+    "addressRegion": "West Bengal",
+    "postalCode": "700031",
+    "addressCountry": "IN"
+  },
+  "geo": { "@type": "GeoCoordinates", "latitude": 22.5061956, "longitude": 88.3673608 },
+  "openingHoursSpecification": [{
+    "@type": "OpeningHoursSpecification",
+    "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+    "opens": "11:00", "closes": "22:30"
+  }],
+  "servesCuisine": ["Indian", "Chinese", "Continental", "North Indian"],
+  "priceRange": "$$",
+  "hasMenu": { "@type": "Menu", "url": "https://hungrytimes.in/menu" },
+  "potentialAction": {
+    "@type": "OrderAction",
+    "target": { "@type": "EntryPoint", "urlTemplate": "https://hungrytimes.in/menu" },
+    "deliveryMethod": ["http://purl.org/goodrelations/v1#DeliveryModeOwnFleet"]
+  }
+};
 
 export default function Home() {
   return (
     <>
+      <SEOHead
+        title="Hungry Times — Order Food Online in Kolkata"
+        description="Order delicious food online from Hungry Times. Fast delivery within 5km. Indian, Chinese, Continental cuisine. Free delivery under 3km!"
+        canonicalPath="/"
+      />
+      <StructuredData data={RESTAURANT_SCHEMA} />
       {/* Hero Section with Single Image Placeholder */}
       <section className="relative min-h-[40vh] md:min-h-[70vh] flex items-center justify-center bg-gradient-to-b from-neutral-900 to-neutral-950">
         <div className="absolute inset-0 bg-neutral-800 animate-pulse">

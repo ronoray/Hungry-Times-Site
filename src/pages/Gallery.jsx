@@ -1,6 +1,7 @@
 // hungrytimes-frontend/src/pages/Gallery.jsx - FIXED VERSION
 import { useState, useEffect } from 'react'
 import Section from '../components/Section'
+import SEOHead from '../components/SEOHead'
 
 // Get API base from environment or use default
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'
@@ -111,6 +112,11 @@ export default function Gallery() {
 
   return (
     <>
+      <SEOHead
+        title="Gallery"
+        description="See photos of our food, ambiance and restaurant. Hungry Times — Chinese-Continental fusion in Kolkata."
+        canonicalPath="/gallery"
+      />
       <Section title="Gallery">
         <p className="text-neutral-400 mb-8 text-center">
           Explore our delicious dishes and restaurant ambiance

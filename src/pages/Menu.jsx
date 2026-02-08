@@ -3,9 +3,14 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import "./Menu.css";
 import { useCart } from "../context/CartContext";
-import { ShoppingCart, Plus, Check, Tag, Sparkles, Search, X } from "lucide-react";
+import { ShoppingCart, Plus, Check, Tag, Sparkles, Search, X, Heart } from "lucide-react";
 import AddToCartModal from "../components/AddToCartModal";
+import FloatingCartBar from "../components/FloatingCartBar";
+import VegDot from "../components/VegDot";
 import { useMenuCategory } from '../context/MenuCategoryContext';
+import { useFavorites } from '../context/FavoritesContext';
+import SEOHead from '../components/SEOHead';
+import KitchenStatus from '../components/KitchenStatus';
 
 import API_BASE from "../config/api";
 
@@ -204,9 +209,28 @@ export default function Menu() {
   const [activeTop, setActiveTop] = useState(null);
   const [activeSub, setActiveSub] = useState(null);
   const { sidebarOpen, setSidebarOpen } = useMenuCategory();
+  const { toggleFavorite, isFavorite } = useFavorites();
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [recentSearches, setRecentSearches] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('ht_recent_searches') || '[]'); }
+    catch { return []; }
+  });
+  const saveRecentSearch = (term) => {
+    const t = term.trim();
+    if (!t || t.length < 2) return;
+    const updated = [t, ...recentSearches.filter(s => s.toLowerCase() !== t.toLowerCase())].slice(0, 5);
+    setRecentSearches(updated);
+    try { localStorage.setItem('ht_recent_searches', JSON.stringify(updated)); } catch {}
+  };
+
+  // Veg filter
+  const [vegOnly, setVegOnly] = useState(() => {
+    try { return localStorage.getItem('ht_veg_only') === '1'; }
+    catch { return false; }
+  });
 
   // Active Offers State
   const [activeOffers, setActiveOffers] = useState([]);
@@ -242,6 +266,12 @@ export default function Menu() {
     document.body.style.overflow = '';
   };
 }, [sidebarOpen]);
+
+  // Persist veg filter
+  useEffect(() => {
+    try { localStorage.setItem('ht_veg_only', vegOnly ? '1' : '0'); }
+    catch {}
+  }, [vegOnly]);
 
   // Modals
   const [imgModal, setImgModal] = useState({
@@ -335,6 +365,32 @@ export default function Menu() {
     return t?.subcategories || [];
   }, [tops, activeTop]);
 
+  // Scroll-spy: highlight active subcategory as user scrolls
+  useEffect(() => {
+    if (searchQuery) return; // Disable during search
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const subId = Number(entry.target.dataset.sub);
+            if (subId) {
+              setActiveSub(subId);
+              const pill = document.getElementById(`pill-${subId}`);
+              pill?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+          }
+        });
+      },
+      { rootMargin: '-120px 0px -70% 0px' }
+    );
+
+    const sections = rightPaneRef.current?.querySelectorAll('[data-sub]');
+    sections?.forEach(el => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, [subs, searchQuery]);
+
   const itemsBySub = useMemo(() => {
     const map = new Map();
     subs.forEach((sc) => map.set(sc.id, sc.items || []));
@@ -352,12 +408,14 @@ export default function Menu() {
     tops.forEach((topCat) => {
       topCat.subcategories?.forEach((subCat) => {
         const items = subCat.items || [];
-        
-        // FIXED: Only include items where the ITEM NAME matches the query
-        const matched = items.filter(item => {
-          return item.name?.toLowerCase().includes(query);
-        });
-        
+
+        // Match item name, category name, or subcategory name
+        const catMatch = topCat.name?.toLowerCase().includes(query);
+        const subMatch = subCat.name?.toLowerCase().includes(query);
+        const matched = (catMatch || subMatch)
+          ? items  // all items if category/subcategory matches
+          : items.filter(item => item.name?.toLowerCase().includes(query));
+
         // Only add subcategory if it has matching items
         if (matched.length > 0) {
           results.push({
@@ -373,37 +431,55 @@ export default function Menu() {
   }, [tops, searchQuery]);
 
   // When searching, use global results; otherwise use current category
+  // Also apply veg filter
   const filteredItemsBySub = useMemo(() => {
-    if (!searchQuery.trim()) return itemsBySub;
-    
-    // Convert global search results to Map format
-    const filtered = new Map();
-    globalSearchResults?.forEach(result => {
-      filtered.set(result.subCategory.id, result.items);
-    });
-    
-    return filtered;
-  }, [itemsBySub, searchQuery, globalSearchResults]);
+    let base;
+    if (searchQuery.trim()) {
+      base = new Map();
+      globalSearchResults?.forEach(result => {
+        base.set(result.subCategory.id, result.items);
+      });
+    } else {
+      base = itemsBySub;
+    }
 
-  // Filtered subcategories
+    if (!vegOnly) return base;
+
+    // Apply veg filter
+    const filtered = new Map();
+    base.forEach((items, subId) => {
+      const vegItems = items.filter(it => it.is_veg === 1 || it.is_veg === true);
+      if (vegItems.length > 0) filtered.set(subId, vegItems);
+    });
+    return filtered;
+  }, [itemsBySub, searchQuery, globalSearchResults, vegOnly]);
+
+  // Filtered subcategories (also filtered by veg if active)
   const filteredSubs = useMemo(() => {
-    if (!searchQuery.trim()) return subs;
-    
-    // When searching, return subcategories from global search results
-    return globalSearchResults?.map(result => result.subCategory) || [];
-  }, [subs, searchQuery, globalSearchResults]);
+    let result;
+    if (searchQuery.trim()) {
+      result = globalSearchResults?.map(r => r.subCategory) || [];
+    } else {
+      result = subs;
+    }
+    // When veg filter is active, only show subcategories that have veg items
+    if (vegOnly) {
+      return result.filter(sc => filteredItemsBySub.has(sc.id));
+    }
+    return result;
+  }, [subs, searchQuery, globalSearchResults, vegOnly, filteredItemsBySub]);
 
   // Auto-scroll to search results when search query changes
   useEffect(() => {
     if (!searchQuery || !searchResultsRef.current) return;
     
-    // Debounce: only scroll after user stops typing for 700ms
+    // Debounce: only scroll after user stops typing for 200ms
     const timeoutId = setTimeout(() => {
       searchResultsRef.current?.scrollIntoView({ 
         behavior: 'smooth', 
         block: 'start' 
       });
-    }, 700);
+    }, 200);
     
     // Cleanup: cancel scroll if user continues typing
     return () => clearTimeout(timeoutId);
@@ -421,6 +497,19 @@ export default function Menu() {
     });
     return items;
   }, [tops]);
+
+  // Collect favorite items from all categories
+  const favoriteItems = useMemo(() => {
+    const items = [];
+    tops.forEach((tc) => {
+      tc.subcategories?.forEach((sc) => {
+        sc.items?.forEach((item) => {
+          if (isFavorite(item.id)) items.push(item);
+        });
+      });
+    });
+    return items;
+  }, [tops, isFavorite]);
 
   const scrollToSub = (subId) => {
     setActiveSub(subId);
@@ -477,32 +566,102 @@ export default function Menu() {
     // Check if item is disabled
     const isDisabled = !acceptingOnlineOrders || it.effectiveDisabled;
     
+    // Price display: show range for items with variants
+    const priceDisplay = (() => {
+      const base = Number(it.basePrice || 0);
+      if (!hasVariants) return `₹${base.toFixed(0)}`;
+      // "From ₹XX" for items with variants
+      return `From ₹${base.toFixed(0)}`;
+    })();
+
     return (
       <article
         key={it.id}
         className={`${isRecommendedCard ? "recommended-item-card" : "menu-item-card"} ${isDisabled ? "item-disabled" : ""}`}
-        style={{ 
+        style={{
           opacity: isDisabled ? 0.6 : 1,
           filter: isDisabled ? 'grayscale(0.5)' : 'none',
           pointerEvents: isDisabled ? 'none' : 'auto'
         }}
       >
-        <div className="item-header">
-          <div className="item-name-wrapper">
-            <h3 className="item-name">{it.name}</h3>
-          </div>
-          <span
-            className={`item-price ${
-              isRecommendedCard ? "item-price-large" : ""
-            }`}
-            style={{
-              textDecoration: isDisabled ? 'line-through' : 'none',
-              color: isDisabled ? '#999' : ''
-            }}
+        {/* Bestseller badge + Favorite heart */}
+        <div className="flex items-center justify-between mb-1">
+          {it.isBestseller ? (
+            <span className="inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-amber-500/20 text-amber-500 border border-amber-500/30 rounded">
+              Bestseller
+            </span>
+          ) : <span />}
+          <button
+            onClick={(e) => { e.stopPropagation(); toggleFavorite(it.id); }}
+            className="p-1 -mr-1 transition-colors"
+            aria-label={isFavorite(it.id) ? 'Remove from favorites' : 'Add to favorites'}
           >
-            ₹{Number(it.basePrice || 0).toFixed(0)}
-          </span>
+            <Heart
+              size={18}
+              className={isFavorite(it.id) ? 'text-red-500 fill-red-500' : 'text-neutral-500 hover:text-red-400'}
+            />
+          </button>
         </div>
+
+        {/* Inline thumbnail + content row */}
+        {!isRecommendedCard && imageUrl && (
+          <div className="flex gap-3 mb-2">
+            <img
+              src={imageUrl}
+              alt={it.name}
+              width={80}
+              height={80}
+              loading="lazy"
+              className="w-20 h-20 rounded-xl object-cover flex-shrink-0 cursor-pointer"
+              onClick={() => setImgModal({ open: true, urls: [imageUrl], name: it.name })}
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <VegDot isVeg={it.is_veg} />
+                <h3 className="item-name">{it.name}</h3>
+              </div>
+              <span
+                className={`item-price ${isRecommendedCard ? "item-price-large" : ""}`}
+                style={{
+                  textDecoration: isDisabled ? 'line-through' : 'none',
+                  color: isDisabled ? '#999' : '',
+                  fontSize: hasVariants ? '0.875rem' : undefined
+                }}
+              >
+                {priceDisplay}
+              </span>
+              {(hasVariants || hasAddons) && (
+                <span className="block text-xs text-neutral-400 mt-0.5">Customisable</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Original header for cards without thumbnail or recommended cards */}
+        {(isRecommendedCard || !imageUrl) && (
+          <div className="item-header">
+            <div className="item-name-wrapper">
+              <div className="flex items-center gap-1.5">
+                <VegDot isVeg={it.is_veg} />
+                <h3 className="item-name">{it.name}</h3>
+              </div>
+            </div>
+            <span
+              className={`item-price ${isRecommendedCard ? "item-price-large" : ""}`}
+              style={{
+                textDecoration: isDisabled ? 'line-through' : 'none',
+                color: isDisabled ? '#999' : '',
+                fontSize: hasVariants ? '0.875rem' : undefined
+              }}
+            >
+              {priceDisplay}
+            </span>
+          </div>
+        )}
+        {(isRecommendedCard || !imageUrl) && (hasVariants || hasAddons) && (
+          <span className="block text-xs text-neutral-400 mb-1">Customisable</span>
+        )}
 
         {it.description && (
           <p
@@ -543,7 +702,7 @@ export default function Menu() {
         )}
 
         <div className="item-actions">
-          {imageUrl && (
+          {imageUrl && isRecommendedCard && (
             <button
               className="view-image-btn"
               onClick={() =>
@@ -697,6 +856,11 @@ export default function Menu() {
   // ========================
   return (
     <div className="menu-page-wrapper">
+      <SEOHead
+        title="Menu"
+        description="Browse our full menu. Veg & non-veg options. Starters, main course, Chinese, Continental, desserts & more. Order now!"
+        canonicalPath="/menu"
+      />
       {/* ================================================ */}
       {/* GLOBAL ORDERING DISABLED BANNER */}
       {/* ================================================ */}
@@ -742,6 +906,11 @@ export default function Menu() {
         </div>
       )}
       <div className="menu-page">
+        {/* Kitchen Status */}
+        <div className="flex justify-center py-2">
+          <KitchenStatus />
+        </div>
+
         {/* Hero */}
         <div className="menu-hero menu-hero-mobile-compact">
           <div className="hero-grid">
@@ -802,13 +971,21 @@ export default function Menu() {
         <div className="search-bar-container">
           <div className="search-bar">
             <div></div> {/* Empty spacer for sidebar column */}
-            <div className="search-bar-input-wrapper">
+            <div className="search-bar-input-wrapper relative">
               <Search className="search-icon" size={20} />
               <input
                 type="text"
                 placeholder="Search menu items or categories..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchQuery.trim()) {
+                    saveRecentSearch(searchQuery);
+                    e.target.blur();
+                  }
+                }}
                 className="search-input"
               />
               {searchQuery && (
@@ -821,6 +998,32 @@ export default function Menu() {
                 </button>
               )}
             </div>
+            {/* Recent searches dropdown */}
+            {searchFocused && !searchQuery && recentSearches.length > 0 && (
+              <div className="absolute left-0 right-0 top-full mt-1 bg-neutral-900 border border-neutral-700 rounded-xl shadow-lg z-50 p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-neutral-400 font-medium">Recent Searches</span>
+                  <button
+                    onClick={() => {
+                      setRecentSearches([]);
+                      try { localStorage.removeItem('ht_recent_searches'); } catch {}
+                    }}
+                    className="text-xs text-neutral-500 hover:text-neutral-300"
+                  >
+                    Clear
+                  </button>
+                </div>
+                {recentSearches.map((term, i) => (
+                  <button
+                    key={i}
+                    onMouseDown={(e) => { e.preventDefault(); setSearchQuery(term); }}
+                    className="block w-full text-left px-2 py-1.5 text-sm text-neutral-300 hover:bg-neutral-800 rounded"
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -893,6 +1096,24 @@ export default function Menu() {
             {/* Right Pane */}
             <div className="menu-main" ref={rightPaneRef}>
               <section>
+                {/* Favorites Section - Hidden during search */}
+                {!searchQuery && favoriteItems.length > 0 && (
+                  <div className="recommended-section" style={{ borderBottom: '1px solid #333', paddingBottom: '16px', marginBottom: '16px' }}>
+                    <div className="recommended-header">
+                      <Heart size={20} className="text-red-500 fill-red-500" />
+                      <h2 className="recommended-title">Your Favorites</h2>
+                      <Heart size={20} className="text-red-500 fill-red-500" />
+                    </div>
+                    <div className="recommended-items-grid-wrapper">
+                      <div className="recommended-items-grid">
+                        {favoriteItems.map((it) => (
+                          <MenuItemCard key={`fav-${it.id}`} it={it} isRecommendedCard={true} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Recommended Section - Hidden during search */}
                 {!searchQuery && recommendedItems.length > 0 && (
                   <div className="recommended-section">
@@ -921,9 +1142,25 @@ export default function Menu() {
                 {!searchQuery && (
                   <nav className="subcategory-bar">
                     <div className="subcategory-scroll">
+                      {/* Veg filter toggle */}
+                      <button
+                        className={`subcategory-btn flex items-center gap-1.5 ${vegOnly ? 'active' : ''}`}
+                        onClick={() => setVegOnly(v => !v)}
+                        style={vegOnly ? {
+                          background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                          borderColor: '#22c55e',
+                          boxShadow: '0 0 12px rgba(34,197,94,0.5)'
+                        } : {}}
+                      >
+                        <span className="inline-flex items-center justify-center w-3.5 h-3.5 border border-green-500 rounded-sm">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                        </span>
+                        Veg
+                      </button>
                       {filteredSubs.map((sc) => (
                         <button
                           key={sc.id}
+                          id={`pill-${sc.id}`}
                           className={`subcategory-btn ${
                             sc.id === activeSub ? "active" : ""
                           }`}
@@ -1024,8 +1261,19 @@ export default function Menu() {
                 ) : searchQuery ? (
                   <div className="search-empty-state">
                     <Search size={48} />
-                    <h3>No items found</h3>
-                    <p>Try searching for something else</p>
+                    <h3>No items found for "{searchQuery}"</h3>
+                    <p>Try browsing categories below</p>
+                    <div className="flex flex-wrap gap-2 mt-3 justify-center">
+                      {tops.slice(0, 5).map(t => (
+                        <button
+                          key={t.id}
+                          onClick={() => { setSearchQuery(''); setActiveTop(t.id); }}
+                          className="px-3 py-1.5 text-sm bg-neutral-800 hover:bg-neutral-700 rounded-full text-neutral-300 border border-neutral-700"
+                        >
+                          {t.name}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 ) : null}
               </section>
@@ -1033,6 +1281,9 @@ export default function Menu() {
           </div>
         </div>
       </div>
+
+      {/* Floating Cart Bar */}
+      <FloatingCartBar />
 
       {/* Global Image Modal */}
       <ImageModal

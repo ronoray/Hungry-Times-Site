@@ -26,3 +26,21 @@ backup/
 *.bak
 *_old*
 *_backup*
+
+# Environment files (keep local, don't track)
+.env
+.env.*
+.env.local
+.env.production
+.env.development
+.env.staging
+
+# Sensitive keys (keep local for backup, don't track)
+vapid.txt
+*vapid*
+*.key
+*.pem
+
+# Temporary docs
+site_structure.txt
+*_structure.txt

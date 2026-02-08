@@ -6,6 +6,7 @@
 
 import { useState } from 'react'
 import { BRAND } from '../lib/constants'
+import SEOHead from '../components/SEOHead'
 
 import API_BASE from '../config/api';
 
@@ -72,6 +73,12 @@ export default function Feedback() {
   }
 
   return (
+    <>
+    <SEOHead
+      title="Feedback"
+      description="Share your feedback about Hungry Times. We value your opinion and use it to improve our food and service."
+      canonicalPath="/feedback"
+    />
     <section className="container-section py-12">
       <h2 className="text-2xl font-semibold mb-6">Share Your Feedback</h2>
       
@@ -226,9 +233,6 @@ export default function Feedback() {
         </div>
       </div>
     </section>
+    </>
   )
 }
-
-// ============================================================================
-// END OF PATCH 2/11
-// ============================================================================

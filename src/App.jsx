@@ -10,6 +10,8 @@ import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import { LocationProvider } from "./context/LocationContext";
 import { MenuCategoryProvider } from './context/MenuCategoryContext';
+import { FavoritesProvider } from './context/FavoritesContext';
+import { ToastProvider } from "./components/Toast";
 import API_BASE from "./config/api.js";
 import "./styles/index.css";
 
@@ -317,6 +319,8 @@ export default function App() {
       <AuthProvider>
         <CartProvider>
           <LocationProvider>
+            <FavoritesProvider>
+            <ToastProvider>
             <div className="min-h-screen flex flex-col bg-[#0B0B0B] text-white">
               
               {/* ✅ Show modal only when SW ready and permission needed */}
@@ -337,6 +341,8 @@ export default function App() {
               <Footer />
 
             </div>
+            </ToastProvider>
+            </FavoritesProvider>
           </LocationProvider>
         </CartProvider>
       </AuthProvider>

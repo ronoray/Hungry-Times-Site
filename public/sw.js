@@ -1,10 +1,10 @@
 // site/public/sw.js - Customer Site Service Worker
 // ============================================================================
 // CORRECTED VERSION - Fixed icon paths to match actual files
-// Version: v5-FIXED-20251229
+// Version: v6
 // ============================================================================
 
-const CACHE_NAME = 'hungry-times-v5-20251229-' + Date.now();
+const CACHE_NAME = 'hungry-times-v6';
 
 // ✅ FIXED: Match actual icon filenames in /public folder
 const STATIC_ASSETS = [
@@ -93,7 +93,25 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Skip API requests - let them go to network
+  // Stale-while-revalidate for menu API (offline menu browsing)
+  if (url.pathname === '/api/public/menu' || url.pathname === '/api/public/categories') {
+    event.respondWith(
+      caches.open(CACHE_NAME).then((cache) => {
+        return cache.match(event.request).then((cached) => {
+          const fetched = fetch(event.request).then((response) => {
+            if (response && response.status === 200) {
+              cache.put(event.request, response.clone());
+            }
+            return response;
+          }).catch(() => cached);
+          return cached || fetched;
+        });
+      })
+    );
+    return;
+  }
+
+  // Skip other API requests - let them go to network
   if (url.pathname.startsWith('/api/')) {
     return;
   }
@@ -365,7 +383,7 @@ self.addEventListener('sync', (event) => {
 
 console.log('╔═══════════════════════════════════════════════════╗');
 console.log('[SW] ✅ Customer Site Service Worker Ready');
-console.log('[SW] Version: v5-FIXED-20251229');
+console.log('[SW] Version: v6');
 console.log('[SW] Cache Strategy: NETWORK-FIRST');
 console.log('[SW] Portal: Customer (hungrytimes.in)');
 console.log('[SW] Features:');

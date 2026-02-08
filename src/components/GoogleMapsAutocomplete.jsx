@@ -1,6 +1,7 @@
 // components/GoogleMapsAutocomplete.jsx - FIXED AUTOCOMPLETE
 import { useState, useRef, useEffect } from 'react';
 import { Search, MapPin, AlertCircle, Check } from 'lucide-react';
+import { loadGoogleMaps } from '../utils/scriptLoaders';
 
 /**
  * Google Maps Autocomplete Component with Manual Fallback
@@ -21,46 +22,24 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
   }, [defaultValue]);
 
   useEffect(() => {
-    let checkInterval;
-    let timeout;
+    let cancelled = false;
 
-    // Check if Google Maps is already loaded
-    if (window.google && window.google.maps && window.google.maps.places) {
-      console.log('[Maps] ✅ Google Maps already loaded');
-      setIsLoaded(true);
-      setTimeout(() => initAutocomplete(), 100);
-      return;
-    }
-
-    console.log('[Maps] ⏳ Waiting for Google Maps to load...');
-
-    // Poll for Google Maps
-    checkInterval = setInterval(() => {
-      if (window.google && window.google.maps && window.google.maps.places) {
-        console.log('[Maps] ✅ Google Maps loaded successfully');
+    loadGoogleMaps()
+      .then(() => {
+        if (cancelled) return;
         setIsLoaded(true);
         setManualMode(false);
-        clearInterval(checkInterval);
-        clearTimeout(timeout);
-        initAutocomplete();
-      }
-    }, 100);
-
-    // Timeout after 3 seconds (reduced from 10)
-    timeout = setTimeout(() => {
-      if (!(window.google && window.google.maps && window.google.maps.places)) {
-        console.warn('[Maps] ⚠️ Google Maps not available - switching to manual mode');
+        setTimeout(() => initAutocomplete(), 100);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        console.warn('[Maps] Google Maps not available - switching to manual mode');
         setManualMode(true);
-        setIsLoaded(true); // Mark as loaded so UI renders
-        clearInterval(checkInterval);
-      }
-    }, 3000); // Reduced timeout to 3 seconds
+        setIsLoaded(true);
+      });
 
     return () => {
-      clearInterval(checkInterval);
-      clearTimeout(timeout);
-      
-      // Cleanup autocomplete listener
+      cancelled = true;
       if (autocompleteRef.current) {
         window.google?.maps?.event?.clearInstanceListeners(autocompleteRef.current);
       }

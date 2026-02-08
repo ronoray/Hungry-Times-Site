@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import './Offers.css';
 import API_BASE from '../config/api';
+import SEOHead from '../components/SEOHead';
 
 export default function Offers() {
   const [customerPhone, setCustomerPhone] = useState('');
@@ -203,6 +204,11 @@ export default function Offers() {
 
   return (
     <div className="offers-container">
+      <SEOHead
+        title="Offers & Referrals"
+        description="Check out the latest offers at Hungry Times. Use referral codes and get discounts on your online food orders in Kolkata."
+        canonicalPath="/offers"
+      />
       {/* Header */}
       <div className="offers-header">
         <a href="/" className="back-link">← Back to Home</a>

@@ -8,16 +8,18 @@ import UserMenu from './UserMenu';
 import AuthModal from './AuthModal';
 import { useMenuCategory } from '../context/MenuCategoryContext';
 import { useCart } from '../context/CartContext';
-import { 
-  Home, 
-  UtensilsCrossed, 
-  ShoppingCart, 
-  Image as ImageIcon, 
+import {
+  Home,
+  UtensilsCrossed,
+  ShoppingCart,
+  Image as ImageIcon,
   Menu as MenuIcon,
   X,
   MessageSquare,
   Star,
-  Phone
+  Phone,
+  Package,
+  User
 } from 'lucide-react';
 
 const desktopLinks = [
@@ -31,12 +33,9 @@ const desktopLinks = [
 
 const mobileBottomNav = [
   { to: '/home', label: 'Home', icon: Home },
-  { to: '/menu', label: 'Menu', icon: UtensilsCrossed },
-  { to: '/order', label: 'Cart', icon: ShoppingCart, showBadge: true },
-  { to: '/gallery', label: 'Gallery', icon: ImageIcon },
-  { to: '/testimonials', label: 'Reviews', icon: Star },
-  { to: '/contact', label: 'Contact', icon: Phone },
-  { to: '/feedback', label: 'Feedback', icon: MessageSquare },
+  { to: '/menu', label: 'Menu', icon: UtensilsCrossed, showBadge: true },
+  { to: '/orders', label: 'Orders', icon: Package },
+  { to: '/profile', label: 'Account', icon: User },
 ];
 
 export default function Navbar() {
@@ -188,38 +187,36 @@ export default function Navbar() {
         </nav>
       </header>
 
-      {/* MOBILE BOTTOM NAVIGATION */}
+      {/* MOBILE BOTTOM NAVIGATION — 4 tabs */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-neutral-950 border-t border-neutral-800 pb-safe">
-        <div className="flex overflow-x-auto scrollbar-hide">
-          <div className="flex min-w-full">
-            {mobileBottomNav.map(item => {
-              const Icon = item.icon;
-              const active = isActive(item.to);
-              const showBadge = item.showBadge && cartCount > 0;
-              
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className={`flex-1 min-w-[80px] flex flex-col items-center justify-center gap-1 py-2 transition-colors ${
-                    active ? 'text-orange-500' : 'text-neutral-400'
-                  }`}
-                >
-                  <div className="relative">
-                    <Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 2} />
-                    {showBadge && (
-                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                        {Math.min(cartCount, 9)}
-                      </span>
-                    )}
-                  </div>
-                  <span className={`text-[10px] leading-tight text-center ${active ? 'font-semibold' : 'font-normal'}`}>
-                    {item.label}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
+        <div className="flex">
+          {mobileBottomNav.map(item => {
+            const Icon = item.icon;
+            const active = isActive(item.to);
+            const showBadge = item.showBadge && cartCount > 0;
+
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`flex-1 flex flex-col items-center justify-center gap-1 py-2.5 transition-colors ${
+                  active ? 'text-orange-500' : 'text-neutral-400'
+                }`}
+              >
+                <div className="relative">
+                  <Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 2} />
+                  {showBadge && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                      {Math.min(cartCount, 9)}
+                    </span>
+                  )}
+                </div>
+                <span className={`text-[11px] leading-tight text-center ${active ? 'font-semibold' : 'font-normal'}`}>
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
         </div>
       </nav>
 

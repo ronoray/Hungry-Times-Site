@@ -1,84 +1,78 @@
-// src/main.jsx - FIXED: Automatic prompt restored + manual trigger option
-import React from "react";
+// src/main.jsx - Code-split with React.lazy()
+import React, { Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import App from "./App";
 import "./styles/index.css";
 
-// Import pages
-import Menu from "./pages/Menu";
-import Home from "./pages/Home";
-import Gallery from "./pages/Gallery";
-import Feedback from "./pages/Feedback";
-import Contact from "./pages/Contact";
-import Careers from "./pages/Careers";
-import Offers from "./pages/Offers";
-import Testimonials from "./pages/Testimonials";
-import Order from "./pages/Order";
-import Profile from "./pages/Profile";
-import Orders from "./pages/Orders";
-import OrderDetails from "./pages/OrderDetails";
-import OrderSuccess from "./pages/OrderSuccess";
+// Skeleton fallbacks
+import MenuSkeleton from "./components/skeletons/MenuSkeleton";
+import OrderSkeleton from "./components/skeletons/OrderSkeleton";
+import OrdersSkeleton from "./components/skeletons/OrdersSkeleton";
+import DefaultSkeleton from "./components/skeletons/DefaultSkeleton";
+
+// Lazy-loaded pages
+const Menu = lazy(() => import("./pages/Menu"));
+const Home = lazy(() => import("./pages/Home"));
+const Gallery = lazy(() => import("./pages/Gallery"));
+const Feedback = lazy(() => import("./pages/Feedback"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Careers = lazy(() => import("./pages/Careers"));
+const Offers = lazy(() => import("./pages/Offers"));
+const Testimonials = lazy(() => import("./pages/Testimonials"));
+const Order = lazy(() => import("./pages/Order"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Orders = lazy(() => import("./pages/Orders"));
+const OrderDetails = lazy(() => import("./pages/OrderDetails"));
+const OrderSuccess = lazy(() => import("./pages/OrderSuccess"));
+
+// Helper to wrap a lazy component with a specific skeleton
+function withSkeleton(Component, Skeleton) {
+  return (
+    <Suspense fallback={<Skeleton />}>
+      <Component />
+    </Suspense>
+  );
+}
 
 // ============================================================================
-// ✅ Service Worker Registration
+// Service Worker Registration
 // ============================================================================
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/sw.js', { scope: '/' })
       .then((registration) => {
-        console.log('[SW] ✅ Registered from main.jsx:', registration.scope);
-        
-        // Check for updates every 60 seconds
-        setInterval(() => {
-          registration.update();
-        }, 60000);
+        console.log('[SW] Registered:', registration.scope);
+        setInterval(() => registration.update(), 60000);
       })
       .catch((error) => {
-        console.error('[SW] ❌ Registration failed:', error);
+        console.error('[SW] Registration failed:', error);
       });
   });
 }
 
 // ============================================================================
-// ✅ FIXED: PWA Install Prompt - Allows Chrome's automatic prompt
+// PWA Install Prompt
 // ============================================================================
 let deferredPrompt = null;
 
 window.addEventListener('beforeinstallprompt', (e) => {
-  console.log('[PWA] 📱 Install prompt available');
-  
-  // ✅ Just capture the prompt for manual trigger later
-  // DON'T call e.preventDefault() - let Chrome show automatic prompt
   deferredPrompt = e;
-  
-  // Dispatch custom event for components that want to show custom install button
-  window.dispatchEvent(new CustomEvent('pwa-install-available', { 
-    detail: { prompt: e } 
+  window.dispatchEvent(new CustomEvent('pwa-install-available', {
+    detail: { prompt: e }
   }));
-  
-  // Chrome will show the prompt automatically now (restored old behavior)
 });
 
-// Manual trigger function (for custom install buttons if needed)
 window.triggerPWAInstall = async () => {
-  if (!deferredPrompt) {
-    console.warn('[PWA] ⚠️ Install prompt not available');
-    return false;
-  }
-  
+  if (!deferredPrompt) return false;
   deferredPrompt.prompt();
   const result = await deferredPrompt.userChoice;
-  console.log('[PWA] User choice:', result.outcome);
-  
   deferredPrompt = null;
   return result.outcome === 'accepted';
 };
 
-// Listen for successful installation
 window.addEventListener('appinstalled', () => {
-  console.log('[PWA] ✅ App successfully installed');
   deferredPrompt = null;
 });
 
@@ -91,26 +85,32 @@ const router = createBrowserRouter(
       path: "/",
       element: <App />,
       children: [
-        // Default → Menu
         { index: true, element: <Navigate to="/menu" replace /> },
 
-        // Public site pages
-        { path: "menu", element: <Menu /> },
-        { path: "home", element: <Home /> },
-        { path: "order", element: <Order /> },
-        { path: "orders", element: <Orders /> },
-        { path: "orders/:orderId", element: <OrderDetails /> },
-        { path: "my-orders/:orderId", element: <OrderDetails /> },
-        { path: "order-success/:orderId", element: <OrderSuccess /> },
-        { path: "profile", element: <Profile /> },
-        { path: "gallery", element: <Gallery /> },
-        { path: "testimonials", element: <Testimonials /> },
-        { path: "feedback", element: <Feedback /> },
-        { path: "contact", element: <Contact /> },
-        { path: "careers", element: <Careers /> },
-        { path: "offers", element: <Offers /> },
+        // Menu — primary landing, gets its own skeleton
+        { path: "menu", element: withSkeleton(Menu, MenuSkeleton) },
 
-        // Catch-all redirect
+        // Order flow — cart/checkout skeleton
+        { path: "order", element: withSkeleton(Order, OrderSkeleton) },
+        { path: "order-success/:orderId", element: withSkeleton(OrderSuccess, DefaultSkeleton) },
+
+        // Order history
+        { path: "orders", element: withSkeleton(Orders, OrdersSkeleton) },
+        { path: "orders/:orderId", element: withSkeleton(OrderDetails, OrdersSkeleton) },
+        { path: "my-orders/:orderId", element: withSkeleton(OrderDetails, OrdersSkeleton) },
+
+        // Profile
+        { path: "profile", element: withSkeleton(Profile, DefaultSkeleton) },
+
+        // Content pages
+        { path: "home", element: withSkeleton(Home, DefaultSkeleton) },
+        { path: "gallery", element: withSkeleton(Gallery, DefaultSkeleton) },
+        { path: "testimonials", element: withSkeleton(Testimonials, DefaultSkeleton) },
+        { path: "feedback", element: withSkeleton(Feedback, DefaultSkeleton) },
+        { path: "contact", element: withSkeleton(Contact, DefaultSkeleton) },
+        { path: "careers", element: withSkeleton(Careers, DefaultSkeleton) },
+        { path: "offers", element: withSkeleton(Offers, DefaultSkeleton) },
+
         { path: "*", element: <Navigate to="/menu" replace /> },
       ],
     },

@@ -1,36 +1,35 @@
 // site/src/pages/OrderDetails.jsx
-// Customer-facing order tracking page
+// Customer-facing order tracking page with progress bar
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Package, MapPin, CreditCard, Clock, CheckCircle, XCircle, Truck, ChefHat } from 'lucide-react';
+import { useCart } from '../context/CartContext';
+import { useToast } from '../components/Toast';
+import {
+  Package, MapPin, CreditCard, Clock, CheckCircle, XCircle,
+  Truck, ChefHat, ClipboardCheck, RefreshCw, ArrowLeft
+} from 'lucide-react';
 import API_BASE from '../config/api.js';
 
-const STATUS_ICONS = {
-  pending: Clock,
-  confirmed: CheckCircle,
-  preparing: ChefHat,
-  out_for_delivery: Truck,
-  delivered: CheckCircle,
-  cancelled: XCircle,
-  rejected: XCircle
-};
+// Progress bar steps
+const STEPS = [
+  { key: 'pending', label: 'Placed', icon: ClipboardCheck },
+  { key: 'confirmed', label: 'Confirmed', icon: CheckCircle },
+  { key: 'preparing', label: 'Preparing', icon: ChefHat },
+  { key: 'out_for_delivery', label: 'On the Way', icon: Truck },
+  { key: 'delivered', label: 'Delivered', icon: Package },
+];
 
-const STATUS_COLORS = {
-  pending: 'text-yellow-500 bg-yellow-500/10 border-yellow-500/30',
-  confirmed: 'text-blue-500 bg-blue-500/10 border-blue-500/30',
-  preparing: 'text-orange-500 bg-orange-500/10 border-orange-500/30',
-  out_for_delivery: 'text-purple-500 bg-purple-500/10 border-purple-500/30',
-  delivered: 'text-green-500 bg-green-500/10 border-green-500/30',
-  cancelled: 'text-red-500 bg-red-500/10 border-red-500/30',
-  rejected: 'text-red-500 bg-red-500/10 border-red-500/30'
-};
+const STATUS_INDEX = {};
+STEPS.forEach((s, i) => { STATUS_INDEX[s.key] = i; });
 
 export default function OrderDetails() {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  
+  const { addLine, clearCart } = useCart();
+  const showToast = useToast();
+
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -40,9 +39,9 @@ export default function OrderDetails() {
       navigate('/login', { state: { from: `/orders/${orderId}` } });
       return;
     }
-    
+
     fetchOrderDetails();
-    
+
     // Poll for updates every 10 seconds
     const interval = setInterval(fetchOrderDetails, 10000);
     return () => clearInterval(interval);
@@ -52,14 +51,10 @@ export default function OrderDetails() {
     try {
       const token = localStorage.getItem('customerToken');
       const response = await fetch(`${API_BASE}/customer/orders/${orderId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch order details');
-      }
+      if (!response.ok) throw new Error('Failed to fetch order details');
 
       const data = await response.json();
       setOrder(data.order);
@@ -72,19 +67,31 @@ export default function OrderDetails() {
     }
   };
 
-  const formatStatus = (status) => {
-    return status
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+  const parseItems = (itemsJson) => {
+    try { return JSON.parse(itemsJson || '[]'); }
+    catch { return []; }
   };
 
-  const parseItems = (itemsJson) => {
-    try {
-      return JSON.parse(itemsJson || '[]');
-    } catch {
-      return [];
-    }
+  const handleReorder = () => {
+    const items = parseItems(order.items_json);
+    clearCart();
+    items.forEach(item => {
+      addLine({
+        itemId: item.itemId,
+        itemName: item.itemName,
+        name: item.itemName,
+        basePrice: item.basePrice || 0,
+        variants: (item.variants || []).map(v => ({
+          id: v.id, name: v.name, priceDelta: v.priceDelta || v.price || 0,
+        })),
+        addons: (item.addons || []).map(a => ({
+          id: a.id, name: a.name, priceDelta: a.priceDelta || a.price || 0,
+        })),
+        qty: item.quantity || 1,
+      });
+    });
+    showToast('Items added to cart', 'success');
+    navigate('/order');
   };
 
   if (loading) {
@@ -112,8 +119,10 @@ export default function OrderDetails() {
     );
   }
 
-  const StatusIcon = STATUS_ICONS[order.status] || Clock;
   const items = parseItems(order.items_json);
+  const isCancelled = order.status === 'cancelled' || order.status === 'rejected';
+  const currentStepIdx = STATUS_INDEX[order.status] ?? -1;
+  const isActive = !isCancelled && currentStepIdx >= 0;
 
   return (
     <div className="min-h-screen bg-neutral-900 py-8 px-4">
@@ -121,137 +130,168 @@ export default function OrderDetails() {
         {/* Header */}
         <div className="mb-6">
           <button
-            onClick={() => navigate('/')}
-            className="text-orange-500 hover:text-orange-400 mb-4"
+            onClick={() => navigate('/orders')}
+            className="text-orange-500 hover:text-orange-400 mb-4 flex items-center gap-1"
           >
-            ← Back to Home
+            <ArrowLeft className="w-4 h-4" /> My Orders
           </button>
-          <h1 className="text-3xl font-bold text-white mb-2">Order #{order.id}</h1>
-          <p className="text-neutral-400">
-            Placed on {new Date(order.created_at).toLocaleString()}
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-1">Order #{order.id}</h1>
+              <p className="text-neutral-400 text-sm">
+                {new Date(order.created_at).toLocaleString('en-IN', {
+                  day: 'numeric', month: 'short', year: 'numeric',
+                  hour: '2-digit', minute: '2-digit'
+                })}
+              </p>
+            </div>
+            {/* Reorder button */}
+            {(order.status === 'delivered' || isCancelled) && (
+              <button
+                onClick={handleReorder}
+                className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg text-sm"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Order Again
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Status Card */}
-        <div className={`rounded-lg border-2 p-6 mb-6 ${STATUS_COLORS[order.status]}`}>
-          <div className="flex items-center gap-3 mb-2">
-            <StatusIcon className="w-8 h-8" />
-            <h2 className="text-2xl font-bold">{formatStatus(order.status)}</h2>
+        {/* ============================================================ */}
+        {/* PROGRESS BAR (Domino's-style)                                */}
+        {/* ============================================================ */}
+        {isActive && (
+          <div className="bg-neutral-800 rounded-xl p-6 mb-6">
+            {/* ETA */}
+            {order.status !== 'delivered' && (
+              <div className="text-center mb-6">
+                <p className="text-3xl font-bold text-white">
+                  {order.eta_min && order.eta_max
+                    ? `${order.eta_min}-${order.eta_max} min`
+                    : '30-45 min'}
+                </p>
+                <p className="text-neutral-400 text-sm">Estimated delivery time</p>
+              </div>
+            )}
+
+            {/* Steps */}
+            <div className="flex items-center justify-between relative">
+              {/* Connecting line (behind steps) */}
+              <div className="absolute top-5 left-8 right-8 h-0.5 bg-neutral-700" />
+              <div
+                className="absolute top-5 left-8 h-0.5 bg-green-500 transition-all duration-500"
+                style={{
+                  width: `${Math.max(0, currentStepIdx / (STEPS.length - 1)) * (100 - 16)}%`
+                }}
+              />
+
+              {STEPS.map((step, i) => {
+                const isCompleted = i < currentStepIdx;
+                const isCurrent = i === currentStepIdx;
+                const Icon = step.icon;
+
+                return (
+                  <div key={step.key} className="flex flex-col items-center relative z-10">
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
+                        isCompleted
+                          ? 'bg-green-500 border-green-500 text-white'
+                          : isCurrent
+                            ? 'bg-green-500 border-green-400 text-white animate-pulse'
+                            : 'bg-neutral-800 border-neutral-600 text-neutral-500'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <span className={`text-[11px] mt-1.5 font-medium ${
+                      isCompleted || isCurrent ? 'text-green-400' : 'text-neutral-500'
+                    }`}>
+                      {step.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <p className="text-sm opacity-90">
-            {order.status === 'pending' && 'Your order is being reviewed by the restaurant'}
-            {order.status === 'confirmed' && '🎉 Your order has been accepted by the restaurant! Estimated delivery: 30-40 minutes'}
-            {order.status === 'preparing' && 'Our chefs are preparing your delicious meal'}
-            {order.status === 'out_for_delivery' && 'Your order is on its way!'}
-            {order.status === 'delivered' && 'Your order has been delivered. Enjoy!'}
-            {order.status === 'cancelled' && 'This order has been cancelled'}
-            {order.status === 'rejected' && 'This order was rejected. Please contact support.'}
-          </p>
-        </div>
+        )}
+
+        {/* Cancelled/Rejected banner */}
+        {isCancelled && (
+          <div className="bg-red-500/10 border-2 border-red-500/30 rounded-xl p-6 mb-6 text-center">
+            <XCircle className="w-12 h-12 text-red-500 mx-auto mb-2" />
+            <h2 className="text-xl font-bold text-red-500">
+              Order {order.status === 'cancelled' ? 'Cancelled' : 'Rejected'}
+            </h2>
+            {order.cancellation_reason && (
+              <p className="text-red-400 mt-1 text-sm">{order.cancellation_reason}</p>
+            )}
+          </div>
+        )}
 
         {/* Order Details Grid */}
-        <div className="grid md:grid-cols-2 gap-6 mb-6">
-          {/* Customer Info */}
-          <div className="bg-neutral-800 rounded-lg p-6">
-            <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-              <Package className="w-5 h-5" />
-              Customer Details
-            </h3>
-            <div className="space-y-2 text-sm">
-              <div>
-                <span className="text-neutral-400">Name:</span>
-                <span className="text-white ml-2">{order.customer_name}</span>
-              </div>
-              <div>
-                <span className="text-neutral-400">Phone:</span>
-                <span className="text-white ml-2">{order.phone}</span>
-              </div>
-              {order.email && (
-                <div>
-                  <span className="text-neutral-400">Email:</span>
-                  <span className="text-white ml-2">{order.email}</span>
-                </div>
+        <div className="grid md:grid-cols-2 gap-4 mb-6">
+          {/* Delivery Address */}
+          {order.delivery_address && (
+            <div className="bg-neutral-800 rounded-lg p-5">
+              <h3 className="text-white font-bold mb-2 flex items-center gap-2 text-sm">
+                <MapPin className="w-4 h-4 text-orange-500" />
+                Delivery Address
+              </h3>
+              <p className="text-neutral-300 text-sm">{order.delivery_address}</p>
+              {order.delivery_instructions && (
+                <p className="text-neutral-500 text-xs mt-1 italic">
+                  Note: {order.delivery_instructions}
+                </p>
               )}
             </div>
-          </div>
+          )}
 
           {/* Payment Info */}
-          <div className="bg-neutral-800 rounded-lg p-6">
-            <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-              <CreditCard className="w-5 h-5" />
+          <div className="bg-neutral-800 rounded-lg p-5">
+            <h3 className="text-white font-bold mb-2 flex items-center gap-2 text-sm">
+              <CreditCard className="w-4 h-4 text-orange-500" />
               Payment
             </h3>
-            <div className="space-y-2 text-sm">
-              <div>
-                <span className="text-neutral-400">Method:</span>
-                <span className="text-white ml-2 uppercase">{order.payment_mode}</span>
-              </div>
-              <div>
-                <span className="text-neutral-400">Status:</span>
-                <span className={`ml-2 ${order.payment_status === 'paid' ? 'text-green-500' : 'text-yellow-500'}`}>
-                  {order.payment_status === 'paid' ? 'Paid' : 'Pending'}
-                </span>
-              </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-neutral-400 uppercase">{order.payment_mode}</span>
+              <span className={order.payment_status === 'paid' ? 'text-green-500 font-medium' : 'text-yellow-500'}>
+                {order.payment_status === 'paid' ? 'Paid' : 'Pending'}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Delivery Address */}
-        {order.delivery_address && (
-          <div className="bg-neutral-800 rounded-lg p-6 mb-6">
-            <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-              <MapPin className="w-5 h-5" />
-              Delivery Address
-            </h3>
-            <p className="text-white">{order.delivery_address}</p>
-          </div>
-        )}
-
-        {/* Special Instructions */}
-        {order.delivery_instructions && (
-          <div className="bg-neutral-800 rounded-lg p-6 mb-6">
-            <h3 className="text-white font-bold mb-4">Special Instructions</h3>
-            <p className="text-neutral-300 italic">"{order.delivery_instructions}"</p>
-          </div>
-        )}
-
         {/* Order Items */}
-        <div className="bg-neutral-800 rounded-lg p-6 mb-6">
-          <h3 className="text-white font-bold mb-4">Order Items</h3>
+        <div className="bg-neutral-800 rounded-lg p-5 mb-6">
+          <h3 className="text-white font-bold mb-3 text-sm">Order Items</h3>
           <div className="space-y-3">
             {items.map((item, idx) => (
               <div key={idx} className="flex justify-between items-start border-b border-neutral-700 pb-3 last:border-0">
                 <div className="flex-1">
-                  <p className="text-white font-medium">{item.itemName}</p>
-                  <p className="text-neutral-400 text-sm">Quantity: {item.quantity}</p>
-                  
-                  {/* Variants */}
-                  {item.variants && item.variants.length > 0 && (
-                    <div className="mt-1 text-xs text-neutral-500">
-                      Variants: {item.variants.map(v => v.name).join(', ')}
-                    </div>
+                  <p className="text-white font-medium text-sm">{item.itemName}</p>
+                  <p className="text-neutral-500 text-xs">Qty: {item.quantity}</p>
+                  {item.variants?.length > 0 && (
+                    <p className="text-neutral-500 text-xs">
+                      {item.variants.map(v => v.name).join(', ')}
+                    </p>
                   )}
-                  
-                  {/* Addons */}
-                  {item.addons && item.addons.length > 0 && (
-                    <div className="mt-1 text-xs text-neutral-500">
-                      Addons: {item.addons.map(a => a.name).join(', ')}
-                    </div>
+                  {item.addons?.length > 0 && (
+                    <p className="text-neutral-500 text-xs">
+                      + {item.addons.map(a => a.name).join(', ')}
+                    </p>
                   )}
                 </div>
-                <div className="text-right">
-                  <p className="text-white font-bold">₹{item.total}</p>
-                  <p className="text-neutral-400 text-sm">₹{item.itemPrice} × {item.quantity}</p>
-                </div>
+                <span className="text-white font-medium text-sm">₹{item.total}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Order Summary */}
-        <div className="bg-neutral-800 rounded-lg p-6">
-          <h3 className="text-white font-bold mb-4">Order Summary</h3>
-          <div className="space-y-2">
+        <div className="bg-neutral-800 rounded-lg p-5 mb-6">
+          <h3 className="text-white font-bold mb-3 text-sm">Order Summary</h3>
+          <div className="space-y-1.5 text-sm">
             <div className="flex justify-between text-neutral-400">
               <span>Subtotal</span>
               <span>₹{order.subtotal}</span>
@@ -262,49 +302,59 @@ export default function OrderDetails() {
                 <span>-₹{order.discount}</span>
               </div>
             )}
+            {order.delivery_fee > 0 && (
+              <div className="flex justify-between text-neutral-400">
+                <span>Delivery</span>
+                <span>₹{order.delivery_fee}</span>
+              </div>
+            )}
+            {(order.delivery_fee === 0 || order.delivery_fee == null) && (
+              <div className="flex justify-between text-neutral-400">
+                <span>Delivery</span>
+                <span className="text-green-400">FREE</span>
+              </div>
+            )}
             <div className="flex justify-between text-neutral-400">
-              <span>Tax (GST)</span>
+              <span>GST</span>
               <span>₹{order.tax}</span>
             </div>
-            <div className="border-t border-neutral-700 pt-2 mt-2 flex justify-between text-white font-bold text-xl">
+            <div className="border-t border-neutral-700 pt-2 mt-2 flex justify-between text-white font-bold text-lg">
               <span>Total</span>
               <span className="text-orange-500">₹{order.total}</span>
             </div>
           </div>
         </div>
 
-        {/* Cancel Button (only for pending orders) */}
-        {order.status === 'pending' && (
-          <div className="mt-6">
-            <button
-              onClick={async () => {
-                if (!confirm('Are you sure you want to cancel this order?')) return;
-                
-                try {
-                  const token = localStorage.getItem('customerToken');
-                  const response = await fetch(`${API_BASE}/customer/orders/${orderId}/cancel`, {
-                    method: 'POST',
-                    headers: {
-                      'Authorization': `Bearer ${token}`,
-                      'Content-Type': 'application/json'
-                    }
-                  });
+        {/* Cancel Button (only for pending/confirmed orders) */}
+        {(order.status === 'pending' || order.status === 'confirmed') && (
+          <button
+            onClick={async () => {
+              if (!confirm('Are you sure you want to cancel this order?')) return;
 
-                  if (response.ok) {
-                    alert('Order cancelled successfully');
-                    fetchOrderDetails();
-                  } else {
-                    alert('Failed to cancel order');
+              try {
+                const token = localStorage.getItem('customerToken');
+                const response = await fetch(`${API_BASE}/customer/orders/${orderId}/cancel`, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
                   }
-                } catch (err) {
-                  alert('Error cancelling order');
+                });
+
+                if (response.ok) {
+                  showToast('Order cancelled', 'success');
+                  fetchOrderDetails();
+                } else {
+                  showToast('Failed to cancel order', 'error');
                 }
-              }}
-              className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg"
-            >
-              Cancel Order
-            </button>
-          </div>
+              } catch (err) {
+                showToast('Error cancelling order', 'error');
+              }
+            }}
+            className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg mb-6"
+          >
+            Cancel Order
+          </button>
         )}
       </div>
     </div>

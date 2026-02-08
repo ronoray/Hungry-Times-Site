@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { BRAND } from '../lib/constants'
+import SEOHead from '../components/SEOHead'
 
 import API_BASE from '../config/api';
 
@@ -64,6 +65,12 @@ export default function Contact() {
   }
 
   return (
+    <>
+    <SEOHead
+      title="Contact Us"
+      description="Get in touch with Hungry Times. Visit us at Selimpur, Ballygunge, Kolkata or call +91-8420822919. Dine-in, takeaway & delivery."
+      canonicalPath="/contact"
+    />
     <section className="container-section py-12">
       <h2 className="text-2xl font-semibold mb-6">Contact Us</h2>
       
@@ -229,5 +236,6 @@ export default function Contact() {
         </div>
       </div>
     </section>
+    </>
   )
 }
