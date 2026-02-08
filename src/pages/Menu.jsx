@@ -448,7 +448,7 @@ export default function Menu() {
     // Apply veg filter
     const filtered = new Map();
     base.forEach((items, subId) => {
-      const vegItems = items.filter(it => it.is_veg === 1 || it.is_veg === true);
+      const vegItems = items.filter(it => it.isVeg === true);
       if (vegItems.length > 0) filtered.set(subId, vegItems);
     });
     return filtered;
@@ -618,7 +618,7 @@ export default function Menu() {
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-0.5">
-                <VegDot isVeg={it.is_veg} />
+                <VegDot isVeg={it.isVeg} />
                 <h3 className="item-name">{it.name}</h3>
               </div>
               <span
@@ -643,7 +643,7 @@ export default function Menu() {
           <div className="item-header">
             <div className="item-name-wrapper">
               <div className="flex items-center gap-1.5">
-                <VegDot isVeg={it.is_veg} />
+                <VegDot isVeg={it.isVeg} />
                 <h3 className="item-name">{it.name}</h3>
               </div>
             </div>
