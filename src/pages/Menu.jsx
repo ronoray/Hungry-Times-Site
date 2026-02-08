@@ -1275,6 +1275,20 @@ export default function Menu() {
                       ))}
                     </div>
                   </div>
+                ) : vegOnly ? (
+                  <div className="search-empty-state">
+                    <span className="inline-flex items-center justify-center w-12 h-12 border-2 border-green-500 rounded-lg mb-2">
+                      <span className="w-5 h-5 rounded-full bg-green-500" />
+                    </span>
+                    <h3>No veg items found in this category</h3>
+                    <p>Try another category or turn off the veg filter</p>
+                    <button
+                      onClick={() => setVegOnly(false)}
+                      className="mt-3 px-4 py-2 text-sm bg-neutral-800 hover:bg-neutral-700 rounded-full text-neutral-300 border border-neutral-700"
+                    >
+                      Show all items
+                    </button>
+                  </div>
                 ) : null}
               </section>
             </div>
