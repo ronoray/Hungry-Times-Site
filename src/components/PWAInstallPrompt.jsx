@@ -9,51 +9,50 @@ import { Download, X } from 'lucide-react';
 export default function PWAInstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
-    console.log('[PWA Install Debug] 🔧 Component mounted');
-    
     // Check session storage immediately
     const dismissed = sessionStorage.getItem('pwa-prompt-dismissed');
-    console.log('[PWA Install Debug] 📦 Session storage check:', dismissed ? 'DISMISSED' : 'not dismissed');
-    
+
     // Check if already installed
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    console.log('[PWA Install Debug] 📱 Standalone mode:', isStandalone);
-    
-    if (isStandalone) {
-      console.log('[PWA Install Debug] ⚠️ Already installed - won\'t show banner');
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+    if (isStandalone || dismissed) {
       return;
     }
 
-    // Listen for the install prompt event
-    const handler = (e) => {
-      console.log('[PWA Install Debug] ✅ beforeinstallprompt event FIRED!');
-      setDeferredPrompt(e);
-      
-      // Show custom prompt after 5 seconds
-      console.log('[PWA Install Debug] ⏱️ Setting timeout for 5 seconds...');
-      setTimeout(() => {
-        console.log('[PWA Install Debug] ⏰ Timeout complete! Checking conditions...');
-        
-        // Re-check session storage
+    // Detect iOS (beforeinstallprompt NEVER fires on iOS)
+    const ua = navigator.userAgent;
+    const iosDevice = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    if (iosDevice) {
+      setIsIOS(true);
+      // Show iOS install prompt after 5 seconds
+      const timer = setTimeout(() => {
         const nowDismissed = sessionStorage.getItem('pwa-prompt-dismissed');
-        console.log('[PWA Install Debug] 📦 Session storage re-check:', nowDismissed ? 'DISMISSED - WON\'T SHOW' : 'not dismissed - will show');
-        
-        if (nowDismissed) {
-          console.log('[PWA Install Debug] ❌ BLOCKED: Session storage has dismissal timestamp');
-          return;
+        if (!nowDismissed) {
+          setShowPrompt(true);
         }
-        
-        console.log('[PWA Install Debug] 🎯 All checks passed - showing banner NOW!');
-        setShowPrompt(true);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+
+    // Android/Desktop: Listen for the install prompt event
+    const handler = (e) => {
+      setDeferredPrompt(e);
+
+      setTimeout(() => {
+        const nowDismissed = sessionStorage.getItem('pwa-prompt-dismissed');
+        if (!nowDismissed) {
+          setShowPrompt(true);
+        }
       }, 5000);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
 
     return () => {
-      console.log('[PWA Install Debug] 🧹 Component unmounting');
       window.removeEventListener('beforeinstallprompt', handler);
     };
   }, []);
@@ -64,32 +63,33 @@ export default function PWAInstallPrompt() {
   }, [showPrompt]);
 
   const handleInstall = async () => {
-    console.log('[PWA Install Debug] 🖱️ Install button clicked');
-    
-    if (!deferredPrompt) {
-      console.warn('[PWA Install Debug] ⚠️ No deferred prompt available');
-      alert('To install this app:\n\n1. Tap the menu (⋮) at top-right\n2. Select "Add to Home screen" or "Install app"\n3. Tap "Install" to confirm');
+    if (isIOS) {
+      // iOS: Show manual instructions since beforeinstallprompt doesn't exist
+      alert(
+        'To install Hungry Times on iPhone/iPad:\n\n' +
+        '1. Tap the Share button (square with arrow) at the bottom of Safari\n' +
+        '2. Scroll down and tap "Add to Home Screen"\n' +
+        '3. Tap "Add" to confirm\n\n' +
+        'This gives you quick access and push notifications!'
+      );
       setShowPrompt(false);
       return;
     }
 
-    console.log('[PWA Install Debug] 📱 Showing browser install prompt...');
-    
-    // Show the prompt
-    deferredPrompt.prompt();
-    
-    // Wait for user choice
-    const result = await deferredPrompt.userChoice;
-    
-    console.log('[PWA Install Debug] 👤 User choice:', result.outcome);
-    
-    if (result.outcome === 'accepted') {
-      console.log('[PWA Install Debug] ✅ User ACCEPTED installation');
-    } else {
-      console.log('[PWA Install Debug] ❌ User DECLINED installation');
+    if (!deferredPrompt) {
+      alert(
+        'To install this app:\n\n' +
+        '1. Tap the menu (\u22EE) at top-right\n' +
+        '2. Select "Install app" or "Add to Home screen"\n' +
+        '3. Tap "Install" to confirm'
+      );
+      setShowPrompt(false);
+      return;
     }
-    
-    // Clear the prompt
+
+    deferredPrompt.prompt();
+    const result = await deferredPrompt.userChoice;
+
     setDeferredPrompt(null);
     setShowPrompt(false);
   };

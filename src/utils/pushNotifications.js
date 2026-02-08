@@ -6,6 +6,29 @@ import API_BASE from '../config/api.js';
 /**
  * Request push notification permission and subscribe
  */
+/**
+ * Detect if running on iOS Safari (not PWA mode)
+ */
+export function isIOSSafari() {
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+  return isIOS && !isStandalone;
+}
+
+/**
+ * Check if push notifications are supported on this platform
+ */
+export function isPushSupported() {
+  if (!('serviceWorker' in navigator)) return false;
+  if (!('PushManager' in window)) return false;
+
+  // iOS Safari (not PWA) doesn't support Web Push
+  if (isIOSSafari()) return false;
+
+  return true;
+}
+
 export async function subscribeToPush() {
   try {
     // Check if service workers are supported
@@ -17,6 +40,12 @@ export async function subscribeToPush() {
     // Check if push is supported
     if (!('PushManager' in window)) {
       console.warn('⚠️ Push notifications not supported');
+      return false;
+    }
+
+    // iOS Safari (not installed as PWA) does not support Web Push
+    if (isIOSSafari()) {
+      console.warn('⚠️ Push not available on iOS Safari. Install app to home screen first.');
       return false;
     }
 

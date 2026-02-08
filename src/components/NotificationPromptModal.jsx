@@ -27,34 +27,42 @@ export default function NotificationPromptModal() {
   const checkShouldShowPrompt = () => {
     // Don't show if notifications not supported
     if (!('Notification' in window)) {
-      console.log('[NotificationModal] Notifications not supported');
+      return false;
+    }
+
+    // iOS Safari (not PWA) doesn't support push - don't show misleading prompt
+    const ua = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+    if (isIOS && !isStandalone) {
+      console.log('[NotificationModal] iOS Safari (not PWA) - skipping push prompt');
       return false;
     }
 
     // Don't show if already granted
     if (Notification.permission === 'granted') {
-      console.log('[NotificationModal] Permission already granted');
       return false;
     }
 
     // Don't show if denied (user explicitly blocked)
     if (Notification.permission === 'denied') {
-      console.log('[NotificationModal] Permission denied by user');
       return false;
     }
 
     // Check if user dismissed in last 24 hours
-    const lastDismissed = localStorage.getItem('notificationModalDismissed');
-    if (lastDismissed) {
-      const hoursSinceDismiss = (Date.now() - parseInt(lastDismissed)) / (1000 * 60 * 60);
-      if (hoursSinceDismiss < 24) {
-        console.log('[NotificationModal] Dismissed recently, not showing');
-        return false;
+    try {
+      const lastDismissed = localStorage.getItem('notificationModalDismissed');
+      if (lastDismissed) {
+        const hoursSinceDismiss = (Date.now() - parseInt(lastDismissed)) / (1000 * 60 * 60);
+        if (hoursSinceDismiss < 24) {
+          return false;
+        }
       }
+    } catch {
+      // localStorage may fail in iOS Private Browsing
+      return false;
     }
 
-    // Show if permission is 'default' (not yet asked)
-    console.log('[NotificationModal] Showing prompt - permission:', Notification.permission);
     return Notification.permission === 'default';
   };
 

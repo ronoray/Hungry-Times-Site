@@ -101,11 +101,12 @@ export default function Order() {
   // ============================================================================
   // FETCH ADDRESSES ON LOAD
   // ============================================================================
+  // Refetch addresses when auth state changes OR when customer profile updates (e.g. after registration)
   useEffect(() => {
     if (isAuthenticated) {
       fetchAddresses();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, customer?.id, customer?.address]);
 
   // ============================================================================
   // FETCH ACTIVE OFFERS ON LOAD

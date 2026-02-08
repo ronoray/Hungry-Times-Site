@@ -35,13 +35,26 @@ html, body, #root { height: 100%; }
 }
 
 @media (max-width: 767px) {
-  /* Add bottom padding to body for bottom nav */
+  /* Add bottom padding to body for bottom nav + iOS safe area */
   body {
-    padding-bottom: 5rem !important;
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px)) !important;
   }
-  
-  /* Ensure bottom nav is always visible */
+
+  /* Ensure bottom nav is always visible and respects iOS home indicator */
   nav.fixed.bottom-0 {
     z-index: 9999 !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* Touch behavior - prevent double-tap zoom on interactive elements */
+button, a, [role="button"], input[type="button"], input[type="submit"] {
+  touch-action: manipulation;
+}
+
+/* iOS safe-area helpers */
+@supports (padding: max(0px)) {
+  .safe-area-bottom {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
   }
 }
