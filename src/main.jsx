@@ -36,6 +36,23 @@ function withSkeleton(Component, Skeleton) {
 }
 
 // ============================================================================
+// Hard refresh when app reopened after 60+ seconds hidden
+// ============================================================================
+(function () {
+  let hiddenAt = null;
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      hiddenAt = Date.now();
+    } else if (document.visibilityState === 'visible' && hiddenAt) {
+      if (Date.now() - hiddenAt > 60000) {
+        window.location.reload();
+      }
+      hiddenAt = null;
+    }
+  });
+})();
+
+// ============================================================================
 // Service Worker Registration
 // ============================================================================
 if ('serviceWorker' in navigator) {
