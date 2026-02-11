@@ -1,0 +1,138 @@
+name: Deploy Website
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "src/**"
+      - "public/**"
+      - "index.html"
+      - "package.json"
+      - "package-lock.json"
+      - "vite.config.*"
+      - "tailwind.config.*"
+      - ".github/workflows/deploy.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Trigger droplet deploy webhook
+        env:
+          WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+          WEBHOOK_KEY: ${{ secrets.DEPLOY_WEBHOOK_KEY }}
+        run: |
+          set -Eeuo pipefail
+
+          if [[ -z "${WEBHOOK_URL:-}" || -z "${WEBHOOK_KEY:-}" ]]; then
+            echo "Missing required secrets: DEPLOY_WEBHOOK_URL and/or DEPLOY_WEBHOOK_KEY"
+            exit 1
+          fi
+
+          body=$(jq -n \
+            --arg repo "$GITHUB_REPOSITORY" \
+            --arg sha "$GITHUB_SHA" \
+            --arg ref "$GITHUB_REF" \
+            '{repo:$repo, sha:$sha, ref:$ref}')
+
+          sig_hex=$(printf '%s' "$body" \
+            | openssl dgst -sha256 -hmac "${WEBHOOK_KEY}" -hex \
+            | awk '{print $NF}')
+          sig="sha256=${sig_hex}"
+
+          echo "Triggering website deployment webhook..."
+          code=$(curl -sS -o /tmp/deploy.out -w '%{http_code}' \
+            -X POST "$WEBHOOK_URL" \
+            -H 'Content-Type: application/json' \
+            -H "X-Hub-Signature-256: $sig" \
+            --data "$body")
+
+          echo "HTTP $code"
+          cat /tmp/deploy.out || true
+          echo ""
+
+          case "$code" in
+            200|202)
+              echo "Webhook accepted - deployment started"
+              ;;
+            429)
+              echo "Deploy already in progress on server (HTTP 429)."
+              ;;
+            *)
+              echo "Webhook failed with HTTP $code"
+              exit 1
+              ;;
+          esac
+
+      - name: Wait for deployment (poll website version)
+        shell: bash
+        env:
+          VERSION_URL: https://hungrytimes.in/version.json
+          EXPECTED_SHA: ${{ github.sha }}
+          TIMEOUT_SEC: 600
+        run: |
+          set -Eeuo pipefail
+          echo "Watching for SHA=${EXPECTED_SHA}"
+          echo "Timeout: ${TIMEOUT_SEC}s"
+
+          get_sha() {
+            curl -fsS --max-time 10 "$VERSION_URL" 2>/dev/null \
+              | sed -n 's/.*"sha"[: ]*"\([^"]*\)".*/\1/p' || echo ""
+          }
+
+          start=$(date +%s)
+          attempt=0
+
+          while :; do
+            attempt=$((attempt + 1))
+            elapsed=$(($(date +%s) - start))
+
+            live_sha="$(get_sha)"
+
+            if (( attempt % 10 == 0 )); then
+              echo "[${elapsed}s] Still waiting... (sha=${live_sha:-none})"
+            fi
+
+            if [[ -n "$live_sha" && "$live_sha" == "$EXPECTED_SHA" ]]; then
+              echo "Website reports deployed SHA: $live_sha"
+              echo "Deployment completed in ${elapsed}s"
+              break
+            fi
+
+            if (( elapsed > TIMEOUT_SEC )); then
+              echo ""
+              echo "Timeout: Deployment verification did not see EXPECTED_SHA within ${TIMEOUT_SEC}s"
+              echo "Last SHA seen: ${live_sha:-none}"
+              echo "Expected SHA: ${EXPECTED_SHA}"
+              exit 1
+            fi
+
+            sleep 5
+          done
+
+      - name: Summary
+        if: success()
+        run: |
+          {
+            echo "### Website Deployment Verified"
+            echo ""
+            echo "- **Commit:** \`$GITHUB_SHA\`"
+            echo "- **Verified via:** /version.json"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Failure summary
+        if: failure()
+        run: |
+          {
+            echo "### Website Deployment Failed"
+            echo ""
+            echo "- **Commit:** \`$GITHUB_SHA\`"
+            echo "- Check the logs above for details."
+          } >> "$GITHUB_STEP_SUMMARY"
