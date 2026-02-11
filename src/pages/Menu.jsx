@@ -13,6 +13,7 @@ import SEOHead from '../components/SEOHead';
 import KitchenStatus from '../components/KitchenStatus';
 
 import API_BASE from "../config/api";
+import { trackAddToCart, trackSearch, trackPhoneClick, trackWhatsAppClick, trackCtaClick, trackViewItem, trackFavoriteToggle } from "../utils/analytics";
 
 // Description length limits
 const DESC_MAX_RECOMMENDED = 40;  // compact cards - carousel
@@ -728,6 +729,7 @@ export default function Menu() {
                   onClick={() => {
                     setSelectedItem(it);
                     setShowAddToCartModal(true);
+                    trackViewItem(it);
                   }}
                   className="add-to-cart-btn"
                   disabled={isDisabled}
@@ -798,6 +800,7 @@ export default function Menu() {
                 onClick={() => {
                   if (!isDisabled) {
                     incrementSimpleItem(it);
+                    trackAddToCart(it, 1);
                   }
                 }}
                 className="add-to-cart-btn"
@@ -949,7 +952,7 @@ export default function Menu() {
                   
                   {/* Secondary CTAs - Call & WhatsApp */}
                   <div className="cta-secondary-group">
-                    <a href="tel:+918420822919" className="cta-button cta-button-secondary">
+                    <a href="tel:+918420822919" className="cta-button cta-button-secondary" onClick={() => trackPhoneClick('hero_cta')}>
                       📞 Call
                     </a>
                     <a
@@ -957,6 +960,7 @@ export default function Menu() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="cta-button cta-button-secondary cta-button-whatsapp-secondary"
+                      onClick={() => trackWhatsAppClick('hero_cta')}
                     >
                       💬 WhatsApp
                     </a>
@@ -983,6 +987,7 @@ export default function Menu() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && searchQuery.trim()) {
                     saveRecentSearch(searchQuery);
+                    trackSearch(searchQuery.trim());
                     e.target.blur();
                   }
                 }}

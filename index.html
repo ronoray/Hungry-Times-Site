@@ -33,6 +33,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png" />
     <link rel="manifest" href="/site.webmanifest" />
 
+    <meta name="google-site-verification" content="yaxWaqk_YgbSK3tJyr9TD5zGWj83M-sEqD3pOTnHJSs" />
     <meta name="msapplication-config" content="/browserconfig.xml" />
     <meta name="msapplication-TileColor" content="#0B0B0B" />
     <meta name="theme-color" content="#0B0B0B" />
@@ -57,9 +58,9 @@
             s.src='https://www.googletagmanager.com/gtag/js?id='+d.measurementId;
             document.head.appendChild(s);
             window.dataLayer=window.dataLayer||[];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js',new Date());
-            gtag('config',d.measurementId);
+            window.gtag=function(){dataLayer.push(arguments);};
+            window.gtag('js',new Date());
+            window.gtag('config',d.measurementId);
           })
           .catch(function(){});
       }

@@ -17,6 +17,7 @@ import { loadRazorpay } from "../utils/scriptLoaders";
 import AuthModal from "../components/AuthModal";
 import { ShoppingCart, MapPin, MessageSquare, Loader, Plus, Check, Edit2, Trash2, X, AlertCircle, Minus, Truck } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { trackBeginCheckout, trackPurchase } from "../utils/analytics";
 
 import API_BASE from '../config/api.js';
 
@@ -492,6 +493,7 @@ export default function Order() {
 
     setPaymentProcessing(true);
     setPaymentError("");
+    trackBeginCheckout(lines, finalTotal);
 
     try {
       const token = localStorage.getItem("customerToken");
@@ -595,6 +597,7 @@ export default function Order() {
             const result = await verifyResponse.json();
             
             console.log('✅ Payment verified! Order created:', result.orderId);
+            trackPurchase(result.orderId, finalTotal, 'razorpay', lines);
 
             // ✅ Navigate to success page
             clearCart();
@@ -720,7 +723,8 @@ export default function Order() {
       const data = await response.json();
       
       console.log('✅ COD Order created:', data.orderId);
-      
+      trackPurchase(data.orderId, finalTotal, 'cod', lines);
+
       // ✅ Navigate to success page
       clearCart();
       navigate(`/order-success/${data.orderId}?type=cod`);

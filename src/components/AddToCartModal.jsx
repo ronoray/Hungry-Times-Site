@@ -8,6 +8,7 @@
 // ✅ Mobile responsive
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { trackAddToCart } from "../utils/analytics";
 import { X, Plus, Minus, ShoppingCart, AlertCircle } from "lucide-react";
 
 const CDN_BASE = import.meta.env.VITE_CDN_BASE || "http://localhost:5000";
@@ -268,6 +269,7 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
       qty: quantity,
     };
 
+    trackAddToCart(item, quantity);
     onAdd(lineItem);
     onClose();
   };

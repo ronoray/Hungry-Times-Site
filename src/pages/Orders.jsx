@@ -7,6 +7,7 @@ import { useCart } from '../context/CartContext';
 import { useToast } from '../components/Toast';
 import { Package, Clock, CheckCircle, XCircle, Truck, ChefHat, AlertCircle, RefreshCw, Filter } from 'lucide-react';
 import API_BASE from '../config/api.js';
+import { trackReorder } from '../utils/analytics';
 
 // Date grouping helper
 const getDateGroup = (dateString) => {
@@ -97,6 +98,7 @@ export default function Orders() {
         qty: item.quantity || 1,
       });
     });
+    trackReorder(order.id);
     showToast('Items added to cart', 'success');
     navigate('/order');
   };

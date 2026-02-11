@@ -8,6 +8,7 @@ import UserMenu from './UserMenu';
 import AuthModal from './AuthModal';
 import { useMenuCategory } from '../context/MenuCategoryContext';
 import { useCart } from '../context/CartContext';
+import { trackPhoneClick } from '../utils/analytics';
 import {
   Home,
   UtensilsCrossed,
@@ -101,9 +102,10 @@ export default function Navbar() {
             {/* Right Side Actions */}
             <div className="flex items-center gap-2 md:gap-3">
               {/* Phone Number - Desktop only */}
-              <a 
-                href={`tel:${BRAND.phone1}`} 
+              <a
+                href={`tel:${BRAND.phone1}`}
                 className="hidden lg:inline text-sm text-neutral-300 hover:text-white transition-colors"
+                onClick={() => trackPhoneClick('navbar')}
               >
                 {BRAND.phone1}
               </a>

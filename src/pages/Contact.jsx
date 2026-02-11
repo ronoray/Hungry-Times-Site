@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BRAND } from '../lib/constants'
 import SEOHead from '../components/SEOHead'
+import { trackContactFormSubmit, trackPhoneClick, trackWhatsAppClick } from '../utils/analytics'
 
 import API_BASE from '../config/api';
 
@@ -51,6 +52,7 @@ export default function Contact() {
       }
 
       setSubmitStatus('success')
+      trackContactFormSubmit()
       setFormData({ name: '', email: '', phone: '', message: '' })
       
       // Clear success message after 5 seconds
@@ -201,10 +203,10 @@ export default function Contact() {
               Call Us
             </h3>
             <div className="space-y-2">
-              <a href={`tel:${BRAND.phone1}`} className="block text-neutral-300 hover:text-white transition-colors">
+              <a href={`tel:${BRAND.phone1}`} className="block text-neutral-300 hover:text-white transition-colors" onClick={() => trackPhoneClick('contact_page')}>
                 {BRAND.phone1}
               </a>
-              <a href={`tel:${BRAND.phone2}`} className="block text-neutral-300 hover:text-white transition-colors">
+              <a href={`tel:${BRAND.phone2}`} className="block text-neutral-300 hover:text-white transition-colors" onClick={() => trackPhoneClick('contact_page')}>
                 {BRAND.phone2}
               </a>
             </div>
