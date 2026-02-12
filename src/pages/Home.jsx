@@ -4,6 +4,8 @@ import { BRAND } from '../lib/constants'
 import SEOHead from '../components/SEOHead'
 import StructuredData from '../components/StructuredData'
 import KitchenStatus from '../components/KitchenStatus'
+import TodaysSpecial from '../components/TodaysSpecial'
+import LiveOrderCount from '../components/LiveOrderCount'
 import VegDot from '../components/VegDot'
 import API_BASE from '../config/api'
 import heroImg from '../assets/hero-1200.jpg'
@@ -122,6 +124,9 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ─── Live Order Count (social proof) ─── */}
+      <LiveOrderCount />
+
       {/* ─── Quick Categories ─── */}
       <section className="py-8 px-4 bg-neutral-950">
         <div className="max-w-5xl mx-auto">
@@ -140,6 +145,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ─── Today's Special ─── */}
+      <TodaysSpecial />
 
       {/* ─── Popular Items ─── */}
       {popularItems.length > 0 && (

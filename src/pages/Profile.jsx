@@ -195,7 +195,7 @@ export default function Profile() {
 
   const handleShareReferral = () => {
     if (!referralCode) return;
-    const msg = `Order from Hungry Times and get 15% off! Use my referral code: ${referralCode.code}. Order now at hungrytimes.in/offers`;
+    const msg = `Order from Hungry Times and get 15% off! Use my referral code: ${referralCode.code}. Order now at hungrytimes.in/offers?utm_source=whatsapp&utm_medium=referral&utm_campaign=refer_a_friend`;
     const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
     window.open(waUrl, '_blank');
   };
