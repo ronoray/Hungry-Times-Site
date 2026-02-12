@@ -117,6 +117,13 @@ export default function Order() {
   const [activeOffers, setActiveOffers] = useState([]);
   const [appliedOffer, setAppliedOffer] = useState(null);
 
+  // Apply Code State
+  const [codeExpanded, setCodeExpanded] = useState(false);
+  const [codeInput, setCodeInput] = useState('');
+  const [codeValidating, setCodeValidating] = useState(false);
+  const [codeError, setCodeError] = useState('');
+  const [appliedCode, setAppliedCode] = useState(null); // { code, type, ... }
+
   useEffect(() => {
     fetchActiveOffers();
   }, []);
@@ -140,6 +147,54 @@ export default function Order() {
     }
   };
 
+  // ============================================================================
+  // APPLY CODE HANDLER
+  // ============================================================================
+  const handleApplyCode = async () => {
+    const code = codeInput.trim();
+    if (!code) return;
+
+    setCodeValidating(true);
+    setCodeError('');
+    try {
+      const response = await fetch(`${API_BASE}/offers/validate-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, customerPhone: customer?.phone }),
+      });
+      const data = await response.json();
+
+      if (data.valid) {
+        // Override any auto-applied offer with the code-based offer
+        setAppliedCode(data);
+        setAppliedOffer({
+          id: data.offer_id || null,
+          title: data.title,
+          discount_type: data.discount_type,
+          discount_value: data.discount_value,
+          max_discount: data.max_discount,
+          min_order_value: data.min_order_value,
+        });
+        setCodeExpanded(false);
+        showToast(`Code "${code}" applied!`, 'success');
+      } else {
+        setCodeError(data.error || 'Invalid code');
+      }
+    } catch (err) {
+      setCodeError('Failed to validate code');
+    } finally {
+      setCodeValidating(false);
+    }
+  };
+
+  const handleRemoveCode = () => {
+    setAppliedCode(null);
+    setCodeInput('');
+    setCodeError('');
+    // Re-apply auto offer if available
+    const autoOffer = activeOffers.find(o => o.apply_automatically);
+    setAppliedOffer(autoOffer || null);
+  };
 
   const fetchAddresses = async () => {
     try {
@@ -531,6 +586,8 @@ export default function Order() {
           delivery_charge: deliveryCharge,
           offer_id: appliedOffer?.id || null,
           offer_title: appliedOffer?.title || null,
+          applied_code: appliedCode?.code || null,
+          applied_code_type: appliedCode?.type || null,
         }),
       });
 
@@ -696,6 +753,8 @@ export default function Order() {
           delivery_charge: deliveryCharge,
           offer_id: appliedOffer?.id || null,
           offer_title: appliedOffer?.title || null,
+          applied_code: appliedCode?.code || null,
+          applied_code_type: appliedCode?.type || null,
         }),
       });
 
@@ -1157,6 +1216,62 @@ export default function Order() {
                     <span className="text-white font-medium">₹{cartTotal}</span>
                   </div>
                   
+                  {/* APPLY CODE SECTION */}
+                  {!appliedCode ? (
+                    <div className="py-1">
+                      {!codeExpanded ? (
+                        <button
+                          onClick={() => setCodeExpanded(true)}
+                          className="text-orange-400 hover:text-orange-300 text-sm font-medium transition-colors"
+                        >
+                          Have a code?
+                        </button>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={codeInput}
+                              onChange={e => setCodeInput(e.target.value.toUpperCase())}
+                              onKeyDown={e => e.key === 'Enter' && handleApplyCode()}
+                              placeholder="Enter code"
+                              className="flex-1 bg-neutral-700 border border-neutral-600 text-white text-sm rounded px-3 py-2 focus:outline-none focus:border-orange-500"
+                              autoFocus
+                            />
+                            <button
+                              onClick={handleApplyCode}
+                              disabled={codeValidating || !codeInput.trim()}
+                              className="px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-neutral-600 text-white text-sm font-bold rounded transition-colors"
+                            >
+                              {codeValidating ? <Loader className="w-4 h-4 animate-spin" /> : 'Apply'}
+                            </button>
+                            <button
+                              onClick={() => { setCodeExpanded(false); setCodeError(''); }}
+                              className="p-2 text-neutral-400 hover:text-white"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          {codeError && (
+                            <p className="text-red-400 text-xs">{codeError}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between bg-orange-500/10 -mx-6 px-6 py-2 rounded">
+                      <span className="text-orange-400 text-sm font-medium">
+                        Code: {appliedCode.code}
+                      </span>
+                      <button
+                        onClick={handleRemoveCode}
+                        className="text-neutral-400 hover:text-red-400 text-xs underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+
                   {/* 💚 DISCOUNT ROW */}
                   {discountAmount > 0 && (
                     <div className="flex justify-between items-center bg-green-500/10 -mx-6 px-6 py-2 rounded">

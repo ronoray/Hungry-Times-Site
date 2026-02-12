@@ -13,6 +13,7 @@ import { LocationProvider } from "./context/LocationContext";
 import { MenuCategoryProvider } from './context/MenuCategoryContext';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { ToastProvider } from "./components/Toast";
+import OfferBanner from "./components/OfferBanner";
 import API_BASE from "./config/api.js";
 import "./styles/index.css";
 
@@ -330,6 +331,9 @@ export default function App() {
               {/* PWA Install Prompt */}
               <PWAInstallPrompt />
               
+              {/* Offer Banner */}
+              <OfferBanner />
+
               {/* Navigation */}
               <Navbar />
 

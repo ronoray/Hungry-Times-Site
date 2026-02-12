@@ -1,9 +1,15 @@
-// GA4 event tracking utility
-// gtag is loaded lazily in index.html — this safely wraps all calls
+// GA4 + Meta Pixel event tracking utility
+// Both are loaded lazily in index.html — this safely wraps all calls
 
 function track(eventName, params = {}) {
   if (typeof window.gtag === 'function') {
     window.gtag('event', eventName, params);
+  }
+}
+
+function fbTrack(eventName, params = {}) {
+  if (typeof window.fbq === 'function') {
+    window.fbq('track', eventName, params);
   }
 }
 
@@ -23,29 +29,46 @@ export function trackViewItemList(categoryName, items = []) {
 }
 
 export function trackViewItem(item, category) {
+  const price = item.basePrice || item.price || 0;
   track('view_item', {
     currency: 'INR',
-    value: item.basePrice || item.price || 0,
+    value: price,
     items: [{
       item_id: String(item.id),
       item_name: item.name,
       item_category: category || '',
-      price: item.basePrice || item.price || 0,
+      price,
     }],
+  });
+  fbTrack('ViewContent', {
+    content_name: item.name,
+    content_category: category || '',
+    content_ids: [String(item.id)],
+    content_type: 'product',
+    value: price,
+    currency: 'INR',
   });
 }
 
 export function trackAddToCart(item, quantity = 1, category) {
+  const price = item.basePrice || item.price || 0;
   track('add_to_cart', {
     currency: 'INR',
-    value: (item.basePrice || item.price || 0) * quantity,
+    value: price * quantity,
     items: [{
       item_id: String(item.id),
       item_name: item.name,
       item_category: category || '',
-      price: item.basePrice || item.price || 0,
+      price,
       quantity,
     }],
+  });
+  fbTrack('AddToCart', {
+    content_name: item.name,
+    content_ids: [String(item.id)],
+    content_type: 'product',
+    value: price * quantity,
+    currency: 'INR',
   });
 }
 
@@ -59,6 +82,13 @@ export function trackBeginCheckout(cartItems, total) {
       price: ci.price || 0,
       quantity: ci.quantity || 1,
     })),
+  });
+  fbTrack('InitiateCheckout', {
+    content_ids: cartItems.map(ci => String(ci.id)),
+    content_type: 'product',
+    num_items: cartItems.length,
+    value: total,
+    currency: 'INR',
   });
 }
 
@@ -74,6 +104,13 @@ export function trackPurchase(orderId, total, paymentMethod, items = []) {
       price: ci.price || 0,
       quantity: ci.quantity || 1,
     })),
+  });
+  fbTrack('Purchase', {
+    content_ids: items.map(ci => String(ci.id || ci.item_id)),
+    content_type: 'product',
+    num_items: items.length,
+    value: total,
+    currency: 'INR',
   });
 }
 
