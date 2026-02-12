@@ -87,10 +87,10 @@
   padding-top: 4rem !important; /* Space for fixed top navbar (64px) */
 }
 
-/* Mobile: Add bottom padding for fixed bottom nav */
+/* Mobile: Add bottom padding for FloatingCartBar (56px) + bottom nav (72px) + safe area */
 @media (max-width: 767px) {
   .menu-page {
-    padding-bottom: 5rem !important; /* Space for bottom nav (64px) + extra */
+    padding-bottom: calc(10rem + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
 

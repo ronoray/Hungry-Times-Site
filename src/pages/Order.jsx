@@ -801,7 +801,7 @@ export default function Order() {
   // RENDER
   // ============================================================================
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-gray-900 pb-24 md:pb-8">
+    <div className="min-h-screen min-h-[100dvh] bg-gray-900 pb-36 md:pb-8">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-white mb-6">Place Your Order</h1>
 
@@ -911,6 +911,23 @@ export default function Order() {
           </div>
         )}
 
+        {/* LOGIN PROMPT — shown prominently at top when not logged in */}
+        {lines.length > 0 && !isAuthenticated && (
+          <div className="bg-gradient-to-r from-orange-600/20 to-orange-500/10 border-2 border-orange-500/50 rounded-xl p-6 mb-6 text-center">
+            <div className="text-3xl mb-3">🔐</div>
+            <h2 className="text-xl font-bold text-white mb-2">Login to Place Your Order</h2>
+            <p className="text-neutral-300 mb-4 text-sm">
+              Create an account or login to add your delivery address and pay online or choose cash on delivery.
+            </p>
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="px-8 py-3 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold rounded-xl transition-colors text-lg shadow-lg shadow-orange-500/25"
+            >
+              Login / Sign Up
+            </button>
+          </div>
+        )}
+
         {/* Order Form */}
         {lines.length > 0 && (
           <div className="grid md:grid-cols-3 gap-6">
@@ -924,16 +941,10 @@ export default function Order() {
                 </h3>
 
                 {!isAuthenticated ? (
-                  <div className="text-center py-8">
-                    <p className="text-neutral-400 mb-4">
-                      Please login to continue with your order
+                  <div className="text-center py-6">
+                    <p className="text-neutral-400">
+                      Please login above to add your delivery address
                     </p>
-                    <button
-                      onClick={() => setShowAuthModal(true)}
-                      className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg transition-colors"
-                    >
-                      Login / Sign Up
-                    </button>
                   </div>
                 ) : (
                   <>
