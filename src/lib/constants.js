@@ -6,7 +6,7 @@ phone2: '+91-9830422919',
 whatsapp: '918420822919',
 email: 'admin@hungrytimes.in',
 address: 'Hungry Times, Selimpur, Ballygunge, Kolkata 700031',
-googleReviewUrl: 'https://g.page/r/hungrytimes/review',
+googleReviewUrl: 'https://search.google.com/local/writereview?placeid=ChIJvWGYyyhxAjoRjhl2_3xBiuM',
 }
 
 
