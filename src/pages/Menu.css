@@ -82,6 +82,7 @@
 .menu-page {
   background: var(--color-bg) !important;
   min-height: 100vh !important;
+  min-height: 100dvh !important; /* iOS Safari dynamic viewport height */
   color: var(--color-text) !important;
   padding-top: 4rem !important; /* Space for fixed top navbar (64px) */
 }
@@ -681,11 +682,13 @@
   flex-direction: column !important;
 }
 
-.menu-item-card:hover {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: var(--color-accent) !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+@media (hover: hover) {
+  .menu-item-card:hover {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: var(--color-accent) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+  }
 }
 
 /* Item Header - compact on mobile */
@@ -934,12 +937,7 @@
   right: 0;
   height: 3px;
   background: linear-gradient(90deg, var(--color-emerald), var(--color-emerald-dark), var(--color-emerald));
-  animation: shimmer 3s linear infinite;
-}
-
-@keyframes shimmer {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+  /* Removed shimmer animation — causes layout reflows on iOS Safari */
 }
 
 /* Recommended Header */
@@ -953,13 +951,11 @@
 
 .star-icon {
   font-size: 1.5rem;
-  animation: pulse 2s ease-in-out infinite;
+  display: inline-block;
+  will-change: transform;
 }
 
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-}
+/* Disable pulse animation entirely — it causes layout thrashing on iOS Safari */
 
 .recommended-title {
   font-size: 1.75rem;
@@ -992,9 +988,12 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.recommended-item-card:hover {
-  transform: translateY(-3px) scale(1.01);
-  box-shadow: 0 12px 32px rgba(80, 200, 120, 0.15);
+/* Only apply hover transforms on devices that support hover (not touch) */
+@media (hover: hover) {
+  .recommended-item-card:hover {
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 12px 32px rgba(80, 200, 120, 0.15);
+  }
 }
 
 /* Recommended Badge */
@@ -1075,12 +1074,7 @@
   right: 8px;
   font-size: 1.25rem;
   z-index: 10;
-  animation: twinkle 1.5s ease-in-out infinite;
-}
-
-@keyframes twinkle {
-  0%, 100% { opacity: 1; transform: rotate(0deg); }
-  50% { opacity: 0.7; transform: rotate(-10deg); }
+  /* Removed twinkle animation — causes layout reflows on iOS Safari */
 }
 
 @media (max-width: 768px) {
@@ -1108,6 +1102,7 @@
     left: -100% !important;
     width: 280px !important;
     height: 100vh !important;
+    height: 100dvh !important; /* iOS Safari dynamic viewport */
     z-index: 999 !important;
     transition: left 0.3s ease !important;
     overflow-y: auto !important;
@@ -1219,7 +1214,7 @@
     scroll-behavior: smooth;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
-    max-height: 320px !important;
+    /* Removed max-height: 320px — was clipping content on iOS */
   }
 
   /* Hide scrollbar */
@@ -1282,6 +1277,7 @@
   .recommended-item-card .read-desc-btn {
     display: none !important;
   }
+} /* Close @media (max-width: 768px) */
 
 /* Tablet adjustments */
 @media (min-width: 769px) and (max-width: 1024px) {
@@ -1352,14 +1348,13 @@
 }
 
 /* Hide scrollbar while keeping scroll functionality */
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 /* Mobile adjustments */
@@ -2276,6 +2271,7 @@
     left: -100%;
     top: 0;
     height: 100vh;
+    height: 100dvh;
     width: 280px;
     background: #171717;
     z-index: 60;

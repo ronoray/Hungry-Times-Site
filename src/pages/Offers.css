@@ -2,6 +2,7 @@
 
 .offers-container {
   min-height: 100vh;
+  min-height: 100dvh;
   background: #0f0f12;
   color: #ffffff;
   padding: 20px;

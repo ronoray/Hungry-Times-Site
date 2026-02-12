@@ -5,6 +5,7 @@
   margin: 0;
   padding: 0;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* Only apply these styles to specific pages if needed */

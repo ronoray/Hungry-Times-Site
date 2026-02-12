@@ -801,7 +801,7 @@ export default function Order() {
   // RENDER
   // ============================================================================
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen min-h-[100dvh] bg-gray-900 pb-24 md:pb-8">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-white mb-6">Place Your Order</h1>
 
@@ -1206,7 +1206,7 @@ export default function Order() {
 
             {/* RIGHT: Order Summary & Payment */}
             <div className="md:col-span-1">
-              <div className="bg-neutral-800 rounded-lg p-6 sticky top-6">
+              <div className="bg-neutral-800 rounded-lg p-6 md:sticky md:top-6">
                 <h3 className="text-white font-bold text-xl mb-4">Order Summary</h3>
                 
                 {/* Price Summary with Discount */}
