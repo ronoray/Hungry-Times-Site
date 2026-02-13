@@ -1,10 +1,11 @@
 // site/src/pages/OrderSuccess.jsx
 // Order confirmation success page
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { CheckCircle, Package, MapPin, CreditCard, ShoppingBag } from 'lucide-react';
 import API_BASE from '../config/api.js';
+import { trackPurchase } from '../utils/analytics';
 
 export default function OrderSuccess() {
   const { orderId } = useParams();
@@ -15,15 +16,35 @@ export default function OrderSuccess() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const paymentType = searchParams.get('type'); // 'online' or 'cod'
+  const tracked = useRef(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
       return;
     }
-    
+
     fetchOrderDetails();
   }, [orderId, isAuthenticated]);
+
+  // Fire Purchase pixel event once when order loads
+  useEffect(() => {
+    if (!order || tracked.current) return;
+    tracked.current = true;
+
+    const items = parseItems(order.items_json);
+    trackPurchase(
+      order.id,
+      Number(order.total) || 0,
+      order.payment_mode || 'unknown',
+      items.map(i => ({
+        id: i.itemId || i.item_id,
+        name: i.itemName || i.item_name,
+        price: i.itemPrice || i.price || 0,
+        quantity: i.quantity || 1,
+      }))
+    );
+  }, [order]);
 
   const fetchOrderDetails = async () => {
     try {
@@ -148,6 +169,12 @@ export default function OrderSuccess() {
               <span className="text-neutral-400">Tax (GST)</span>
               <span className="text-white">₹{order.tax}</span>
             </div>
+            {Number(order.delivery_charge) > 0 && (
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-neutral-400">Delivery</span>
+                <span className="text-white">₹{order.delivery_charge}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center pt-2 border-t border-neutral-700">
               <span className="text-white font-bold text-lg">Total</span>
               <span className="text-orange-500 font-bold text-xl">₹{order.total}</span>
