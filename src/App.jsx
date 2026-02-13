@@ -16,6 +16,7 @@ import { ToastProvider } from "./components/Toast";
 import OfferBanner from "./components/OfferBanner";
 import FirstVisitPopup from "./components/FirstVisitPopup";
 import WhatsAppFloat from "./components/WhatsAppFloat";
+import ActiveOrderBar from "./components/ActiveOrderBar";
 import API_BASE from "./config/api.js";
 import "./styles/index.css";
 
@@ -354,6 +355,9 @@ export default function App() {
 
               {/* WhatsApp floating CTA */}
               <WhatsAppFloat />
+
+              {/* Active order tracking bar */}
+              <ActiveOrderBar />
 
             </div>
             </ToastProvider>

@@ -15,15 +15,16 @@ export default function FloatingCartBar() {
       <button
         onClick={() => navigate('/order')}
         className="pointer-events-auto w-full max-w-lg mx-auto flex items-center justify-between
-                   bg-green-600 hover:bg-green-700 active:bg-green-800
+                   bg-neutral-800/95 hover:bg-neutral-700/95 active:bg-neutral-600/95
+                   backdrop-blur-sm border border-neutral-700
                    text-white px-5 py-3.5
-                   rounded-2xl shadow-[0_8px_30px_rgba(22,163,74,0.45)]
+                   rounded-2xl shadow-lg shadow-black/40
                    transition-all duration-200"
       >
         <div className="flex items-center gap-2.5">
           <div className="relative">
             <ShoppingBag className="w-5 h-5" />
-            <span className="absolute -top-2 -right-2 bg-white text-green-700 text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+            <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
               {Math.min(itemCount, 9)}
             </span>
           </div>
@@ -33,8 +34,8 @@ export default function FloatingCartBar() {
         </div>
         <div className="flex items-center gap-1.5">
           <span className="font-bold">₹{total.toFixed(0)}</span>
-          <span className="text-sm text-green-100">View Cart</span>
-          <ChevronRight className="w-4 h-4 text-green-200" />
+          <span className="text-sm text-neutral-300">View Cart</span>
+          <ChevronRight className="w-4 h-4 text-neutral-400" />
         </div>
       </button>
     </div>

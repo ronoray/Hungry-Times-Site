@@ -25,6 +25,8 @@ const Profile = lazy(() => import("./pages/Profile"));
 const Orders = lazy(() => import("./pages/Orders"));
 const OrderDetails = lazy(() => import("./pages/OrderDetails"));
 const OrderSuccess = lazy(() => import("./pages/OrderSuccess"));
+const TrackOrder = lazy(() => import("./pages/TrackOrder"));
+const DeliveryView = lazy(() => import("./pages/DeliveryView"));
 
 // Helper to wrap a lazy component with a specific skeleton
 function withSkeleton(Component, Skeleton) {
@@ -127,6 +129,10 @@ const router = createBrowserRouter(
         { path: "contact", element: withSkeleton(Contact, DefaultSkeleton) },
         { path: "careers", element: withSkeleton(Careers, DefaultSkeleton) },
         { path: "offers", element: withSkeleton(Offers, DefaultSkeleton) },
+
+        // Delivery tracking (public, token-based)
+        { path: "track/:token", element: withSkeleton(TrackOrder, DefaultSkeleton) },
+        { path: "delivery/:token", element: withSkeleton(DeliveryView, DefaultSkeleton) },
 
         { path: "*", element: <Navigate to="/menu" replace /> },
       ],
