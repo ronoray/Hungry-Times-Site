@@ -14,6 +14,7 @@ import { MenuCategoryProvider } from './context/MenuCategoryContext';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { ToastProvider } from "./components/Toast";
 import OfferBanner from "./components/OfferBanner";
+import FirstVisitPopup from "./components/FirstVisitPopup";
 import WhatsAppFloat from "./components/WhatsAppFloat";
 import API_BASE from "./config/api.js";
 import "./styles/index.css";
@@ -347,6 +348,9 @@ export default function App() {
 
               {/* Footer */}
               <Footer />
+
+              {/* First-visit welcome offer popup */}
+              <FirstVisitPopup />
 
               {/* WhatsApp floating CTA */}
               <WhatsAppFloat />

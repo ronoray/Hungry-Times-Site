@@ -333,6 +333,203 @@
   100% { left: 100%; }
 }
 
+/* Section title with icon */
+.section-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.section-title-row .section-title {
+  margin-bottom: 0;
+}
+
+/* Offer cards grid */
+.offers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.offer-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(212, 175, 55, 0.15);
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.3s, transform 0.2s;
+}
+
+.offer-card:hover {
+  border-color: rgba(212, 175, 55, 0.4);
+  transform: translateY(-2px);
+}
+
+.offer-card-badge {
+  display: inline-block;
+  align-self: flex-start;
+  background: linear-gradient(135deg, #d4af37, #c09a28);
+  color: #0f0f12;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 4px 12px;
+  border-radius: 6px;
+}
+
+.offer-card-title {
+  font-size: 1.1rem;
+  color: #fff;
+  margin: 0;
+  font-weight: 600;
+}
+
+.offer-card-desc {
+  font-size: 0.9rem;
+  color: #a0a0a0;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.offer-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.offer-card-chip {
+  font-size: 0.75rem;
+  color: #a0a0a0;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.offer-card-chip--timer {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.offer-card-code-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.offer-card-code-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px dashed rgba(212, 175, 55, 0.4);
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+  color: #fff;
+}
+
+.offer-card-code-btn:hover {
+  background: rgba(212, 175, 55, 0.1);
+}
+
+.offer-card-code-text {
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  color: #d4af37;
+}
+
+.offer-card-copied {
+  font-size: 0.75rem;
+  color: #22c55e;
+}
+
+.offer-card-cta {
+  margin-top: auto;
+  padding: 10px;
+  background: rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 8px;
+  color: #d4af37;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.offer-card-cta:hover {
+  background: #d4af37;
+  color: #0f0f12;
+}
+
+/* FAQ accordion */
+.faq-item {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.faq-item:last-child {
+  border-bottom: none;
+}
+
+.faq-item:hover {
+  background: rgba(212, 175, 55, 0.03);
+}
+
+.faq-q {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  font-weight: 500;
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.faq-a {
+  color: #a0a0a0;
+  line-height: 1.6;
+  padding: 0 0 14px;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* Status guide (kept for compatibility) */
+.status-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  min-width: 70px;
+  text-align: center;
+}
+
+.status-badge.pending { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+.status-badge.active { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+.status-badge.used { background: rgba(107, 114, 128, 0.2); color: #9ca3af; }
+.status-badge.expired { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
 /* Mobile responsiveness */
 @media (max-width: 640px) {
   .offers-container h1 {
@@ -345,6 +542,10 @@
 
   .code-display {
     font-size: 1.4rem;
+  }
+
+  .offers-grid {
+    grid-template-columns: 1fr;
   }
 
   .step {
