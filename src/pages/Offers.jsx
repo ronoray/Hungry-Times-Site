@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Copy, Check, Tag, Gift, Users, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import API_BASE from '../config/api';
+import { useAuth } from '../context/AuthContext';
 import SEOHead from '../components/SEOHead';
 import './Offers.css';
 
@@ -99,14 +100,16 @@ export default function Offers() {
   const [verifyResult, setVerifyResult] = useState({ show: false, type: '', message: '' });
   const [verifying, setVerifying] = useState(false);
   const navigate = useNavigate();
+  const { customer, isAuthenticated } = useAuth();
 
   useEffect(() => {
     fetchOffers();
-  }, []);
+  }, [isAuthenticated, customer?.phone]);
 
   const fetchOffers = async () => {
     try {
-      const res = await fetch(`${API_BASE}/offers/active`);
+      const phoneParam = isAuthenticated && customer?.phone ? `?phone=${customer.phone}` : '';
+      const res = await fetch(`${API_BASE}/offers/active${phoneParam}`);
       if (res.ok) {
         const data = await res.json();
         // Only show offers that have a promo code (not auto-apply hidden ones)

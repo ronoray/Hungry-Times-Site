@@ -63,6 +63,10 @@ export default function Profile() {
   // Referral state
   const [referralCode, setReferralCode] = useState(null);
 
+  // Loyalty state
+  const [loyaltyData, setLoyaltyData] = useState(null);
+  const [loyaltyLoading, setLoyaltyLoading] = useState(false);
+
   // UI state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -87,6 +91,8 @@ export default function Profile() {
       loadRecentOrders();
       // Load referral code
       loadReferralCode();
+      // Load loyalty data
+      loadLoyaltyData();
     }
   }, [customer, isAuthenticated, navigate]);
 
@@ -147,6 +153,23 @@ export default function Profile() {
       }
     } catch (err) {
       console.error('Load referral error:', err);
+    }
+  };
+
+  const loadLoyaltyData = async () => {
+    setLoyaltyLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/customer/loyalty/history`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLoyaltyData(data);
+      }
+    } catch (err) {
+      console.error('Load loyalty error:', err);
+    } finally {
+      setLoyaltyLoading(false);
     }
   };
 
@@ -590,6 +613,62 @@ export default function Profile() {
                 <p className="text-white font-medium">{customer?.phone || 'Not set'}</p>
               </div>
             </div>
+          )}
+        </div>
+
+        {/* Loyalty Points Card */}
+        <div className="bg-neutral-800 rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold text-white flex items-center gap-2 mb-4">
+            <Gift className="w-5 h-5 text-purple-400" />
+            Loyalty Points
+          </h2>
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4 text-center">
+              <p className="text-3xl font-bold text-purple-400">{customer?.loyaltyPoints || 0}</p>
+              <p className="text-sm text-gray-400 mt-1">Available Points</p>
+              <p className="text-xs text-purple-300 mt-1">Worth ₹{customer?.loyaltyPoints || 0}</p>
+            </div>
+            <div className="bg-neutral-700/50 rounded-lg p-4 text-center">
+              <p className="text-3xl font-bold text-white">{customer?.totalPointsEarned || 0}</p>
+              <p className="text-sm text-gray-400 mt-1">Total Earned</p>
+              <p className="text-xs text-gray-500 mt-1">Lifetime points</p>
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 mb-3">Earn 1 point per ₹10 spent. Redeem at checkout (min 50 pts, max 20% of order).</p>
+
+          {/* Recent Transactions */}
+          {loyaltyLoading ? (
+            <div className="flex items-center gap-2 text-gray-400 text-sm">
+              <Loader className="w-4 h-4 animate-spin" /> Loading history...
+            </div>
+          ) : loyaltyData?.transactions?.length > 0 ? (
+            <div>
+              <h3 className="text-sm font-medium text-gray-400 mb-2">Recent Activity</h3>
+              <div className="space-y-2">
+                {loyaltyData.transactions.slice(0, 5).map((tx, i) => (
+                  <div key={i} className="flex justify-between items-center text-sm py-1 border-b border-neutral-700/50 last:border-0">
+                    <div>
+                      <span className={tx.type === 'earned' ? 'text-green-400' : 'text-orange-400'}>
+                        {tx.type === 'earned' ? '+' : ''}{tx.points} pts
+                      </span>
+                      <span className="text-gray-500 ml-2 text-xs">{tx.description}</span>
+                    </div>
+                    <span className="text-gray-500 text-xs">{new Date(tx.created_at).toLocaleDateString('en-IN')}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">Place your first order to start earning points!</p>
+          )}
+
+          {(customer?.loyaltyPoints || 0) >= 50 && (
+            <button
+              onClick={() => navigate('/order')}
+              className="mt-4 w-full py-2 bg-purple-500 hover:bg-purple-600 text-white font-medium rounded-lg transition-colors text-sm"
+            >
+              Redeem Points at Checkout
+            </button>
           )}
         </div>
 

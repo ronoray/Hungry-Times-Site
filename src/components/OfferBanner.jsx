@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import API_BASE from '../config/api.js';
+import { useAuth } from '../context/AuthContext';
 
 export default function OfferBanner() {
+  const { customer, isAuthenticated } = useAuth();
   const [offer, setOffer] = useState(null);
   const [dismissed, setDismissed] = useState(false);
   const [timeLeft, setTimeLeft] = useState('');
@@ -52,7 +54,8 @@ export default function OfferBanner() {
 
   const fetchOffer = async () => {
     try {
-      const res = await fetch(`${API_BASE}/offers/active`);
+      const phoneParam = isAuthenticated && customer?.phone ? `?phone=${customer.phone}` : '';
+      const res = await fetch(`${API_BASE}/offers/active${phoneParam}`);
       if (!res.ok) return;
       const data = await res.json();
       const offers = data.offers || [];

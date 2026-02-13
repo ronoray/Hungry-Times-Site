@@ -99,6 +99,10 @@ export default function Order() {
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState("");
 
+  // Loyalty Points State
+  const [pointsToRedeem, setPointsToRedeem] = useState(0);
+  const loyaltyPoints = customer?.loyaltyPoints || 0;
+
   // ============================================================================
   // FETCH ADDRESSES ON LOAD
   // ============================================================================
@@ -126,11 +130,12 @@ export default function Order() {
 
   useEffect(() => {
     fetchActiveOffers();
-  }, []);
+  }, [isAuthenticated, customer?.phone]);
 
   const fetchActiveOffers = async () => {
     try {
-      const response = await fetch(`${API_BASE}/offers/active`);
+      const phoneParam = isAuthenticated && customer?.phone ? `?phone=${customer.phone}` : '';
+      const response = await fetch(`${API_BASE}/offers/active${phoneParam}`);
       if (!response.ok) throw new Error('Failed to fetch offers');
       
       const data = await response.json();
@@ -458,7 +463,7 @@ export default function Order() {
 
   const deliveryCharge = deliveryStatus?.deliveryCharge > 0 ? deliveryStatus.deliveryCharge : 0;
 
-  const { cartTotal, discountAmount, gstAmount, finalTotal } = useMemo(() => {
+  const { cartTotal, discountAmount, pointsDiscount, maxRedeemablePoints, gstAmount, finalTotal } = useMemo(() => {
     let total = 0;
     lines.forEach((line) => {
       const unitPrice =
@@ -484,15 +489,21 @@ export default function Order() {
   }
 
     const subtotalAfterDiscount = Math.max(0, total - discount);
-    const gst = Math.round(subtotalAfterDiscount * 0.05);
+    // Points redemption: max 20% of subtotalAfterDiscount, min 50 points
+    const maxPts = Math.min(loyaltyPoints, Math.floor(subtotalAfterDiscount * 0.2));
+    const pointsDiscount = pointsToRedeem > 0 ? Math.min(pointsToRedeem, maxPts) : 0;
+    const afterPoints = Math.max(0, subtotalAfterDiscount - pointsDiscount);
+    const gst = Math.round(afterPoints * 0.05);
 
     return {
       cartTotal: Math.round(total),
       discountAmount: Math.round(discount),
+      pointsDiscount,
+      maxRedeemablePoints: maxPts,
       gstAmount: gst,
-      finalTotal: Math.round(subtotalAfterDiscount + gst + deliveryCharge),
+      finalTotal: Math.round(afterPoints + gst + deliveryCharge),
     };
-  }, [lines, appliedOffer, deliveryCharge]);
+  }, [lines, appliedOffer, deliveryCharge, pointsToRedeem, loyaltyPoints]);
 
   const cartCount = lines.reduce((sum, line) => sum + (line.qty || 1), 0);
 
@@ -569,7 +580,7 @@ export default function Order() {
 
       // ✅ STEP 1: INITIATE order (creates Razorpay order only, NO database order yet!)
       console.log('🔄 Step 1: Initiating payment...');
-      
+
       const response = await fetch(`${API_BASE}/customer/orders/initiate`, {
         method: "POST",
         headers: {
@@ -588,6 +599,7 @@ export default function Order() {
           offer_title: appliedOffer?.title || null,
           applied_code: appliedCode?.code || null,
           applied_code_type: appliedCode?.type || null,
+          points_to_redeem: pointsToRedeem > 0 ? pointsToRedeem : 0,
         }),
       });
 
@@ -755,6 +767,7 @@ export default function Order() {
           offer_title: appliedOffer?.title || null,
           applied_code: appliedCode?.code || null,
           applied_code_type: appliedCode?.type || null,
+          points_to_redeem: pointsToRedeem > 0 ? pointsToRedeem : 0,
         }),
       });
 
@@ -1292,7 +1305,61 @@ export default function Order() {
                       <span className="text-green-400 font-bold">- ₹{discountAmount}</span>
                     </div>
                   )}
-                  
+
+                  {/* 🎯 LOYALTY POINTS REDEMPTION */}
+                  {isAuthenticated && loyaltyPoints >= 50 && maxRedeemablePoints >= 50 && (
+                    <div className="bg-purple-500/10 -mx-6 px-6 py-3 rounded space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-purple-400 font-medium text-sm">
+                          Loyalty Points ({loyaltyPoints} available)
+                        </span>
+                        {pointsToRedeem > 0 && (
+                          <button
+                            onClick={() => setPointsToRedeem(0)}
+                            className="text-neutral-400 hover:text-red-400 text-xs underline"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                      {pointsToRedeem === 0 ? (
+                        <button
+                          onClick={() => setPointsToRedeem(Math.min(loyaltyPoints, maxRedeemablePoints))}
+                          className="w-full py-1.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-sm font-medium rounded transition-colors"
+                        >
+                          Use {Math.min(loyaltyPoints, maxRedeemablePoints)} points (save ₹{Math.min(loyaltyPoints, maxRedeemablePoints)})
+                        </button>
+                      ) : (
+                        <div className="space-y-1">
+                          <input
+                            type="range"
+                            min={50}
+                            max={maxRedeemablePoints}
+                            step={10}
+                            value={pointsToRedeem}
+                            onChange={(e) => setPointsToRedeem(Number(e.target.value))}
+                            className="w-full accent-purple-500"
+                          />
+                          <div className="flex justify-between text-xs text-purple-300">
+                            <span>50 pts</span>
+                            <span className="font-bold">Using {pointsToRedeem} pts (- ₹{pointsDiscount})</span>
+                            <span>{maxRedeemablePoints} pts</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Points discount display */}
+                  {pointsDiscount > 0 && (
+                    <div className="flex justify-between items-center bg-purple-500/10 -mx-6 px-6 py-2 rounded">
+                      <span className="text-purple-400 font-medium text-sm">
+                        Points Discount
+                      </span>
+                      <span className="text-purple-400 font-bold">- ₹{pointsDiscount}</span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between text-neutral-400">
                     <span>GST (5%)</span>
                     <span className="text-white">₹{gstAmount}</span>
@@ -1321,10 +1388,10 @@ export default function Order() {
                   </div>
                   
                   {/* 🎊 SAVINGS MESSAGE */}
-                  {discountAmount > 0 && (
+                  {(discountAmount > 0 || pointsDiscount > 0) && (
                     <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-2 text-center mt-2">
                       <p className="text-green-400 font-semibold text-sm">
-                        🎊 Yay! You saved ₹{discountAmount} on this order!
+                        🎊 Yay! You saved ₹{discountAmount + pointsDiscount} on this order!
                       </p>
                     </div>
                   )}
