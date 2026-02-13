@@ -118,14 +118,17 @@ export function trackPurchase(orderId, total, paymentMethod, items = []) {
 
 export function trackSearch(searchTerm) {
   track('search', { search_term: searchTerm });
+  fbTrack('Search', { search_string: searchTerm });
 }
 
 export function trackPhoneClick(location) {
   track('phone_click', { link_location: location });
+  fbTrack('Contact', { content_category: 'phone', content_name: location });
 }
 
 export function trackWhatsAppClick(location) {
   track('whatsapp_click', { link_location: location });
+  fbTrack('Contact', { content_category: 'whatsapp', content_name: location });
 }
 
 export function trackCtaClick(ctaName, location) {
@@ -138,6 +141,7 @@ export function trackFavoriteToggle(itemName, isFavorite) {
 
 export function trackContactFormSubmit() {
   track('contact_form_submit');
+  fbTrack('Lead', { content_category: 'contact_form' });
 }
 
 export function trackReorder(orderId) {
@@ -146,4 +150,11 @@ export function trackReorder(orderId) {
 
 export function trackShare(method, contentType) {
   track('share', { method, content_type: contentType });
+}
+
+// ─── Auth events ───
+
+export function trackCompleteRegistration(method) {
+  track('sign_up', { method: method || 'otp' });
+  fbTrack('CompleteRegistration', { content_name: method || 'otp' });
 }

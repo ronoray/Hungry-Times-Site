@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Phone, Lock, User, Mail, MapPin, Check, AlertCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import GoogleMapsAutocomplete from './GoogleMapsAutocomplete';
+import { trackCompleteRegistration } from '../utils/analytics';
 
 const STEPS = {
   // Returning user
@@ -335,6 +336,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
       });
 
       console.log('[Registration] Complete! Moving to success screen');
+      trackCompleteRegistration('otp');
       setStep(STEPS.SUCCESS);
     } catch (err) {
       console.error('[Registration] Error:', err);
