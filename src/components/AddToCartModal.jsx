@@ -351,12 +351,12 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4"
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center z-[60] p-0 md:p-4 pb-16 md:pb-0"
       onClick={onClose}
     >
       <div
         ref={sheetRef}
-        className="bg-neutral-900 w-full md:max-w-2xl rounded-t-2xl md:rounded-2xl relative flex flex-col overflow-hidden h-[85vh] md:h-auto md:max-h-[85vh]"
+        className="bg-neutral-900 w-full md:max-w-2xl rounded-t-2xl md:rounded-2xl relative flex flex-col overflow-hidden h-[calc(85vh-64px)] md:h-auto md:max-h-[85vh]"
         style={{
           transform: `translateY(${sheetTranslateY}px)`,
           transition: sheetAnimating ? 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)' : 'none',
