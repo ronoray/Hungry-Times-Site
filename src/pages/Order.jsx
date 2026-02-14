@@ -17,6 +17,7 @@ import { loadRazorpay } from "../utils/scriptLoaders";
 import AuthModal from "../components/AuthModal";
 import { ShoppingCart, MapPin, MessageSquare, Loader, Plus, Check, Edit2, Trash2, X, AlertCircle, Minus, Truck } from "lucide-react";
 import { useToast } from "../components/Toast";
+import OffersPanel from "../components/OffersPanel";
 import { trackBeginCheckout, trackPurchase } from "../utils/analytics";
 
 import API_BASE from '../config/api.js';
@@ -170,7 +171,7 @@ export default function Order() {
       const data = await response.json();
 
       if (data.valid) {
-        // Override any auto-applied offer with the code-based offer
+        // Override any auto-applied or panel offer with the code-based offer
         setAppliedCode(data);
         setAppliedOffer({
           id: data.offer_id || null,
@@ -180,6 +181,7 @@ export default function Order() {
           max_discount: data.max_discount,
           min_order_value: data.min_order_value,
         });
+        setSelectedOfferSource('code');
         setCodeExpanded(false);
         showToast(`Code "${code}" applied!`, 'success');
       } else {
@@ -192,11 +194,39 @@ export default function Order() {
     }
   };
 
+  // Track where the current offer came from: 'auto' | 'panel' | 'code'
+  const [selectedOfferSource, setSelectedOfferSource] = useState('auto');
+
   const handleRemoveCode = () => {
     setAppliedCode(null);
     setCodeInput('');
     setCodeError('');
+    setSelectedOfferSource('auto');
     // Re-apply auto offer if available
+    const autoOffer = activeOffers.find(o => o.apply_automatically);
+    setAppliedOffer(autoOffer || null);
+  };
+
+  // Panel offer handlers
+  const handlePanelApplyOffer = (offer) => {
+    setAppliedCode({ code: offer.code, type: offer.source });
+    setAppliedOffer({
+      id: offer.offer_id || null,
+      title: offer.title,
+      discount_type: offer.discount_type,
+      discount_value: offer.discount_value,
+      max_discount: offer.max_discount,
+      min_order_value: offer.min_order_value,
+    });
+    setSelectedOfferSource('panel');
+    setCodeExpanded(false);
+    setCodeError('');
+  };
+
+  const handlePanelRemoveOffer = () => {
+    setAppliedCode(null);
+    setSelectedOfferSource('auto');
+    // Restore auto-apply if available
     const autoOffer = activeOffers.find(o => o.apply_automatically);
     setAppliedOffer(autoOffer || null);
   };
@@ -1240,6 +1270,17 @@ export default function Order() {
                     <span className="text-white font-medium">₹{cartTotal}</span>
                   </div>
                   
+                  {/* YOUR OFFERS PANEL */}
+                  {isAuthenticated && customer?.phone && (
+                    <OffersPanel
+                      cartTotal={cartTotal}
+                      customerPhone={customer.phone}
+                      onApplyOffer={handlePanelApplyOffer}
+                      onRemoveOffer={handlePanelRemoveOffer}
+                      appliedCode={appliedCode}
+                    />
+                  )}
+
                   {/* APPLY CODE SECTION */}
                   {!appliedCode ? (
                     <div className="py-1">
@@ -1248,7 +1289,7 @@ export default function Order() {
                           onClick={() => setCodeExpanded(true)}
                           className="text-orange-400 hover:text-orange-300 text-sm font-medium transition-colors"
                         >
-                          Have a code?
+                          {isAuthenticated && customer?.phone ? 'Have a different code?' : 'Have a code?'}
                         </button>
                       ) : (
                         <div className="space-y-2">
