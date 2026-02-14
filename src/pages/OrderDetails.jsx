@@ -54,6 +54,12 @@ export default function OrderDetails() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
+      if (response.status === 404) {
+        // Order was deleted — redirect to orders list
+        navigate('/orders', { replace: true });
+        return;
+      }
+
       if (!response.ok) throw new Error('Failed to fetch order details');
 
       const data = await response.json();

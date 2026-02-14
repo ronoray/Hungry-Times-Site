@@ -55,6 +55,11 @@ export default function OrderSuccess() {
         }
       });
 
+      if (response.status === 404) {
+        navigate('/orders', { replace: true });
+        return;
+      }
+
       if (!response.ok) {
         throw new Error('Failed to fetch order details');
       }
