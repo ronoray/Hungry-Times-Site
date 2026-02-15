@@ -6,6 +6,10 @@ Disallow: /orders/*
 Disallow: /order-success
 Disallow: /order-success/*
 Disallow: /profile
+Disallow: /track/
+Disallow: /delivery/
+Disallow: /public-testimonials
+Disallow: /public-feedback
 Disallow: /api/
 
 Allow: /api/public/
