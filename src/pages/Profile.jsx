@@ -15,6 +15,7 @@ import {
   Share2, Gift, Heart, HelpCircle, Package, RefreshCw, Loader
 } from 'lucide-react';
 import GoogleMapsAutocomplete from '../components/GoogleMapsAutocomplete';
+import AuthModal from '../components/AuthModal';
 
 import API_BASE from '../config/api.js';
 
@@ -22,6 +23,7 @@ export default function Profile() {
   const { customer, isAuthenticated, logout, token, login } = useAuth();
   const { addLine, clearCart } = useCart();
   const navigate = useNavigate();
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Profile edit state
   const [editingProfile, setEditingProfile] = useState(false);
@@ -73,11 +75,6 @@ export default function Profile() {
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/menu');
-      return;
-    }
-
     if (customer) {
       setProfileData({
         name: customer.name || '',
@@ -507,6 +504,45 @@ export default function Profile() {
   // ============================================
   // RENDER
   // ============================================
+
+  // Not logged in — show login prompt
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-neutral-900 py-8 pb-24 px-4">
+        <div className="max-w-md mx-auto text-center pt-16">
+          <div className="w-20 h-20 bg-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <User className="w-10 h-10 text-orange-500" />
+          </div>
+          <h1 className="text-2xl font-bold text-white mb-3">Your Account</h1>
+          <p className="text-neutral-400 mb-8">
+            Login to view your profile, manage addresses, track orders and earn loyalty points.
+          </p>
+          <button
+            onClick={() => setShowAuthModal(true)}
+            className="w-full max-w-xs mx-auto py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-orange-500/50 transition-all"
+          >
+            Login or Create Account
+          </button>
+          <button
+            onClick={() => navigate('/menu')}
+            className="mt-4 text-neutral-400 hover:text-white transition-colors text-sm"
+          >
+            Continue browsing menu
+          </button>
+
+          <AuthModal
+            isOpen={showAuthModal}
+            onClose={() => setShowAuthModal(false)}
+            onSuccess={() => {
+              setShowAuthModal(false);
+              window.scrollTo(0, 0);
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-neutral-900 py-8 pb-24 px-4">
       <div className="max-w-2xl mx-auto">

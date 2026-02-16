@@ -72,11 +72,6 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
       autocompleteRef.current.addListener('place_changed', handlePlaceSelect);
       
       console.log('[Maps] ✅ Autocomplete initialized successfully');
-      
-      // Focus the input to ensure it's active
-      if (inputRef.current) {
-        inputRef.current.focus();
-      }
     } catch (error) {
       console.error('[Maps] ❌ Failed to initialize autocomplete:', error);
       setManualMode(true);

@@ -1,6 +1,6 @@
 // site/src/App.jsx - COMPLETE: All push notification logic preserved, SW registration moved to main.jsx
 import { useEffect, useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import NotificationPromptModal from "./components/NotificationPromptModal";
@@ -252,6 +252,12 @@ export async function resubscribeOnLogin() {
 export default function App() {
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [swReady, setSwReady] = useState(false);
+  const location = useLocation();
+
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   useEffect(() => {
     console.log('[Push] 🚀 App mounted - waiting for SW from main.jsx');

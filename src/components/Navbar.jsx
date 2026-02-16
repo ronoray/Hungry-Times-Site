@@ -197,6 +197,20 @@ export default function Navbar() {
             const active = isActive(item.to);
             const showBadge = item.showBadge && cartCount > 0;
 
+            // Account tab: open AuthModal if not logged in
+            if (item.to === '/profile' && !isAuthenticated) {
+              return (
+                <button
+                  key={item.to}
+                  onClick={() => setShowAuthModal(true)}
+                  className="flex-1 flex flex-col items-center justify-center gap-1 py-2.5 transition-colors text-neutral-400"
+                >
+                  <Icon className="w-5 h-5" strokeWidth={2} />
+                  <span className="text-[11px] leading-tight text-center font-normal">{item.label}</span>
+                </button>
+              );
+            }
+
             return (
               <Link
                 key={item.to}
@@ -231,6 +245,7 @@ export default function Navbar() {
         onClose={() => setShowAuthModal(false)}
         onSuccess={() => {
           setShowAuthModal(false);
+          window.scrollTo(0, 0);
         }}
       />
     </>
