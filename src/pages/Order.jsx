@@ -7,7 +7,7 @@
 // ✅ Persistent banner showing active offers
 
 import { useState, useMemo, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import AddToCartModal from "../components/AddToCartModal";
@@ -63,9 +63,48 @@ export default function Order() {
   }, []);
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editOrderId = searchParams.get('editOrderId');
   const { isAuthenticated, customer } = useAuth();
   const { lines, clearCart, addLine, removeLine, updateQty } = useCart();
   const showToast = useToast();
+
+  // Edit mode state
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editOrderData, setEditOrderData] = useState(null);
+
+  // Detect edit mode from URL
+  useEffect(() => {
+    if (!editOrderId || !isAuthenticated) return;
+
+    const fetchEditOrder = async () => {
+      try {
+        const token = localStorage.getItem('customerToken');
+        const response = await fetch(`${API_BASE}/customer/orders/${editOrderId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Order not found');
+        const data = await response.json();
+        const order = data.order;
+
+        // Verify editable
+        if (!['pending', 'confirmed'].includes(order.status) || order.payment_mode !== 'COD') {
+          showToast('This order cannot be edited', 'error');
+          navigate(`/orders/${editOrderId}`);
+          return;
+        }
+
+        setIsEditMode(true);
+        setEditOrderData(order);
+      } catch (err) {
+        console.error('Failed to load order for editing:', err);
+        showToast('Failed to load order for editing', 'error');
+        navigate('/orders');
+      }
+    };
+
+    fetchEditOrder();
+  }, [editOrderId, isAuthenticated]);
 
   // UI State
   const [selectedItemForModal, setSelectedItemForModal] = useState(null);
@@ -634,21 +673,22 @@ export default function Order() {
       });
 
       if (!response.ok) {
-        console.error("=== INITIATE FAILED ===");
-        console.error("Status:", response.status);
-        
         let errorData;
         try {
           errorData = await response.json();
-          console.error("Error data:", errorData);
         } catch (e) {
           errorData = {};
         }
-        
+
         if (response.status === 401) {
           throw new Error("Authentication failed. Please logout and login again.");
         }
-        
+
+        // 403 = business rejection (ordering hours, ordering disabled) — not a code error
+        if (response.status !== 403) {
+          console.error("Payment initiate failed:", response.status, errorData);
+        }
+
         throw new Error(errorData.error || "Failed to initiate payment");
       }
 
@@ -733,7 +773,13 @@ export default function Order() {
       rzp.open();
       
     } catch (error) {
-      console.error('❌ Payment error:', error);
+      // Don't log business rejections (ordering hours, disabled) as errors
+      const isBusinessRejection = error.message.includes('12:00 PM') ||
+        error.message.includes('currently unavailable') ||
+        error.message.includes('online orders');
+      if (!isBusinessRejection) {
+        console.error('Payment error:', error);
+      }
       setPaymentError(error.message);
       setPaymentProcessing(false);
     }
@@ -778,58 +824,66 @@ export default function Order() {
         addons: line.addons || []
       }));
 
-      const response = await fetch(`${API_BASE}/customer/orders`, {
-        method: "POST",
+      const orderPayload = {
+        items: orderItems,
+        delivery_address: selectedAddr.fullAddress,
+        delivery_latitude: selectedAddr.latitude,
+        delivery_longitude: selectedAddr.longitude,
+        delivery_instructions: deliveryInstructions,
+        paymentMethod: "COD",
+        discount: discountAmount,
+        delivery_charge: deliveryCharge,
+        offer_id: appliedOffer?.id || null,
+        offer_title: appliedOffer?.title || null,
+        applied_code: appliedCode?.code || null,
+        applied_code_type: appliedCode?.type || null,
+        points_to_redeem: pointsToRedeem > 0 ? pointsToRedeem : 0,
+      };
+
+      const url = isEditMode
+        ? `${API_BASE}/customer/orders/${editOrderId}`
+        : `${API_BASE}/customer/orders`;
+      const method = isEditMode ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          items: orderItems,
-          delivery_address: selectedAddr.fullAddress,
-          delivery_latitude: selectedAddr.latitude,
-          delivery_longitude: selectedAddr.longitude,
-          delivery_instructions: deliveryInstructions,
-          paymentMethod: "COD",  // Cash on Delivery
-          discount: discountAmount,
-          delivery_charge: deliveryCharge,
-          offer_id: appliedOffer?.id || null,
-          offer_title: appliedOffer?.title || null,
-          applied_code: appliedCode?.code || null,
-          applied_code_type: appliedCode?.type || null,
-          points_to_redeem: pointsToRedeem > 0 ? pointsToRedeem : 0,
-        }),
+        body: JSON.stringify(orderPayload),
       });
 
       if (!response.ok) {
-        console.error("=== ORDER CREATION FAILED ===");
-        console.error("Status:", response.status);
-        console.error("Status Text:", response.statusText);
-        
         let errorData;
         try {
           errorData = await response.json();
-          console.error("Error data:", errorData);
         } catch (e) {
-          console.error("Could not parse error response");
           errorData = {};
         }
-        
+
         if (response.status === 401) {
           throw new Error("Authentication failed. Please logout and login again to continue.");
         }
-        
-        throw new Error(errorData.error || errorData.message || "Failed to create order");
+
+        throw new Error(errorData.error || errorData.message || `Failed to ${isEditMode ? 'update' : 'create'} order`);
       }
 
       const data = await response.json();
-      
-      console.log('✅ COD Order created:', data.orderId);
-      trackPurchase(data.orderId, finalTotal, 'cod', lines);
+      const resultOrderId = data.orderId || editOrderId;
 
-      // ✅ Navigate to success page
+      console.log(`✅ COD Order ${isEditMode ? 'updated' : 'created'}:`, resultOrderId);
+      if (!isEditMode) {
+        trackPurchase(resultOrderId, finalTotal, 'cod', lines);
+      }
+
       clearCart();
-      navigate(`/order-success/${data.orderId}?type=cod`);
+      if (isEditMode) {
+        showToast('Order updated successfully!', 'success');
+        navigate(`/orders/${resultOrderId}`);
+      } else {
+        navigate(`/order-success/${resultOrderId}?type=cod`);
+      }
     } catch (error) {
       setPaymentError(error.message);
       setPaymentProcessing(false);
@@ -846,7 +900,22 @@ export default function Order() {
   return (
     <div className="min-h-screen min-h-[100dvh] bg-gray-900 pb-36 md:pb-8">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-white mb-6">Place Your Order</h1>
+        <h1 className="text-3xl font-bold text-white mb-6">
+          {isEditMode ? `Update Order #${editOrderId}` : 'Place Your Order'}
+        </h1>
+        {isEditMode && (
+          <div className="bg-yellow-600/20 border border-yellow-500/40 rounded-lg px-4 py-3 mb-6 flex items-center justify-between">
+            <span className="text-yellow-300 text-sm font-medium">
+              You are editing Order #{editOrderId}. Delivery address is locked.
+            </span>
+            <button
+              onClick={() => navigate(`/orders/${editOrderId}`)}
+              className="text-yellow-200 hover:text-white text-sm underline"
+            >
+              Cancel Edit
+            </button>
+          </div>
+        )}
 
         {/* 🎉 PERSISTENT OFFER BANNER */}
 
@@ -1471,31 +1540,35 @@ export default function Order() {
                 })()}
 
                 <div className="space-y-2">
-                  <button
-                    onClick={handleRazorpayPayment}
-                    disabled={paymentProcessing || lines.length === 0 || !selectedAddressId}
-                    className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors"
-                  >
-                    {paymentProcessing ? (
-                      <>
-                        <Loader className="w-4 h-4 inline animate-spin mr-2" />
-                        Processing...
-                      </>
-                    ) : (
-                      "💳 Pay Online - Razorpay"
-                    )}
-                  </button>
+                  {!isEditMode && (
+                    <button
+                      onClick={handleRazorpayPayment}
+                      disabled={paymentProcessing || lines.length === 0 || !selectedAddressId}
+                      className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors"
+                    >
+                      {paymentProcessing ? (
+                        <>
+                          <Loader className="w-4 h-4 inline animate-spin mr-2" />
+                          Processing...
+                        </>
+                      ) : (
+                        "💳 Pay Online - Razorpay"
+                      )}
+                    </button>
+                  )}
 
                   <button
                     onClick={handleCODPayment}
                     disabled={paymentProcessing || lines.length === 0 || !selectedAddressId}
-                    className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors"
+                    className={`w-full py-3 ${isEditMode ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700'} disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors`}
                   >
                     {paymentProcessing ? (
                       <>
                         <Loader className="w-4 h-4 inline animate-spin mr-2" />
-                        Processing...
+                        {isEditMode ? 'Updating...' : 'Processing...'}
                       </>
+                    ) : isEditMode ? (
+                      `Update Order #${editOrderId}`
                     ) : (
                       "💵 Cash on Delivery"
                     )}
