@@ -17,6 +17,7 @@ import OfferBanner from "./components/OfferBanner";
 import FirstVisitPopup from "./components/FirstVisitPopup";
 import WhatsAppFloat from "./components/WhatsAppFloat";
 import ActiveOrderBar from "./components/ActiveOrderBar";
+import WhatsAppOrderBar from "./components/WhatsAppOrderBar";
 import API_BASE from "./config/api.js";
 import "./styles/index.css";
 
@@ -345,6 +346,9 @@ export default function App() {
 
               {/* Navigation */}
               <Navbar />
+
+              {/* WhatsApp ordering cross-promo bar (pinned below navbar) */}
+              <WhatsAppOrderBar />
 
               {/* Main Content */}
               <main className="flex-1">
