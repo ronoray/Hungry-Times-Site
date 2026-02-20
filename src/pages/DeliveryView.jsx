@@ -111,34 +111,54 @@ export default function DeliveryView() {
       {/* Customer Info */}
       <div className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-4 mb-4">
         <p className="text-neutral-400 text-xs font-medium mb-2">Customer</p>
-        <p className="text-white font-semibold text-lg">{order.customer_name}</p>
+        <p className="text-white font-semibold text-lg mb-2">{order.customer_name}</p>
         {order.phone && (
-          <a
-            href={`tel:${order.phone}`}
-            className="mt-2 flex items-center gap-2 bg-emerald-500/20 text-emerald-400 px-4 py-3 rounded-lg font-medium text-base"
-          >
-            <Phone className="w-5 h-5" />
-            Call {order.phone}
-          </a>
+          <div className="flex items-center gap-2">
+            <span className="text-white font-mono text-base flex-1">{order.phone}</span>
+            <a
+              href={`tel:${order.phone}`}
+              className="flex items-center gap-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors"
+            >
+              <Phone className="w-4 h-4" />
+              Call
+            </a>
+          </div>
         )}
       </div>
 
       {/* Address */}
       <div className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-4 mb-4">
         <p className="text-neutral-400 text-xs font-medium mb-2">Delivery Address</p>
-        <p className="text-white text-sm mb-2">{order.delivery_address || 'Not provided'}</p>
+        <p className="text-white text-sm mb-3">{order.delivery_address || 'Not provided'}</p>
 
-        {order.delivery_latitude && order.delivery_longitude && (
+        {order.delivery_latitude && order.delivery_longitude ? (
+          /* GPS-verified location — opens exact pin */
           <a
-            href={`https://maps.google.com/?q=${order.delivery_latitude},${order.delivery_longitude}`}
+            href={`https://www.google.com/maps?q=${order.delivery_latitude},${order.delivery_longitude}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 bg-blue-500/20 text-blue-400 px-4 py-3 rounded-lg font-medium text-base"
+            className="flex items-center gap-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 px-4 py-3 rounded-lg font-semibold text-base transition-colors"
           >
             <Navigation className="w-5 h-5" />
             Open in Google Maps
           </a>
-        )}
+        ) : order.delivery_address && order.delivery_address !== 'Pickup' ? (
+          /* No GPS — text-based search, clearly marked as approximate */
+          <div>
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.delivery_address)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 px-4 py-3 rounded-lg font-semibold text-base transition-colors"
+            >
+              <MapPin className="w-5 h-5" />
+              Search Address on Maps
+            </a>
+            <p className="text-amber-500/70 text-xs mt-1.5 pl-1">
+              Location not GPS-verified — confirm with customer if unsure
+            </p>
+          </div>
+        ) : null}
 
         {order.delivery_instructions && (
           <div className="mt-3 p-2 bg-neutral-700/50 rounded-lg">
