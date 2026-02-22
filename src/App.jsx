@@ -250,10 +250,15 @@ export async function resubscribeOnLogin() {
   }
 }
 
+// Paths that should render as standalone utility pages (no nav, footer, popups)
+const UTILITY_PATHS = ['/delivery/', '/track/'];
+const isUtilityPath = (pathname) => UTILITY_PATHS.some(p => pathname.startsWith(p));
+
 export default function App() {
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [swReady, setSwReady] = useState(false);
   const location = useLocation();
+  const isUtility = isUtilityPath(location.pathname);
 
   // Scroll to top on route change
   useEffect(() => {
@@ -326,6 +331,17 @@ export default function App() {
     };
   }, [showNotificationModal]);
 
+  // Delivery/track pages are standalone — no restaurant chrome
+  if (isUtility) {
+    return (
+      <div className="min-h-screen flex flex-col bg-[#0B0B0B] text-white">
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
+      </div>
+    );
+  }
+
   return (
     <MenuCategoryProvider>
       <AuthProvider>
@@ -334,13 +350,13 @@ export default function App() {
             <FavoritesProvider>
             <ToastProvider>
             <div className="min-h-screen flex flex-col bg-[#0B0B0B] text-white">
-              
+
               {/* ✅ Show modal only when SW ready and permission needed */}
               {swReady && showNotificationModal && <NotificationPromptModal />}
-              
+
               {/* PWA Install Prompt */}
               <PWAInstallPrompt />
-              
+
               {/* Offer Banner */}
               <OfferBanner />
 
