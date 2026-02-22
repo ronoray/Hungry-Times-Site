@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Phone, MapPin, Navigation, Package, CheckCircle } from 'lucide-react';
+import { Phone, MapPin, Navigation, Package, CheckCircle, Radio } from 'lucide-react';
 import API_BASE from '../config/api';
 
 export default function DeliveryView() {
@@ -10,6 +10,9 @@ export default function DeliveryView() {
   const [error, setError] = useState(null);
   const [updating, setUpdating] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const [sharingLocation, setSharingLocation] = useState(false);
+  const watchIdRef = useRef(null);
+  const locationIntervalRef = useRef(null);
 
   const fetchOrder = async () => {
     try {
@@ -34,6 +37,42 @@ export default function DeliveryView() {
   useEffect(() => {
     fetchOrder();
   }, [token]);
+
+  // GPS broadcasting — runs while order is out_for_delivery
+  useEffect(() => {
+    const isOFD = order?.status === 'out_for_delivery';
+
+    if (isOFD && 'geolocation' in navigator) {
+      const sendLocation = (lat, lng) => {
+        fetch(`${API_BASE}/delivery/location/${token}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lat, lng }),
+        }).catch(() => {});
+      };
+
+      // Start watching position
+      watchIdRef.current = navigator.geolocation.watchPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          sendLocation(latitude, longitude);
+          setSharingLocation(true);
+        },
+        (err) => { console.warn('GPS error:', err.message); },
+        { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
+      );
+
+      return () => {
+        if (watchIdRef.current != null) {
+          navigator.geolocation.clearWatch(watchIdRef.current);
+          watchIdRef.current = null;
+        }
+        setSharingLocation(false);
+      };
+    } else {
+      setSharingLocation(false);
+    }
+  }, [order?.status, token]);
 
   const handleStatusUpdate = async (newStatus) => {
     const label = newStatus === 'picked_up' ? 'Picked Up' : 'Delivered';
@@ -199,6 +238,14 @@ export default function DeliveryView() {
           </div>
         )}
       </div>
+
+      {/* GPS sharing indicator */}
+      {sharingLocation && (
+        <div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/30 rounded-xl px-4 py-2.5 mb-4">
+          <Radio className="w-4 h-4 text-blue-400 animate-pulse" />
+          <p className="text-blue-400 text-sm font-medium">Sharing your location with the customer</p>
+        </div>
+      )}
 
       {/* Action Buttons */}
       <div className="space-y-3">

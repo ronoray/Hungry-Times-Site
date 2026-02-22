@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { useParams } from 'react-router-dom';
 import { ClipboardCheck, CheckCircle, ChefHat, Truck, Package, Phone } from 'lucide-react';
 import API_BASE from '../config/api';
+
+// Lazy-load map so leaflet CSS doesn't affect all pages
+const LiveTrackingMap = lazy(() => import('../components/LiveTrackingMap'));
 
 const STEPS = [
   { key: 'pending', label: 'Placed', icon: ClipboardCheck },
@@ -127,6 +130,21 @@ export default function TrackOrder() {
             </div>
           )}
         </>
+      )}
+
+      {/* Live tracking map — shown when out for delivery */}
+      {order.status === 'out_for_delivery' && (
+        <Suspense fallback={
+          <div className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-4 mb-4 text-center">
+            <p className="text-neutral-500 text-sm">Loading map...</p>
+          </div>
+        }>
+          <LiveTrackingMap
+            token={token}
+            customerLat={order.delivery_latitude ?? null}
+            customerLng={order.delivery_longitude ?? null}
+          />
+        </Suspense>
       )}
 
       {/* Delivery partner */}
