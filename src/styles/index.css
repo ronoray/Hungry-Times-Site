@@ -35,9 +35,9 @@ html { height: 100%; }
 }
 
 @media (max-width: 767px) {
-  /* Add bottom padding to body for bottom nav + iOS safe area */
+  /* Add bottom padding to body for bottom nav + FloatingCartBar + safe area */
   body {
-    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(9rem + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   /* Ensure bottom nav is always visible and respects iOS home indicator */

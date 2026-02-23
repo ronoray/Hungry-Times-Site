@@ -11,7 +11,7 @@ export default function FloatingCartBar() {
   const itemCount = lines.reduce((sum, l) => sum + (l.qty || 1), 0);
 
   return (
-    <div className="fixed left-0 right-0 z-40 px-4 pointer-events-none bottom-[calc(72px+env(safe-area-inset-bottom,0px))] md:bottom-6">
+    <div className="fixed left-0 right-0 z-40 px-4 pointer-events-none bottom-[calc(80px+env(safe-area-inset-bottom,0px))] md:bottom-6">
       <button
         onClick={() => navigate('/order')}
         className="pointer-events-auto w-full max-w-lg mx-auto flex items-center justify-between

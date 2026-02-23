@@ -1,5 +1,8 @@
 /* Menu.css - REDESIGNED FOR BETTER UX */
 
+/* ── Google Fonts ─────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap');
+
 /* NUCLEAR RESET */
 .menu-page-wrapper,
 .menu-page-wrapper * {
@@ -87,10 +90,10 @@
   padding-top: 4rem !important; /* Space for fixed top navbar (64px) */
 }
 
-/* Mobile: Add bottom padding for FloatingCartBar (56px) + bottom nav (72px) + safe area */
+/* Mobile: Add bottom padding for FloatingCartBar (56px) + bottom nav (80px) + WA FAB + safe area */
 @media (max-width: 767px) {
   .menu-page {
-    padding-bottom: calc(10rem + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(14rem + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
 
@@ -2802,4 +2805,271 @@
 
 .quantity-control {
   animation: slideInFromBottom 0.2s ease-out;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   DESIGN UPGRADE — visual overrides applied on top of base styles
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Updated CSS Variables ─────────────────────────────────────── */
+:root {
+  --color-bg: #0A0C10;
+  --color-surface: #131822;
+  --color-surface-2: #1a2235;
+  --color-accent: #F59E0B;
+  --color-accent-glow: rgba(245, 158, 11, 0.15);
+  --color-danger: #E02424;
+  --color-text: #F0F2F5;
+  --color-text-dim: rgba(240, 242, 245, 0.65);
+  --color-text-muted: rgba(240, 242, 245, 0.38);
+  --color-border: rgba(255, 255, 255, 0.07);
+  --color-border-active: rgba(245, 158, 11, 0.38);
+  --color-success: #22C55E;
+  --color-emerald: #22C55E;
+  --color-emerald-dark: #16A34A;
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+}
+
+/* ── Apply body font site-wide ─────────────────────────────────── */
+.menu-page,
+.menu-page * {
+  font-family: var(--font-body) !important;
+}
+
+/* ── Section titles — editorial serif ──────────────────────────── */
+.section-title {
+  font-family: var(--font-display) !important;
+  font-size: 1.75rem !important;
+  font-weight: 600 !important;
+  color: var(--color-text) !important;
+  letter-spacing: -0.02em !important;
+  margin-bottom: 1.25rem !important;
+  padding-bottom: 0.625rem !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+}
+
+.recommended-title {
+  font-family: var(--font-display) !important;
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+  color: var(--color-accent) !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* ── Sidebar ── cleaner, amber left-bar active ──────────────────── */
+.sidebar-sticky {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  border-radius: 1rem !important;
+  padding: 1.25rem !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35) !important;
+}
+
+.sidebar-heading {
+  font-family: var(--font-display) !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  color: rgba(240, 242, 245, 0.3) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+  margin-bottom: 0.875rem !important;
+}
+
+.sidebar-category-btn {
+  padding: 0.625rem 0.875rem 0.625rem 1rem !important;
+  background: transparent !important;
+  border: none !important;
+  border-left: 2px solid transparent !important;
+  border-radius: 0 !important;
+  color: var(--color-text-muted) !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  transition: color 0.15s, border-color 0.15s, background 0.15s !important;
+  font-family: var(--font-body) !important;
+}
+
+.sidebar-category-btn:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: var(--color-text) !important;
+  border-left-color: rgba(245, 158, 11, 0.35) !important;
+  transform: none !important;
+}
+
+.sidebar-category-btn.active {
+  background: rgba(245, 158, 11, 0.08) !important;
+  color: var(--color-accent) !important;
+  font-weight: 600 !important;
+  border-left-color: var(--color-accent) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* ── Item cards ── amber glow on hover ──────────────────────────── */
+.menu-item-card {
+  background: var(--color-surface) !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  border-radius: 1rem !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease !important;
+}
+
+@media (hover: hover) {
+  .menu-item-card:hover {
+    background: var(--color-surface) !important;
+    border-color: rgba(245, 158, 11, 0.3) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(245, 158, 11, 0.1) !important;
+  }
+}
+
+/* ── Item name ── slightly more legible ─────────────────────────── */
+.item-name {
+  font-weight: 600 !important;
+  color: var(--color-text) !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* ── Item price ── amber accent ─────────────────────────────────── */
+.item-price {
+  color: var(--color-accent) !important;
+  font-weight: 700 !important;
+}
+
+.item-price-large {
+  color: var(--color-accent) !important;
+}
+
+/* ── Add to Cart button ── solid red, no gradient ───────────────── */
+.add-to-cart-btn {
+  background: #E02424 !important;
+  box-shadow: none !important;
+  border-radius: 10px !important;
+  font-family: var(--font-body) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em !important;
+  transition: background 0.15s, box-shadow 0.15s !important;
+}
+
+.add-to-cart-btn:hover {
+  background: #c81e1e !important;
+  transform: none !important;
+  box-shadow: 0 4px 16px rgba(224, 36, 36, 0.3) !important;
+}
+
+.add-to-cart-btn:active {
+  background: #b31a1a !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ── Subcategory pills ── cleaner active ────────────────────────── */
+.subcategory-btn {
+  font-family: var(--font-body) !important;
+  font-weight: 500 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: var(--color-text-muted) !important;
+  transition: all 0.15s ease !important;
+}
+
+.subcategory-btn:hover {
+  background: rgba(245, 158, 11, 0.08) !important;
+  border-color: rgba(245, 158, 11, 0.25) !important;
+  color: var(--color-text) !important;
+}
+
+.subcategory-btn.active {
+  background: rgba(245, 158, 11, 0.14) !important;
+  color: var(--color-accent) !important;
+  font-weight: 600 !important;
+  border-color: rgba(245, 158, 11, 0.4) !important;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.15) !important;
+}
+
+/* ── Subcategory bar background ─────────────────────────────────── */
+.menu-page .subcategory-bar {
+  background: rgba(10, 12, 16, 0.97) !important;
+  border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+/* ── Recommended card ── cleaner emerald style ──────────────────── */
+.recommended-item-card {
+  background: var(--color-surface) !important;
+  border: 1px solid rgba(34, 197, 94, 0.2) !important;
+  box-shadow: none !important;
+  border-radius: 1rem !important;
+}
+
+@media (hover: hover) {
+  .recommended-item-card:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(34, 197, 94, 0.25) !important;
+  }
+}
+
+/* ── Search bar ── cleaner focus ────────────────────────────────── */
+.search-bar-input-wrapper {
+  background: var(--color-surface) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 14px !important;
+  transition: border-color 0.15s !important;
+}
+
+.search-bar-input-wrapper:focus-within {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1) !important;
+}
+
+/* ── Quantity control ── green, refined ─────────────────────────── */
+.quantity-control {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 2px 12px rgba(34, 197, 94, 0.25) !important;
+}
+
+.quantity-btn {
+  border-radius: 7px !important;
+}
+
+.quantity-btn.remove-indicator {
+  background: rgba(239, 68, 68, 0.25) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+}
+
+/* ── Hero title ── serif ────────────────────────────────────────── */
+.hero-title {
+  font-family: var(--font-display) !important;
+  letter-spacing: -0.02em !important;
+}
+
+/* ── Star / recommended badge ── ────────────────────────────────── */
+.star-badge {
+  background: var(--color-success) !important;
+  font-family: var(--font-body) !important;
+}
+
+/* ── Menu page background ───────────────────────────────────────── */
+.menu-page {
+  background: var(--color-bg) !important;
+}
+
+/* ── Section search results header ─────────────────────────────── */
+.search-results-header {
+  background: rgba(245, 158, 11, 0.07) !important;
+  border-left-color: var(--color-accent) !important;
+  border-radius: 0.75rem !important;
+}
+
+/* ── Read more link ─────────────────────────────────────────────── */
+.read-more-inline {
+  color: var(--color-accent) !important;
+  text-decoration: none !important;
+}
+
+/* ── Mobile section title override ─────────────────────────────── */
+@media (max-width: 768px) {
+  .section-title {
+    font-size: 1.25rem !important;
+    font-family: var(--font-display) !important;
+  }
 }

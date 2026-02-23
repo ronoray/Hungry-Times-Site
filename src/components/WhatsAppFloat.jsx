@@ -12,7 +12,7 @@ export default function WhatsAppFloat() {
       rel="noopener noreferrer"
       onClick={() => trackWhatsAppClick('floating_button')}
       aria-label="Chat on WhatsApp"
-      className="fixed z-50 right-4 bottom-[calc(80px+env(safe-area-inset-bottom,0px))] md:bottom-6 md:right-6
+      className="fixed z-50 right-4 bottom-[calc(144px+env(safe-area-inset-bottom,0px))] md:bottom-6 md:right-6
                  w-14 h-14 bg-[#25D366] hover:bg-[#20BD5A] active:scale-95
                  rounded-full flex items-center justify-center
                  shadow-[0_4px_20px_rgba(37,211,102,0.5)]
