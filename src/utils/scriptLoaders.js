@@ -14,7 +14,7 @@ export function loadGoogleMaps() {
     mapsPromise = new Promise((resolve, reject) => {
       const script = document.createElement('script');
       script.src =
-        'https://maps.googleapis.com/maps/api/js?key=AIzaSyC1OsnZiTXao9VqePa8npp1CLVBTzCMXSM&libraries=places&loading=async';
+        'https://maps.googleapis.com/maps/api/js?key=AIzaSyC1OsnZiTXao9VqePa8npp1CLVBTzCMXSM&libraries=places';
       script.async = true;
       script.onload = () => resolve();
       script.onerror = () => {

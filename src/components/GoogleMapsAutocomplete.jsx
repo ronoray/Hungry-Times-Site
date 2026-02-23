@@ -27,9 +27,20 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
     loadGoogleMaps()
       .then(() => {
         if (cancelled) return;
-        setIsLoaded(true);
-        setManualMode(false);
-        setTimeout(() => initAutocomplete(), 100);
+        // Verify places library is actually ready (can lag behind onload)
+        const check = (attempts = 0) => {
+          if (window.google?.maps?.places) {
+            setIsLoaded(true);
+            setManualMode(false);
+            setTimeout(() => initAutocomplete(), 100);
+          } else if (attempts < 10) {
+            setTimeout(() => check(attempts + 1), 200);
+          } else {
+            setManualMode(true);
+            setIsLoaded(true);
+          }
+        };
+        check();
       })
       .catch(() => {
         if (cancelled) return;
