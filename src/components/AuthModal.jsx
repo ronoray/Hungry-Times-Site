@@ -200,7 +200,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
   }, [step]);
 
   const startOtpCooldown = (type) => {
-    const cooldownSeconds = 600; // 10 minutes
+    const cooldownSeconds = 60; // 60 seconds
     const cooldownEnd = Date.now() + (cooldownSeconds * 1000);
     const key = type === 'register' ? 'otp_cooldown_register' : 'otp_cooldown_forgot';
     localStorage.setItem(key, cooldownEnd.toString());
