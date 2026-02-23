@@ -693,9 +693,9 @@ export default function Order() {
       }
 
       const data = await response.json();
-      const { razorpayOrderId, razorpayKey, amount } = data;
+      const { razorpayOrderId, razorpayKey, amount, dbOrderId } = data;
 
-      console.log('✅ Step 1 complete: Razorpay order created:', razorpayOrderId);
+      console.log('✅ Step 1 complete: Razorpay order created:', razorpayOrderId, 'dbOrderId:', dbOrderId);
 
       // Load Razorpay SDK if not loaded
       await loadRazorpay();
@@ -711,44 +711,85 @@ export default function Order() {
         description: "Order Payment",
         order_id: razorpayOrderId,
         handler: async function (paymentResponse) {
-          try {
-            // ✅ STEP 3: VERIFY payment and CREATE database order
-            console.log('🔄 Step 3: Verifying payment and creating order...');
-            
-            const verifyResponse = await fetch(`${API_BASE}/customer/orders/verify`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                razorpayOrderId: paymentResponse.razorpay_order_id,
-                razorpayPaymentId: paymentResponse.razorpay_payment_id,
-                razorpaySignature: paymentResponse.razorpay_signature,
-              }),
-            });
+          // Payment was captured by Razorpay — money has been taken.
+          // The order record already exists in the DB (created at /initiate).
+          // We now call /verify to confirm it. If the server is briefly restarting
+          // (e.g. during a deploy), we retry before giving up.
+          console.log('🔄 Step 3: Verifying payment...', paymentResponse.razorpay_payment_id);
 
-            if (!verifyResponse.ok) {
-              const errorData = await verifyResponse.json();
-              throw new Error(errorData.error || "Payment verification failed");
+          const verifyBody = JSON.stringify({
+            razorpayOrderId: paymentResponse.razorpay_order_id,
+            razorpayPaymentId: paymentResponse.razorpay_payment_id,
+            razorpaySignature: paymentResponse.razorpay_signature,
+          });
+
+          let result = null;
+          let lastError = null;
+          const MAX_RETRIES = 4;
+          const RETRY_DELAYS_MS = [2000, 4000, 8000, 15000]; // ~30s total wait
+
+          for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+            if (attempt > 0) {
+              console.log(`⏳ Verify retry ${attempt}/${MAX_RETRIES - 1} in ${RETRY_DELAYS_MS[attempt - 1] / 1000}s...`);
+              await new Promise(r => setTimeout(r, RETRY_DELAYS_MS[attempt - 1]));
             }
+            try {
+              const verifyResponse = await fetch(`${API_BASE}/customer/orders/verify`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                body: verifyBody,
+              });
 
-            const result = await verifyResponse.json();
-            
-            console.log('✅ Payment verified! Order created:', result.orderId);
-            trackPurchase(result.orderId, finalTotal, 'razorpay', lines);
+              if (verifyResponse.ok) {
+                result = await verifyResponse.json();
+                break;
+              }
 
-            // ✅ Navigate to success page
+              // 4xx = definitive error (bad signature, auth failure), don't retry
+              if (verifyResponse.status < 500) {
+                const err = await verifyResponse.json().catch(() => ({}));
+                throw new Error(err.error || `Verification failed (${verifyResponse.status})`);
+              }
+
+              // 5xx = server error, retry
+              lastError = new Error(`Server error ${verifyResponse.status}`);
+              console.warn('[VERIFY] 5xx on attempt', attempt + 1, '— will retry');
+
+            } catch (fetchErr) {
+              // Network error (server restarting) — retry
+              lastError = fetchErr;
+              // If it's not a network/server error, rethrow immediately
+              if (fetchErr.message && !fetchErr.message.includes('5') &&
+                  !fetchErr.message.includes('fetch') && !fetchErr.message.includes('network') &&
+                  !fetchErr.message.includes('Server error') && !fetchErr.message.includes('Failed to fetch')) {
+                throw fetchErr;
+              }
+              console.warn('[VERIFY] Network error on attempt', attempt + 1, '— will retry:', fetchErr.message);
+            }
+          }
+
+          if (result) {
+            const confirmedOrderId = result.orderId || dbOrderId;
+            console.log('✅ Payment verified! Order confirmed:', confirmedOrderId);
+            trackPurchase(confirmedOrderId, finalTotal, 'razorpay', lines);
             clearCart();
-            navigate(`/order-success/${result.orderId}?type=online`);
-            
-          } catch (error) {
-            console.error('❌ Verification error:', error);
-            setPaymentError(
-              `Payment verification failed. ` +
-              `If money was deducted, contact support with payment ID: ${paymentResponse.razorpay_payment_id}`
-            );
-            setPaymentProcessing(false);
+            navigate(`/order-success/${confirmedOrderId}?type=online`);
+          } else {
+            // All retries exhausted. Money was taken. Order IS in DB (DB-first).
+            // Razorpay webhook will confirm it. Do NOT say "payment failed."
+            console.error('❌ Verify retries exhausted. Payment captured, order pending webhook confirmation.');
+            clearCart();
+            // Navigate to orders page — the order will appear once webhook fires
+            if (dbOrderId) {
+              navigate(`/order-success/${dbOrderId}?type=online&pending=1&pid=${paymentResponse.razorpay_payment_id}`);
+            } else {
+              setPaymentError(
+                `Your payment of ₹${finalTotal} was received. Your order is being confirmed. ` +
+                `Check your orders page in a minute. Payment ID: ${paymentResponse.razorpay_payment_id}`
+              );
+              setTimeout(() => navigate('/orders'), 5000);
+              setPaymentProcessing(false);
+            }
           }
         },
         prefill: {

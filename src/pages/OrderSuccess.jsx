@@ -16,7 +16,14 @@ export default function OrderSuccess() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const paymentType = searchParams.get('type'); // 'online' or 'cod'
+  const isPending = searchParams.get('pending') === '1'; // payment captured but webhook not yet confirmed
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(isPending);
+  const [pollTimedOut, setPollTimedOut] = useState(false);
   const tracked = useRef(false);
+  const pollTimer = useRef(null);
+  const pollTimeout = useRef(null);
+  // Read the payment ID from URL so we can show it to the customer if polling times out
+  const paymentId = searchParams.get('pid') || null;
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -26,6 +33,44 @@ export default function OrderSuccess() {
 
     fetchOrderDetails();
   }, [orderId, isAuthenticated]);
+
+  // If we arrived with pending=1, poll until payment_status flips to 'paid'
+  useEffect(() => {
+    if (!awaitingConfirmation) return;
+
+    const poll = async () => {
+      try {
+        const token = localStorage.getItem('customerToken');
+        const res = await fetch(`${API_BASE}/customer/orders/${orderId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.order?.payment_status === 'paid' || data.order?.status === 'confirmed') {
+          setOrder(data.order);
+          setAwaitingConfirmation(false);
+          clearInterval(pollTimer.current);
+          clearTimeout(pollTimeout.current);
+        }
+      } catch { /* ignore — transient network error */ }
+    };
+
+    pollTimer.current = setInterval(poll, 5000);
+    poll(); // immediate first check
+
+    // Safety timeout — after 3 minutes stop spinning and show a help message.
+    // The reconciliation cron will still confirm the order server-side within 30 min.
+    pollTimeout.current = setTimeout(() => {
+      clearInterval(pollTimer.current);
+      setAwaitingConfirmation(false);
+      setPollTimedOut(true);
+    }, 3 * 60 * 1000);
+
+    return () => {
+      clearInterval(pollTimer.current);
+      clearTimeout(pollTimeout.current);
+    };
+  }, [awaitingConfirmation, orderId]);
 
   // Fire Purchase pixel event once when order loads
   useEffect(() => {
@@ -80,6 +125,55 @@ export default function OrderSuccess() {
       return [];
     }
   };
+
+  if (pollTimedOut) {
+    return (
+      <div className="min-h-screen bg-neutral-900 flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <div className="text-5xl mb-4">✅</div>
+          <h2 className="text-2xl font-bold text-white mb-3">Payment Received!</h2>
+          <p className="text-neutral-300 mb-4">
+            Your payment was successfully captured. Your order will be confirmed automatically within a few minutes.
+          </p>
+          <p className="text-neutral-400 text-sm mb-6">
+            Check your <button onClick={() => navigate('/orders')} className="text-orange-400 underline font-medium">orders page</button> in a minute — it will show up there once confirmed.
+          </p>
+          {paymentId && (
+            <p className="text-neutral-500 text-xs mb-4">
+              Payment ID: <span className="font-mono text-neutral-400">{paymentId}</span>
+            </p>
+          )}
+          <p className="text-neutral-500 text-xs">
+            Need help? WhatsApp us: <span className="text-orange-400">+91 62904 71281</span>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (awaitingConfirmation) {
+    return (
+      <div className="min-h-screen bg-neutral-900 flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <div className="text-5xl mb-4">⏳</div>
+          <h2 className="text-2xl font-bold text-white mb-3">Payment Received!</h2>
+          <p className="text-neutral-300 mb-4">
+            Your payment was captured. We're confirming your order — this usually takes a few seconds.
+          </p>
+          <div className="flex items-center justify-center gap-2 text-orange-400">
+            <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+            <span className="text-sm">Waiting for confirmation...</span>
+          </div>
+          <p className="text-neutral-500 text-xs mt-6">
+            You can also check your <button onClick={() => navigate('/orders')} className="text-orange-400 underline">orders page</button>.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
