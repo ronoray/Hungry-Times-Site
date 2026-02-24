@@ -12,15 +12,10 @@ export default function PWAInstallPrompt() {
   const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
-    // Check session storage immediately
     const dismissed = sessionStorage.getItem('pwa-prompt-dismissed');
-
-    // Check if already installed
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
-    if (isStandalone || dismissed) {
-      return;
-    }
+    if (isStandalone || dismissed) return;
 
     // Detect iOS (beforeinstallprompt NEVER fires on iOS)
     const ua = navigator.userAgent;
@@ -28,33 +23,29 @@ export default function PWAInstallPrompt() {
 
     if (iosDevice) {
       setIsIOS(true);
-      // Show iOS install prompt after 5 seconds
       const timer = setTimeout(() => {
-        const nowDismissed = sessionStorage.getItem('pwa-prompt-dismissed');
-        if (!nowDismissed) {
-          setShowPrompt(true);
-        }
+        if (!sessionStorage.getItem('pwa-prompt-dismissed')) setShowPrompt(true);
       }, 5000);
       return () => clearTimeout(timer);
     }
 
-    // Android/Desktop: Listen for the install prompt event
-    const handler = (e) => {
-      setDeferredPrompt(e);
-
+    const showAfterDelay = (prompt) => {
+      setDeferredPrompt(prompt);
       setTimeout(() => {
-        const nowDismissed = sessionStorage.getItem('pwa-prompt-dismissed');
-        if (!nowDismissed) {
-          setShowPrompt(true);
-        }
+        if (!sessionStorage.getItem('pwa-prompt-dismissed')) setShowPrompt(true);
       }, 5000);
     };
 
-    window.addEventListener('beforeinstallprompt', handler);
+    // If beforeinstallprompt already fired before React mounted, grab it from window
+    if (window.__pwaDeferred) {
+      showAfterDelay(window.__pwaDeferred);
+      return;
+    }
 
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
-    };
+    // Otherwise wait for the custom event dispatched by main.jsx
+    const handler = (e) => showAfterDelay(e.detail.prompt);
+    window.addEventListener('pwa-install-available', handler);
+    return () => window.removeEventListener('pwa-install-available', handler);
   }, []);
 
   // Monitor showPrompt state changes
@@ -64,19 +55,19 @@ export default function PWAInstallPrompt() {
 
   const handleInstall = async () => {
     if (isIOS) {
-      // iOS: Show manual instructions since beforeinstallprompt doesn't exist
       alert(
         'To install Hungry Times on iPhone/iPad:\n\n' +
         '1. Tap the Share button (square with arrow) at the bottom of Safari\n' +
         '2. Scroll down and tap "Add to Home Screen"\n' +
-        '3. Tap "Add" to confirm\n\n' +
-        'This gives you quick access and push notifications!'
+        '3. Tap "Add" to confirm'
       );
       setShowPrompt(false);
       return;
     }
 
-    if (!deferredPrompt) {
+    // Use global trigger (set up in main.jsx) or local deferred prompt
+    const prompt = deferredPrompt || window.__pwaDeferred;
+    if (!prompt) {
       alert(
         'To install this app:\n\n' +
         '1. Tap the menu (\u22EE) at top-right\n' +
@@ -87,9 +78,9 @@ export default function PWAInstallPrompt() {
       return;
     }
 
-    deferredPrompt.prompt();
-    const result = await deferredPrompt.userChoice;
-
+    prompt.prompt();
+    await prompt.userChoice;
+    window.__pwaDeferred = null;
     setDeferredPrompt(null);
     setShowPrompt(false);
   };

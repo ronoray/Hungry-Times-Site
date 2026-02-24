@@ -9,90 +9,71 @@
 import { useState, useEffect } from 'react';
 import { Bell, X } from 'lucide-react';
 
-export default function NotificationPromptModal() {
+export default function NotificationPromptModal({ onGranted }) {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    // Wait 1.5 seconds after page load to show modal
+    // Wait 1.5 seconds after mount to show modal
     const timer = setTimeout(() => {
-      const shouldShow = checkShouldShowPrompt();
-      if (shouldShow) {
-        setShow(true);
-      }
+      if (checkShouldShowPrompt()) setShow(true);
     }, 1500);
-
     return () => clearTimeout(timer);
   }, []);
 
   const checkShouldShowPrompt = () => {
-    // Don't show if notifications not supported
-    if (!('Notification' in window)) {
-      return false;
-    }
+    if (!('Notification' in window)) return false;
 
     // iOS Safari (not PWA) doesn't support push - don't show misleading prompt
     const ua = navigator.userAgent;
     const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-    if (isIOS && !isStandalone) {
-      console.log('[NotificationModal] iOS Safari (not PWA) - skipping push prompt');
-      return false;
-    }
+    if (isIOS && !isStandalone) return false;
 
-    // Don't show if already granted
-    if (Notification.permission === 'granted') {
-      return false;
-    }
+    // Don't show if already decided
+    if (Notification.permission !== 'default') return false;
 
-    // Don't show if denied (user explicitly blocked)
-    if (Notification.permission === 'denied') {
-      return false;
-    }
+    // Don't show if permission request is already in progress (tab was backgrounded)
+    if (localStorage.getItem('ht_notif_in_progress')) return false;
 
-    // Check if user dismissed in last 24 hours
+    // Don't show if user dismissed in last 24 hours
     try {
       const lastDismissed = localStorage.getItem('notificationModalDismissed');
       if (lastDismissed) {
         const hoursSinceDismiss = (Date.now() - parseInt(lastDismissed)) / (1000 * 60 * 60);
-        if (hoursSinceDismiss < 24) {
-          return false;
-        }
+        if (hoursSinceDismiss < 24) return false;
       }
     } catch {
-      // localStorage may fail in iOS Private Browsing
       return false;
     }
 
-    return Notification.permission === 'default';
+    return true;
   };
 
   const handleEnable = async () => {
+    setShow(false);
+    // Mark as in-progress so a re-mount during the native dialog doesn't re-show
+    localStorage.setItem('ht_notif_in_progress', '1');
     try {
-      console.log('[NotificationModal] Requesting permission...');
       const permission = await Notification.requestPermission();
-      console.log('[NotificationModal] Permission result:', permission);
-      
+      localStorage.removeItem('ht_notif_in_progress');
+
       if (permission === 'granted') {
-        console.log('[NotificationModal] ✅ Permission granted!');
-        setShow(false);
-        
-        // Show success message briefly
+        if (onGranted) onGranted();
         setTimeout(() => {
           if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('🎉 Notifications Enabled!', {
-              body: 'You\'ll now receive order status updates',
+            new Notification('Notifications Enabled!', {
+              body: "You'll now receive order status updates",
               icon: '/icon-192.png',
               tag: 'notification-enabled'
             });
           }
         }, 500);
-      } else {
-        console.log('[NotificationModal] ⚠️ Permission not granted');
-        setShow(false);
+      } else if (permission === 'denied') {
+        // User explicitly blocked — don't ask again
+        localStorage.setItem('notificationModalDismissed', Date.now().toString());
       }
-    } catch (error) {
-      console.error('[NotificationModal] Error requesting permission:', error);
-      setShow(false);
+    } catch {
+      localStorage.removeItem('ht_notif_in_progress');
     }
   };
 

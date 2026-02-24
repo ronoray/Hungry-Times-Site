@@ -78,6 +78,8 @@ let deferredPrompt = null;
 
 window.addEventListener('beforeinstallprompt', (e) => {
   deferredPrompt = e;
+  // Store on window so late-mounting components can read it
+  window.__pwaDeferred = e;
   window.dispatchEvent(new CustomEvent('pwa-install-available', {
     detail: { prompt: e }
   }));

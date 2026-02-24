@@ -255,7 +255,6 @@ const UTILITY_PATHS = ['/delivery/', '/track/'];
 const isUtilityPath = (pathname) => UTILITY_PATHS.some(p => pathname.startsWith(p));
 
 export default function App() {
-  const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [swReady, setSwReady] = useState(false);
   const location = useLocation();
   const isUtility = isUtilityPath(location.pathname);
@@ -266,70 +265,22 @@ export default function App() {
   }, [location.pathname]);
 
   useEffect(() => {
-    console.log('[Push] 🚀 App mounted - waiting for SW from main.jsx');
-    
-    // Setup service worker messages
     setupServiceWorkerMessages();
 
-    // ✅ Wait for SW to be ready (registered in main.jsx)
-    const initializePushNotifications = async () => {
-      try {
-        if ('serviceWorker' in navigator) {
-          // Wait for SW ready (registered in main.jsx)
-          await navigator.serviceWorker.ready;
-          console.log('[Push] ✅ Service worker ready from main.jsx');
-          setSwReady(true);
-
-          // ✅ Check permission status
-          if ('Notification' in window) {
-            const permission = Notification.permission;
-            console.log('[Push] 🔔 Current permission:', permission);
-
-            if (permission === 'granted') {
-              // Permission already granted - setup push immediately
-              console.log('[Push] ✅ Permission already granted, setting up push...');
-              setupPushNotifications();
-            } else if (permission === 'default') {
-              // Not asked yet - show modal after 1.5s
-              console.log('[Push] 📱 Permission not asked, showing modal...');
-              setTimeout(() => {
-                setShowNotificationModal(true);
-              }, 1500);
-            } else {
-              // Permission denied
-              console.log('[Push] ⚠️ Permission denied by user');
-            }
-          }
+    // Wait for SW ready once; if already granted set up push silently
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(() => {
+        setSwReady(true);
+        if ('Notification' in window && Notification.permission === 'granted') {
+          setupPushNotifications();
         }
-      } catch (error) {
-        console.error('[Push] ❌ Initialization error:', error);
-      }
-    };
-
-    initializePushNotifications();
-
-    // ✅ Listen for permission changes (when user grants via modal)
-    const checkPermissionInterval = setInterval(() => {
-      if ('Notification' in window && Notification.permission === 'granted' && showNotificationModal) {
-        console.log('[Push] ✅ Permission granted! Hiding modal and setting up push...');
-        setShowNotificationModal(false);
-        
-        // Setup push immediately after permission granted
-        setupPushNotifications()
-          .then(success => {
-            if (success) {
-              console.log('[Push] ✅ Push notifications fully configured');
-            } else {
-              console.warn('[Push] ⚠️ Push setup incomplete (may need login)');
-            }
-          });
-      }
-    }, 1000);
-
-    return () => {
-      clearInterval(checkPermissionInterval);
-    };
-  }, [showNotificationModal]);
+      }).catch(() => {
+        setSwReady(true); // Still show modal even if SW fails
+      });
+    } else {
+      setSwReady(true);
+    }
+  }, []);
 
   // Delivery/track pages are standalone — no restaurant chrome
   if (isUtility) {
@@ -351,8 +302,8 @@ export default function App() {
             <ToastProvider>
             <div className="min-h-screen flex flex-col bg-[#0B0B0B] text-white">
 
-              {/* ✅ Show modal only when SW ready and permission needed */}
-              {swReady && showNotificationModal && <NotificationPromptModal />}
+              {/* Show notification modal when SW is ready — it decides internally whether to show */}
+              {swReady && <NotificationPromptModal onGranted={setupPushNotifications} />}
 
               {/* PWA Install Prompt */}
               <PWAInstallPrompt />
