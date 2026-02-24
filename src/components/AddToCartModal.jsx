@@ -270,6 +270,21 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
     };
 
     trackAddToCart(item, quantity);
+
+    // Fire-and-forget: log cart add to our DB for ops panel visibility
+    const API = import.meta.env.VITE_API_BASE || 'https://hungrytimes.in';
+    fetch(`${API}/api/site-activity/cart-add`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        item_id: item.id,
+        item_name: item.name,
+        price: basePrice,
+        customer_id: null, // anonymous — Order.jsx can pass if known
+        session_id: sessionStorage.getItem('ht_session_id') || null,
+      }),
+    }).catch(() => {}); // never block the cart action
+
     onAdd(lineItem);
     onClose();
   };

@@ -16,6 +16,7 @@ import { ToastProvider } from "./components/Toast";
 import OfferBanner from "./components/OfferBanner";
 import FirstVisitPopup from "./components/FirstVisitPopup";
 import WhatsAppFloat from "./components/WhatsAppFloat";
+import SiteFeedbackWidget from "./components/SiteFeedbackWidget";
 import ActiveOrderBar from "./components/ActiveOrderBar";
 import WhatsAppOrderBar from "./components/WhatsAppOrderBar";
 import API_BASE from "./config/api.js";
@@ -335,6 +336,9 @@ export default function App() {
 
               {/* Active order tracking bar */}
               <ActiveOrderBar />
+
+              {/* Visitor feedback widget — appears bottom-left after 60s */}
+              <SiteFeedbackWidget />
 
             </div>
             </ToastProvider>
