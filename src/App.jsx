@@ -251,6 +251,39 @@ export async function resubscribeOnLogin() {
   }
 }
 
+// ─── TEMPORARY CLOSURE ───────────────────────────────────────────────────────
+// Set to false and redeploy when reopening
+const BUSINESS_CLOSED = true;
+
+function ClosedPage() {
+  return (
+    <div style={{
+      minHeight: '100vh', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      background: '#0B0B0B', color: '#fff', textAlign: 'center', padding: '2rem',
+      fontFamily: 'sans-serif'
+    }}>
+      <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🍽️</div>
+      <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem', color: '#f97316' }}>
+        Hungry Times
+      </h1>
+      <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: '#fbbf24' }}>
+        Temporarily Closed
+      </h2>
+      <p style={{ color: '#9ca3af', maxWidth: '360px', lineHeight: 1.6, marginBottom: '2rem' }}>
+        We are currently closed for a short break. We will be back soon with fresh food and great service.
+      </p>
+      <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
+        For enquiries:{' '}
+        <a href="tel:+918420822919" style={{ color: '#f97316', textDecoration: 'none' }}>
+          +91 84208 22919
+        </a>
+      </p>
+    </div>
+  );
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 // Paths that should render as standalone utility pages (no nav, footer, popups)
 const UTILITY_PATHS = ['/delivery/', '/track/'];
 const isUtilityPath = (pathname) => UTILITY_PATHS.some(p => pathname.startsWith(p));
@@ -259,6 +292,9 @@ export default function App() {
   const [swReady, setSwReady] = useState(false);
   const location = useLocation();
   const isUtility = isUtilityPath(location.pathname);
+
+  // Show closed page immediately — no providers, no API calls, no hanging
+  if (BUSINESS_CLOSED) return <ClosedPage />;
 
   // Scroll to top on route change
   useEffect(() => {
