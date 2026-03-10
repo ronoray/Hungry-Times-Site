@@ -253,7 +253,7 @@ export async function resubscribeOnLogin() {
 
 // ─── TEMPORARY CLOSURE ───────────────────────────────────────────────────────
 // Set to false and redeploy when reopening
-const BUSINESS_CLOSED = true;
+const BUSINESS_CLOSED = false;
 
 function ClosedPage() {
   return (
