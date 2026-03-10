@@ -402,7 +402,7 @@ export default function Menu() {
   const globalSearchResults = useMemo(() => {
     if (!searchQuery.trim()) return null;
     
-    const query = searchQuery.toLowerCase();
+    const query = searchQuery.toLowerCase().trim();
     const results = [];
     
     // Search through ALL top categories and their subcategories
