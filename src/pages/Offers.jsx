@@ -1,7 +1,7 @@
 // src/pages/Offers.jsx — Central offers hub
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Copy, Check, Tag, Gift, Users, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { Copy, Check, Tag, Gift, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import API_BASE from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import SEOHead from '../components/SEOHead';
@@ -160,52 +160,11 @@ export default function Offers() {
           </div>`
         });
       } else {
-        // Try referral-specific validation for more detailed state info
-        const refRes = await fetch(`${API_BASE}/referral/validate`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code, customerPhone: phone })
+        setVerifyResult({
+          show: true,
+          type: 'error',
+          message: data.error || 'This code is invalid or expired.'
         });
-        const refData = await refRes.json();
-
-        if (refData.valid) {
-          setVerifyResult({
-            show: true,
-            type: 'success',
-            message: `<div style="text-align:center">
-              <div class="code-display">${code}</div>
-              <p style="font-weight:bold;color:#10b981">${refData.title}</p>
-              <p>${refData.message}</p>
-              ${refData.discount_percent ? `<p style="margin-top:10px;padding:10px;background:rgba(16,185,129,0.1);border-radius:8px;font-weight:500"><strong>${refData.discount_percent}% OFF</strong> on your order!</p>` : ''}
-              ${refData.action ? `<p style="margin-top:8px;font-size:0.85em;color:#6b7280">${refData.action}</p>` : ''}
-            </div>`
-          });
-        } else if (refData.state) {
-          const colorMap = {
-            CODE_PENDING_ACTIVATION: '#f59e0b',
-            CODE_EXPIRED: '#ef4444',
-            CODE_ALREADY_USED: '#6b7280',
-            CODE_NOT_FOUND: '#ef4444'
-          };
-          const color = colorMap[refData.state] || '#ef4444';
-          setVerifyResult({
-            show: true,
-            type: refData.state === 'CODE_PENDING_ACTIVATION' ? 'info' : 'error',
-            message: `<div style="text-align:center">
-              <div class="code-display">${code}</div>
-              <p style="font-weight:bold;color:${color}">${refData.title}</p>
-              <p>${refData.message}</p>
-              ${refData.details ? `<p style="margin-top:10px;opacity:0.9;font-size:0.9em">${refData.details}</p>` : ''}
-              ${refData.action ? `<p style="margin-top:8px;font-size:0.85em;color:#6b7280">${refData.action}</p>` : ''}
-            </div>`
-          });
-        } else {
-          setVerifyResult({
-            show: true,
-            type: 'error',
-            message: data.error || 'This code is invalid or expired.'
-          });
-        }
       }
     } catch {
       setVerifyResult({ show: true, type: 'error', message: 'Unable to connect. Please try again.' });
@@ -218,7 +177,7 @@ export default function Offers() {
     <div className="offers-container">
       <SEOHead
         title="Offers & Rewards"
-        description="Exclusive offers at Hungry Times — promo codes, referral discounts, and more. Order online and save on your favourite Chinese-Continental food in Kolkata."
+        description="Exclusive offers at Hungry Times — promo codes, loyalty rewards, and more. Order online and save on your favourite Chinese-Continental food in Kolkata."
         canonicalPath="/offers"
       />
 
@@ -241,25 +200,6 @@ export default function Offers() {
         </div>
       )}
 
-      {/* Referral Program */}
-      <div className="section">
-        <div className="section-title-row">
-          <Users className="w-5 h-5 text-orange-400" />
-          <h2 className="section-title">Referral Program</h2>
-        </div>
-        <div className="offer-highlight">
-          <h3>Share & Earn 15% OFF Together</h3>
-          <p>Our referral program rewards both you and your friends:</p>
-          <ul>
-            <li><strong>Get Your Code:</strong> Receive a unique referral code from Hungry Times</li>
-            <li><strong>Share with Friends:</strong> Give your code to someone who hasn't ordered before</li>
-            <li><strong>They Save 15%:</strong> Your friend gets 15% OFF on their first order</li>
-            <li><strong>You Save 15%:</strong> After they use it, your code activates for you too</li>
-            <li><strong>90-Day Validity:</strong> Each code is valid for 90 days</li>
-          </ul>
-        </div>
-      </div>
-
       {/* Verify Code */}
       <div className="section">
         <div className="section-title-row">
@@ -267,7 +207,7 @@ export default function Offers() {
           <h2 className="section-title">Verify a Code</h2>
         </div>
         <p className="section-description">
-          Have a promo or referral code? Check if it's valid and see your discount.
+          Have a promo code? Check if it's valid and see your discount.
         </p>
 
         <form onSubmit={handleVerify}>
@@ -283,11 +223,11 @@ export default function Offers() {
             />
           </div>
           <div className="input-group">
-            <label htmlFor="verifyCode">Offer / Referral Code</label>
+            <label htmlFor="verifyCode">Promo Code</label>
             <input
               type="text"
               id="verifyCode"
-              placeholder="e.g. FIRST30, TRYONLINE, HT-XXXXX"
+              placeholder="e.g. FIRST30, TRYONLINE, WEEKEND15"
               value={verifyCode}
               onChange={(e) => setVerifyCode(e.target.value.toUpperCase())}
               required
@@ -316,34 +256,34 @@ export default function Offers() {
           />
           <FAQItem
             q="Can I use multiple codes on one order?"
-            a="Only one code can be applied per order. The system will automatically use the best available discount."
-          />
-          <FAQItem
-            q="How does the referral program work?"
-            a="Share your referral code with a friend who hasn't ordered before. They get 15% off their first order, and your code then activates for you to use for 15% off too."
-          />
-          <FAQItem
-            q="Can I use my own referral code?"
-            a="Not directly. Your code must first be used by a new customer. Once they order, your code activates for you."
+            a="Only one promo code can be applied per order. However, you can combine a promo code with loyalty points redemption."
           />
           <FAQItem
             q="Do codes work for dine-in orders?"
-            a="Promo codes like FIRST30 and TRYONLINE are for online orders only. Referral codes can be used at the counter too."
+            a="Promo codes like FIRST30 and TRYONLINE are for online orders only. Loyalty points can be redeemed online."
+          />
+          <FAQItem
+            q="Why is my code not working?"
+            a="Some codes have eligibility rules — FIRST30 works only on your first order, TRYONLINE works 20+ days after your last order, WEEKEND15 only on Saturdays and Sundays, and LUNCH15 only between 12 PM and 3 PM."
           />
         </div>
       </div>
 
-      {/* Loyalty Teaser */}
+      {/* Loyalty Rewards */}
       <div className="section loyalty-section-container">
         <div className="loyalty-section">
           <div className="loyalty-icon">
             <Gift className="w-10 h-10 text-orange-400 mx-auto" />
           </div>
-          <h3>Loyalty Rewards — Coming Soon</h3>
+          <h3>Loyalty Rewards</h3>
           <p className="section-description">
-            Earn points on every order. Redeem them for discounts. The more you order, the more you save.
+            Earn 1 point for every ₹10 spent. Redeem points at checkout — 1 point = ₹1 off.
           </p>
-          <div className="loading-text">Coming Soon</div>
+          <ul style={{ textAlign: 'left', marginTop: '12px', paddingLeft: '20px', color: '#9ca3af', fontSize: '0.9em', lineHeight: '1.8' }}>
+            <li>Minimum <strong style={{ color: '#e5e7eb' }}>50 points</strong> to redeem</li>
+            <li>Points visible at checkout when you sign in</li>
+            <li>Stackable with most promo codes</li>
+          </ul>
         </div>
       </div>
 

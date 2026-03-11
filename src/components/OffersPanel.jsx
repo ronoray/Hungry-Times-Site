@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Tag, Gift, Users, Check } from 'lucide-react';
+import { Tag, Gift, Check } from 'lucide-react';
 import API_BASE from '../config/api.js';
 
-const SOURCE_ICONS = { promo: Tag, crm: Gift, referral: Users };
+const SOURCE_ICONS = { promo: Tag, crm: Gift };
 
 export default function OffersPanel({ cartTotal, customerPhone, onApplyOffer, onRemoveOffer, appliedCode }) {
   const [offers, setOffers] = useState([]);
