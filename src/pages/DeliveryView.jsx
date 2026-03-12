@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Phone, MapPin, Navigation, Package, CheckCircle, Radio } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import API_BASE from '../config/api';
 
 export default function DeliveryView() {
@@ -135,8 +136,8 @@ export default function DeliveryView() {
   let items = [];
   try { items = JSON.parse(order.items_json || '[]'); } catch (e) {}
 
-  const isCOD = order.payment_mode === 'COD';
   const isPaid = order.payment_status === 'paid';
+  const upiUrl = `upi://pay?pa=8420822919@okbizaxis&pn=HungryTimes&am=${order.total}&tn=Order+%23${order.id}&cu=INR`;
   const canPickUp = ['pending', 'confirmed', 'preparing'].includes(order.status);
   const canDeliver = order.status === 'out_for_delivery';
 
@@ -221,23 +222,30 @@ export default function DeliveryView() {
       </div>
 
       {/* Payment */}
-      <div className={`rounded-xl p-4 mb-6 border ${
-        isCOD && !isPaid
-          ? 'bg-amber-500/10 border-amber-500/30'
-          : 'bg-emerald-500/10 border-emerald-500/30'
-      }`}>
-        {isCOD && !isPaid ? (
-          <div className="text-center">
-            <p className="text-amber-400 text-sm font-medium">Cash on Delivery</p>
-            <p className="text-white text-2xl font-bold mt-1">Collect ₹{order.total}</p>
+      {isPaid ? (
+        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 mb-6 text-center">
+          <p className="text-emerald-400 text-sm font-medium">Paid Online</p>
+          <p className="text-white text-xl font-bold mt-1">₹{order.total}</p>
+        </div>
+      ) : (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-6">
+          <p className="text-amber-400 text-sm font-medium text-center mb-1">Collect Payment at Door</p>
+          <p className="text-white text-3xl font-bold text-center mb-4">₹{order.total}</p>
+          {/* GPay QR */}
+          <div className="flex flex-col items-center gap-3">
+            <div className="bg-white p-3 rounded-xl">
+              <QRCodeSVG value={upiUrl} size={200} />
+            </div>
+            <p className="text-neutral-400 text-xs text-center">Customer scans to pay via any UPI app</p>
+            <a
+              href={upiUrl}
+              className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition-colors text-base"
+            >
+              Open GPay / UPI App
+            </a>
           </div>
-        ) : (
-          <div className="text-center">
-            <p className="text-emerald-400 text-sm font-medium">Paid Online</p>
-            <p className="text-white text-xl font-bold mt-1">₹{order.total}</p>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* GPS sharing indicator */}
       {sharingLocation && (
