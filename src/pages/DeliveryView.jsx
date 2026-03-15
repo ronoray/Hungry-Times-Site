@@ -39,6 +39,15 @@ export default function DeliveryView() {
     fetchOrder();
   }, [token]);
 
+  // Poll every 10s so payment status updates (QR → Paid) are reflected in real time
+  useEffect(() => {
+    if (completed) return;
+    const interval = setInterval(() => {
+      fetchOrder();
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [token, completed]);
+
   // GPS broadcasting — runs while order is out_for_delivery
   useEffect(() => {
     const isOFD = order?.status === 'out_for_delivery';
@@ -224,7 +233,9 @@ export default function DeliveryView() {
       {/* Payment */}
       {isPaid ? (
         <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 mb-6 text-center">
-          <p className="text-emerald-400 text-sm font-medium">Paid Online</p>
+          <p className="text-emerald-400 text-sm font-medium">
+            {order.payment_mode === 'COD' ? 'Payment Collected' : 'Paid Online'}
+          </p>
           <p className="text-white text-xl font-bold mt-1">₹{order.total}</p>
         </div>
       ) : (
