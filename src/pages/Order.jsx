@@ -131,6 +131,10 @@ export default function Order() {
     longitude: null
   });
 
+  // Geocoded coordinates for addresses that have no GPS pin
+  // { [addrId]: { lat, lng } | 'pending' | 'failed' }
+  const [geocodedCoords, setGeocodedCoords] = useState({});
+
   // Form State
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
 
@@ -318,6 +322,41 @@ export default function Order() {
   };
 
   // ============================================================================
+  // GEOCODE UNPINNED ADDRESSES (Nominatim fallback for old customers)
+  // ============================================================================
+  const geocodeAddress = async (addrId, fullAddress) => {
+    if (!fullAddress) return;
+    setGeocodedCoords(prev => ({ ...prev, [addrId]: 'pending' }));
+    try {
+      const encoded = encodeURIComponent(fullAddress + ', Kolkata, India');
+      const resp = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1&countrycodes=in`,
+        { headers: { 'User-Agent': 'HungryTimes/1.0 (ronoray@gmail.com)' } }
+      );
+      const data = await resp.json();
+      if (data.length > 0 && data[0].lat && data[0].lon) {
+        setGeocodedCoords(prev => ({
+          ...prev,
+          [addrId]: { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
+        }));
+      } else {
+        setGeocodedCoords(prev => ({ ...prev, [addrId]: 'failed' }));
+      }
+    } catch {
+      setGeocodedCoords(prev => ({ ...prev, [addrId]: 'failed' }));
+    }
+  };
+
+  // Trigger geocoding when a pinless address is selected
+  useEffect(() => {
+    if (!selectedAddressId) return;
+    const addr = addresses.find(a => a.id === selectedAddressId);
+    if (!addr || addr.latitude || addr.longitude) return; // has coords — no need
+    if (geocodedCoords[selectedAddressId]) return; // already done or in progress
+    geocodeAddress(selectedAddressId, addr.fullAddress);
+  }, [selectedAddressId, addresses]);
+
+  // ============================================================================
   // ADD NEW ADDRESS
   // ============================================================================
   const handleAddNewAddress = async (e) => {
@@ -485,19 +524,27 @@ export default function Order() {
   // GET DELIVERY STATUS FOR ANY ADDRESS
   // ============================================================================
   const getDeliveryStatus = (address) => {
-    if (!address.latitude || !address.longitude) {
-      return {
-        canDeliver: false,
-        distance: null,
-        message: "No location data - please edit and select from Google Maps"
-      };
+    let lat = address.latitude;
+    let lng = address.longitude;
+
+    if (!lat || !lng) {
+      const geocoded = geocodedCoords[address.id];
+      if (!geocoded || geocoded === 'pending') {
+        return { canDeliver: null, distance: null, message: "Checking delivery area..." };
+      }
+      if (geocoded === 'failed') {
+        // Can't verify — allow through rather than blocking a loyal customer
+        return { canDeliver: true, distance: null, message: "Address accepted" };
+      }
+      lat = geocoded.lat;
+      lng = geocoded.lng;
     }
 
     const distance = calculateDistance(
       RESTAURANT_LOCATION.latitude,
       RESTAURANT_LOCATION.longitude,
-      address.latitude,
-      address.longitude
+      lat,
+      lng
     );
 
     if (distance > MAX_DELIVERY_RADIUS_KM) {
@@ -579,21 +626,38 @@ export default function Order() {
   // Get selected address object
   const selectedAddress = addresses.find(addr => addr.id === selectedAddressId);
 
+  // True while Nominatim is resolving coordinates for the selected address
+  const geocodingPending = selectedAddressId &&
+    selectedAddress && !selectedAddress.latitude && !selectedAddress.longitude &&
+    geocodedCoords[selectedAddressId] === 'pending';
+
   // ============================================================================
   // VALIDATE DELIVERY AREA
   // ============================================================================
   const validateDeliveryArea = () => {
     const selectedAddress = addresses.find(a => a.id === selectedAddressId);
-    
-    if (!selectedAddress || !selectedAddress.latitude || !selectedAddress.longitude) {
-      return { valid: false, message: "Please select a valid delivery address" };
+    if (!selectedAddress) return { valid: false, message: "Please select a delivery address" };
+
+    let lat = selectedAddress.latitude;
+    let lng = selectedAddress.longitude;
+
+    if (!lat || !lng) {
+      const geocoded = geocodedCoords[selectedAddressId];
+      if (!geocoded || geocoded === 'pending') {
+        return { valid: false, message: "Checking your delivery area, please wait..." };
+      }
+      if (geocoded === 'failed') {
+        return { valid: true }; // Can't verify — allow through
+      }
+      lat = geocoded.lat;
+      lng = geocoded.lng;
     }
 
     const distance = calculateDistance(
       RESTAURANT_LOCATION.latitude,
       RESTAURANT_LOCATION.longitude,
-      selectedAddress.latitude,
-      selectedAddress.longitude
+      lat,
+      lng
     );
 
     if (distance > MAX_DELIVERY_RADIUS_KM) {
@@ -1201,10 +1265,18 @@ export default function Order() {
                                           {/* Delivery Status Badge */}
                                           {(() => {
                                             const status = getDeliveryStatus(addr);
+                                            if (status.canDeliver === null) {
+                                              return (
+                                                <div className="mt-2 px-2 py-1 rounded text-xs inline-flex items-center gap-1 bg-neutral-700/50 text-neutral-400 border border-neutral-600">
+                                                  <Loader className="w-3 h-3 animate-spin" />
+                                                  Checking area…
+                                                </div>
+                                              );
+                                            }
                                             return (
                                               <div className={`mt-2 px-2 py-1 rounded text-xs inline-flex items-center gap-1 ${
-                                                status.canDeliver 
-                                                  ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                                                status.canDeliver
+                                                  ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                                                   : 'bg-red-500/20 text-red-400 border border-red-500/30'
                                               }`}>
                                                 {status.canDeliver ? (
@@ -1557,7 +1629,15 @@ export default function Order() {
                 {/* Delivery Area Warning */}
                 {selectedAddress && (() => {
                   const status = getDeliveryStatus(selectedAddress);
-                  if (!status.canDeliver) {
+                  if (status.canDeliver === null) {
+                    return (
+                      <div className="mb-4 p-3 bg-neutral-700/50 border border-neutral-600 rounded-lg flex items-center gap-2 text-neutral-300 text-sm">
+                        <Loader className="w-4 h-4 animate-spin flex-shrink-0" />
+                        Checking delivery area for your address…
+                      </div>
+                    );
+                  }
+                  if (status.canDeliver === false) {
                     return (
                       <div className="mb-4 p-4 bg-red-500/10 border border-red-500/50 rounded-lg">
                         <div className="flex items-start gap-3">
@@ -1584,7 +1664,7 @@ export default function Order() {
                   {!isEditMode && (
                     <button
                       onClick={handleRazorpayPayment}
-                      disabled={paymentProcessing || lines.length === 0 || !selectedAddressId}
+                      disabled={paymentProcessing || lines.length === 0 || !selectedAddressId || geocodingPending}
                       className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors"
                     >
                       {paymentProcessing ? (
@@ -1600,7 +1680,7 @@ export default function Order() {
 
                   <button
                     onClick={handleCODPayment}
-                    disabled={paymentProcessing || lines.length === 0 || !selectedAddressId}
+                    disabled={paymentProcessing || lines.length === 0 || !selectedAddressId || geocodingPending}
                     className={`w-full py-3 ${isEditMode ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700'} disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors`}
                   >
                     {paymentProcessing ? (
