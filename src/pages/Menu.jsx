@@ -198,11 +198,12 @@ export default function Menu() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
-  const { 
-     addLine, 
-     getSimpleItemQty, 
-     incrementSimpleItem, 
-     decrementSimpleItem 
+  const {
+     addLine,
+     getSimpleItemQty,
+     incrementSimpleItem,
+     decrementSimpleItem,
+     reconcileWithMenu,
    } = useCart();
   const [selectedItem, setSelectedItem] = useState(null);
   const [showAddToCartModal, setShowAddToCartModal] = useState(false);
@@ -314,6 +315,17 @@ export default function Menu() {
         if (!alive) return;
 
         setData(json);
+
+        // Reconcile any stale prices in the cart (e.g. variant priceDelta that was
+        // incorrectly 0 before a server-side fix). Runs immediately with fresh data.
+        const allItems = [];
+        for (const tc of (json.topCategories || [])) {
+          for (const sc of (tc.subcategories || [])) {
+            for (const item of (sc.items || [])) allItems.push(item);
+          }
+        }
+        if (allItems.length > 0) reconcileWithMenu(allItems);
+
         // Extract global ordering status
         setAcceptingOnlineOrders(json.acceptingOnlineOrders !== false);
         setOrderingDisabledMessage(json.onlineOrdersDisabledMessage || "");

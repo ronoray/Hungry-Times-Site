@@ -1,4 +1,5 @@
-import { createContext, useContext, useMemo, useState, useEffect } from "react";
+import { createContext, useContext, useMemo, useState, useEffect, useCallback } from "react";
+import API_BASE from "../config/api.js";
 
 const CartCtx = createContext(null);
 export const useCart = () => useContext(CartCtx);
@@ -104,6 +105,87 @@ export function CartProvider({ children }) {
 
   const clearCart = () => setLines([]);
 
+  // ============================================================================
+  // RECONCILE CART PRICES WITH FRESH MENU DATA
+  // Fixes stale priceDelta values in localStorage (e.g. after a server-side fix).
+  // Can be called directly with already-fetched menu items (Menu.jsx path),
+  // or auto-triggered on mount (covers /order and other pages).
+  // ============================================================================
+
+  const reconcileWithMenu = useCallback((allItems) => {
+    // Build lookup: itemId → { basePrice, priceById (covers both variants and addon options) }
+    const lookup = new Map();
+    for (const item of allItems) {
+      const priceById = new Map();
+      for (const v of (item.variants || [])) priceById.set(v.id, v.priceDelta);
+      for (const fam of (item.families || [])) {
+        for (const opt of (fam.options || [])) priceById.set(opt.id, opt.priceDelta);
+      }
+      for (const g of (item.addonGroups || [])) {
+        for (const opt of (g.options || [])) priceById.set(opt.id, opt.priceDelta);
+      }
+      lookup.set(item.id, { basePrice: item.basePrice, priceById });
+    }
+
+    setLines(prev => {
+      let anyChanged = false;
+      const next = prev.map(line => {
+        const info = lookup.get(line.itemId);
+        if (!info) return line;
+
+        let lineChanged = false;
+        const newBase = info.basePrice !== undefined ? info.basePrice : line.basePrice;
+        if (newBase !== line.basePrice) lineChanged = true;
+
+        const newVariants = Array.isArray(line.variants)
+          ? line.variants.map(v => {
+              const fresh = info.priceById.get(v.id);
+              if (fresh !== undefined && fresh !== v.priceDelta) { lineChanged = true; return { ...v, priceDelta: fresh }; }
+              return v;
+            })
+          : line.variants;
+
+        const newAddons = Array.isArray(line.addons)
+          ? line.addons.map(a => {
+              const fresh = info.priceById.get(a.id);
+              if (fresh !== undefined && fresh !== a.priceDelta) { lineChanged = true; return { ...a, priceDelta: fresh }; }
+              return a;
+            })
+          : line.addons;
+
+        if (lineChanged) {
+          anyChanged = true;
+          return { ...line, basePrice: newBase, variants: newVariants, addons: newAddons };
+        }
+        return line;
+      });
+      return anyChanged ? next : prev;
+    });
+  }, []);
+
+  // Auto-reconcile on mount: silently fetch fresh menu in the background and
+  // correct any stale priceDelta values that may be cached in localStorage.
+  useEffect(() => {
+    // No cart items — nothing to reconcile
+    const stored = (() => { try { return JSON.parse(localStorage.getItem("ht_cart") || "[]"); } catch { return []; } })();
+    if (stored.length === 0) return;
+
+    fetch(`${API_BASE}/public/menu`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data?.topCategories) return;
+        const allItems = [];
+        for (const tc of data.topCategories) {
+          for (const sc of (tc.subcategories || [])) {
+            for (const item of (sc.items || [])) allItems.push(item);
+          }
+        }
+        if (allItems.length > 0) reconcileWithMenu(allItems);
+      })
+      .catch(() => {}); // never surface errors to the user
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // once per page-load
+
   const total = useMemo(
     () => lines.reduce((s, l) => s + calcUnit(l) * (l.qty || 1), 0),
     [lines]
@@ -170,14 +252,15 @@ export function CartProvider({ children }) {
   };
 
   return (
-    <CartCtx.Provider value={{ 
-      lines, 
-      addLine, 
-      removeLine, 
-      updateQty, 
-      clearCart, 
-      total, 
+    <CartCtx.Provider value={{
+      lines,
+      addLine,
+      removeLine,
+      updateQty,
+      clearCart,
+      total,
       calcUnit,
+      reconcileWithMenu,
       // New helper functions
       findSimpleItem,
       getSimpleItemQty,
