@@ -1462,34 +1462,23 @@ export default function Order() {
 
               {/* Schedule Order */}
               <div className="bg-neutral-800 rounded-lg p-6">
-                <label className="block text-white font-bold text-lg mb-1">
-                  When should we start your order?
-                </label>
-                <p className="text-neutral-400 text-sm mb-3">
-                  The time you pick is when we begin preparing it — delivery follows from there.
-                </p>
-                <div className="flex gap-3 mb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-white font-bold text-lg leading-tight">Schedule for later</p>
+                    <p className="text-neutral-400 text-sm">
+                      {isScheduled ? "We'll start preparing at the time you chose" : "Order will be placed immediately"}
+                    </p>
+                  </div>
                   <button
                     type="button"
-                    onClick={() => { setIsScheduled(false); setScheduledDate(""); setScheduledTime(""); }}
-                    className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                      !isScheduled
-                        ? "bg-orange-500 text-white"
-                        : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
+                    onClick={() => { setIsScheduled(!isScheduled); setScheduledDate(""); setScheduledTime(""); }}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                      isScheduled ? "bg-orange-500" : "bg-neutral-600"
                     }`}
                   >
-                    Order Now
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsScheduled(true)}
-                    className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                      isScheduled
-                        ? "bg-orange-500 text-white"
-                        : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
-                    }`}
-                  >
-                    Schedule for Later
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      isScheduled ? "translate-x-6" : "translate-x-1"
+                    }`} />
                   </button>
                 </div>
                 {isScheduled && (() => {
