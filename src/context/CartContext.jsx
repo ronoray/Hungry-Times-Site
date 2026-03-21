@@ -1,8 +1,39 @@
-import { createContext, useContext, useMemo, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useMemo, useState, useEffect, useCallback, useRef } from "react";
 import API_BASE from "../config/api.js";
 
 const CartCtx = createContext(null);
 export const useCart = () => useContext(CartCtx);
+
+// ─── Server cart helpers ───────────────────────────────────────────────────
+function getToken() {
+  return localStorage.getItem("customerToken") || null;
+}
+
+async function fetchServerCart() {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const res = await fetch(`${API_BASE}/customer/cart`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return Array.isArray(data.cart) ? data.cart : null;
+  } catch { return null; }
+}
+
+async function pushServerCart(cart) {
+  const token = getToken();
+  if (!token) return;
+  try {
+    await fetch(`${API_BASE}/customer/cart`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ cart }),
+    });
+  } catch {}
+}
+// ──────────────────────────────────────────────────────────────────────────
 
 export function CartProvider({ children }) {
   const [lines, setLines] = useState(() => {
@@ -10,9 +41,41 @@ export function CartProvider({ children }) {
     catch { return []; }
   });
 
+  // Debounce timer ref for server push
+  const syncTimer = useRef(null);
+
+  // Persist to localStorage on every change
   useEffect(() => {
     localStorage.setItem("ht_cart", JSON.stringify(lines));
   }, [lines]);
+
+  // Debounced push to server whenever lines change (only if logged in)
+  useEffect(() => {
+    if (!getToken()) return;
+    clearTimeout(syncTimer.current);
+    syncTimer.current = setTimeout(() => pushServerCart(lines), 1500);
+    return () => clearTimeout(syncTimer.current);
+  }, [lines]);
+
+  // On mount (or when token appears), sync cart from server
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    fetchServerCart().then(serverCart => {
+      if (!serverCart) return;
+      setLines(local => {
+        // If local cart is non-empty keep it (user was browsing before login)
+        // and push it to server so both devices converge.
+        // If local is empty, use server cart.
+        if (local.length > 0) {
+          pushServerCart(local);
+          return local;
+        }
+        return serverCart;
+      });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ============================================================================
   // CALCULATE UNIT PRICE - Support both singular and array variants
@@ -103,7 +166,10 @@ export function CartProvider({ children }) {
     }
   };
 
-  const clearCart = () => setLines([]);
+  const clearCart = () => {
+    setLines([]);
+    pushServerCart([]);
+  };
 
   // ============================================================================
   // RECONCILE CART PRICES WITH FRESH MENU DATA
