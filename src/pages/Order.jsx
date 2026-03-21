@@ -1025,8 +1025,8 @@ export default function Order() {
   // ============================================================================
   return (
     <div className="min-h-screen min-h-[100dvh] bg-gray-900 pb-36 md:pb-8">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-white mb-6">
+      <div className="max-w-7xl mx-auto px-4 py-4 md:py-8 pb-28 md:pb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-4 md:mb-6">
           {isEditMode ? `Update Order #${editOrderId}` : 'Place Your Order'}
         </h1>
         {isEditMode && (
@@ -1065,7 +1065,7 @@ export default function Order() {
 
         {/* Cart Items Display */}
         {lines.length > 0 && (
-          <div className="bg-neutral-800 rounded-lg p-6 mb-6">
+          <div className="bg-neutral-800 rounded-lg p-4 sm:p-6 mb-6">
             <h3 className="text-white font-bold text-xl mb-4">
               Your Cart ({cartCount} items)
             </h3>
@@ -1172,7 +1172,7 @@ export default function Order() {
             {/* LEFT: Delivery Details */}
             <div className="md:col-span-2 space-y-6">
               {/* Delivery Address */}
-              <div className="bg-neutral-800 rounded-lg p-6">
+              <div className="bg-neutral-800 rounded-lg p-4 sm:p-6">
                 <h3 className="text-white font-bold text-xl mb-4">
                   <MapPin className="w-5 h-5 inline mr-2" />
                   Delivery Address
@@ -1438,7 +1438,7 @@ export default function Order() {
               </div>
 
               {/* Special Instructions */}
-              <div className="bg-neutral-800 rounded-lg p-6">
+              <div className="bg-neutral-800 rounded-lg p-4 sm:p-6">
                 <label className="block text-white font-bold text-lg mb-2">
                   <MessageSquare className="w-5 h-5 inline mr-2" />
                   Special Instructions (Optional)
@@ -1461,7 +1461,7 @@ export default function Order() {
               </div>
 
               {/* Schedule Order */}
-              <div className="bg-neutral-800 rounded-lg p-6">
+              <div className="bg-neutral-800 rounded-lg p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <p className="text-white font-bold text-lg leading-tight">Schedule for later</p>
@@ -1489,7 +1489,7 @@ export default function Order() {
                   const maxDateStr = maxDate.toISOString().slice(0, 10);
                   return (
                     <div className="space-y-3">
-                      <div className="flex gap-3">
+                      <div className="flex flex-col sm:flex-row gap-3">
                         <div className="flex-1">
                           <label className="text-neutral-400 text-xs mb-1 block">Date</label>
                           <input
@@ -1526,7 +1526,7 @@ export default function Order() {
 
             {/* RIGHT: Order Summary & Payment */}
             <div className="md:col-span-1">
-              <div className="bg-neutral-800 rounded-lg p-6 md:sticky md:top-6">
+              <div className="bg-neutral-800 rounded-lg p-4 sm:p-6 md:sticky md:top-6">
                 <h3 className="text-white font-bold text-xl mb-4">Order Summary</h3>
                 
                 {/* Price Summary with Discount */}
@@ -1744,7 +1744,8 @@ export default function Order() {
                   return null;
                 })()}
 
-                <div className="space-y-2">
+                {/* Payment buttons — hidden on mobile, shown in sticky bottom bar instead */}
+                <div className="hidden md:block space-y-2">
                   {!isEditMode && (
                     <button
                       onClick={handleRazorpayPayment}
@@ -1784,6 +1785,36 @@ export default function Order() {
           </div>
         )}
       </div>
+
+      {/* Mobile sticky bottom bar — pay buttons always visible */}
+      {lines.length > 0 && isAuthenticated && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-neutral-900 border-t border-neutral-700 px-4 py-3 space-y-2">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-neutral-400 text-sm">Total</span>
+            <span className="text-orange-500 font-bold text-lg">₹{finalTotal}</span>
+          </div>
+          {!isEditMode && (
+            <button
+              onClick={handleRazorpayPayment}
+              disabled={paymentProcessing || !selectedAddressId || geocodingPending}
+              className="w-full py-3 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors text-sm"
+            >
+              {paymentProcessing ? (
+                <><Loader className="w-4 h-4 inline animate-spin mr-2" />Processing...</>
+              ) : "💳 Pay Online"}
+            </button>
+          )}
+          <button
+            onClick={handleCODPayment}
+            disabled={paymentProcessing || !selectedAddressId || geocodingPending}
+            className={`w-full py-3 ${isEditMode ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700'} active:bg-green-800 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors text-sm`}
+          >
+            {paymentProcessing ? (
+              <><Loader className="w-4 h-4 inline animate-spin mr-2" />{isEditMode ? 'Updating...' : 'Processing...'}</>
+            ) : isEditMode ? `Update Order #${editOrderId}` : "💵 Cash on Delivery"}
+          </button>
+        </div>
+      )}
 
       {/* Mobile cart drawer */}
       <CartDrawer
