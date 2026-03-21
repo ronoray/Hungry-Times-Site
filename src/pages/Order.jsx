@@ -1025,7 +1025,7 @@ export default function Order() {
   // ============================================================================
   return (
     <div className="min-h-screen min-h-[100dvh] bg-gray-900 pb-36 md:pb-8">
-      <div className="max-w-7xl mx-auto px-4 py-4 md:py-8 pb-28 md:pb-8">
+      <div className="max-w-7xl mx-auto px-4 py-4 md:py-8 pb-44 md:pb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-white mb-4 md:mb-6">
           {isEditMode ? `Update Order #${editOrderId}` : 'Place Your Order'}
         </h1>
@@ -1788,7 +1788,7 @@ export default function Order() {
 
       {/* Mobile sticky bottom bar — pay buttons always visible */}
       {lines.length > 0 && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-neutral-900 border-t border-neutral-700 px-4 pt-2 pb-3">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-[60] bg-neutral-900 border-t border-neutral-700 px-4 pt-2 pb-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-neutral-400 text-sm">Total</span>
             <span className="text-orange-500 font-bold text-lg">₹{finalTotal}</span>
