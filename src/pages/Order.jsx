@@ -1462,9 +1462,12 @@ export default function Order() {
 
               {/* Schedule Order */}
               <div className="bg-neutral-800 rounded-lg p-6">
-                <label className="block text-white font-bold text-lg mb-3">
-                  When do you want your order?
+                <label className="block text-white font-bold text-lg mb-1">
+                  When should we start your order?
                 </label>
+                <p className="text-neutral-400 text-sm mb-3">
+                  The time you pick is when we begin preparing it — delivery follows from there.
+                </p>
                 <div className="flex gap-3 mb-4">
                   <button
                     type="button"
@@ -1499,11 +1502,12 @@ export default function Order() {
                   });
                   const selectedDay = days.find(d => d.value === scheduledDate);
                   const isToday = scheduledDate === toDateStr(nowIST);
-                  const startHour = isToday ? nowIST.getUTCHours() + 2 : 11;
+                  // Slots always 12 PM–11 PM. Same-day: exclude slots < 1h from now.
+                  const minHour = isToday ? nowIST.getUTCHours() + 1 : 0;
                   const timeSlots = [];
-                  for (let h = Math.max(startHour, 11); h <= 22; h++) {
+                  for (let h = Math.max(12, minHour); h <= 23; h++) {
                     const val = `${String(h).padStart(2,"0")}:00`;
-                    const label = h < 12 ? `${h}:00 AM` : h === 12 ? "12:00 PM" : `${h-12}:00 PM`;
+                    const label = h === 12 ? "12:00 PM" : `${h-12}:00 PM`;
                     timeSlots.push({ value: val, label });
                   }
                   return (
@@ -1554,7 +1558,7 @@ export default function Order() {
                       )}
                       {scheduledDate && scheduledTime && (
                         <div className="bg-orange-900/30 border border-orange-700 rounded-lg px-3 py-2 text-sm text-orange-300">
-                          Scheduled: {selectedDay?.label} at {scheduledTime}
+                          We'll start preparing on {selectedDay?.label} at {scheduledTime}
                         </div>
                       )}
                     </div>
