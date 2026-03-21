@@ -1024,8 +1024,8 @@ export default function Order() {
   // RENDER
   // ============================================================================
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-gray-900 pb-36 md:pb-8">
-      <div className="max-w-7xl mx-auto px-4 py-4 md:py-8 pb-44 md:pb-8">
+    <div className="min-h-screen min-h-[100dvh] bg-gray-900">
+      <div className="max-w-7xl mx-auto px-4 py-4 md:py-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-white mb-4 md:mb-6">
           {isEditMode ? `Update Order #${editOrderId}` : 'Place Your Order'}
         </h1>
@@ -1744,8 +1744,8 @@ export default function Order() {
                   return null;
                 })()}
 
-                {/* Payment buttons — hidden on mobile, shown in sticky bottom bar instead */}
-                <div className="hidden md:block space-y-2">
+                {/* Payment buttons */}
+                <div className="space-y-2">
                   {!isEditMode && (
                     <button
                       onClick={handleRazorpayPayment}
@@ -1786,35 +1786,6 @@ export default function Order() {
         )}
       </div>
 
-      {/* Mobile sticky bottom bar — pay buttons always visible */}
-      {lines.length > 0 && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-[60] bg-neutral-900 border-t border-neutral-700 px-4 pt-2 pb-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-neutral-400 text-sm">Total</span>
-            <span className="text-orange-500 font-bold text-lg">₹{finalTotal}</span>
-          </div>
-          <div className={`flex gap-2 ${isEditMode ? '' : ''}`}>
-            {!isEditMode && (
-              <button
-                onClick={handleRazorpayPayment}
-                disabled={paymentProcessing || !selectedAddressId || geocodingPending}
-                className="flex-1 py-3 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors text-sm"
-              >
-                {paymentProcessing ? <Loader className="w-4 h-4 inline animate-spin" /> : "💳 Pay Online"}
-              </button>
-            )}
-            <button
-              onClick={handleCODPayment}
-              disabled={paymentProcessing || !selectedAddressId || geocodingPending}
-              className={`flex-1 py-3 ${isEditMode ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700'} active:opacity-90 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors text-sm`}
-            >
-              {paymentProcessing
-                ? <Loader className="w-4 h-4 inline animate-spin" />
-                : isEditMode ? `Update #${editOrderId}` : "💵 COD"}
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Mobile cart drawer */}
       <CartDrawer
