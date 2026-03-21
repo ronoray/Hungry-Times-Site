@@ -1483,71 +1483,39 @@ export default function Order() {
                 </div>
                 {isScheduled && (() => {
                   const nowIST = new Date(Date.now() + 330 * 60 * 1000);
-                  const toDateStr = (d) => d.toISOString().slice(0, 10);
-                  const days = [0, 1, 2].map(offset => {
-                    const d = new Date(nowIST);
-                    d.setUTCDate(d.getUTCDate() + offset);
-                    return { value: toDateStr(d), label: offset === 0 ? "Today" : offset === 1 ? "Tomorrow" : "Day after" };
-                  });
-                  const selectedDay = days.find(d => d.value === scheduledDate);
-                  const isToday = scheduledDate === toDateStr(nowIST);
-                  // Slots always 12 PM–11 PM. Same-day: exclude slots < 1h from now.
-                  const minHour = isToday ? nowIST.getUTCHours() + 1 : 0;
-                  const timeSlots = [];
-                  for (let h = Math.max(12, minHour); h <= 23; h++) {
-                    const val = `${String(h).padStart(2,"0")}:00`;
-                    const label = h === 12 ? "12:00 PM" : `${h-12}:00 PM`;
-                    timeSlots.push({ value: val, label });
-                  }
+                  const todayStr = nowIST.toISOString().slice(0, 10);
+                  const maxDate = new Date(nowIST);
+                  maxDate.setUTCDate(maxDate.getUTCDate() + 2);
+                  const maxDateStr = maxDate.toISOString().slice(0, 10);
                   return (
                     <div className="space-y-3">
-                      <div>
-                        <p className="text-neutral-400 text-sm mb-2">Select day:</p>
-                        <div className="flex gap-2">
-                          {days.map(d => (
-                            <button
-                              key={d.value}
-                              type="button"
-                              onClick={() => { setScheduledDate(d.value); setScheduledTime(""); }}
-                              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                scheduledDate === d.value
-                                  ? "bg-orange-500 text-white"
-                                  : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
-                              }`}
-                            >
-                              {d.label}
-                            </button>
-                          ))}
+                      <div className="flex gap-3">
+                        <div className="flex-1">
+                          <label className="text-neutral-400 text-xs mb-1 block">Date</label>
+                          <input
+                            type="date"
+                            value={scheduledDate}
+                            min={todayStr}
+                            max={maxDateStr}
+                            onChange={e => { setScheduledDate(e.target.value); setScheduledTime(""); }}
+                            className="w-full px-3 py-2.5 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="text-neutral-400 text-xs mb-1 block">Time (12 PM – 11 PM)</label>
+                          <input
+                            type="time"
+                            value={scheduledTime}
+                            min="12:00"
+                            max="23:00"
+                            onChange={e => setScheduledTime(e.target.value)}
+                            className="w-full px-3 py-2.5 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          />
                         </div>
                       </div>
-                      {scheduledDate && (
-                        <div>
-                          <p className="text-neutral-400 text-sm mb-2">Select time:</p>
-                          {timeSlots.length === 0 ? (
-                            <p className="text-orange-400 text-sm">No slots available for today. Please choose tomorrow.</p>
-                          ) : (
-                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                              {timeSlots.map(t => (
-                                <button
-                                  key={t.value}
-                                  type="button"
-                                  onClick={() => setScheduledTime(t.value)}
-                                  className={`py-2 rounded-lg text-xs font-medium transition-colors ${
-                                    scheduledTime === t.value
-                                      ? "bg-orange-500 text-white"
-                                      : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
-                                  }`}
-                                >
-                                  {t.label}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
                       {scheduledDate && scheduledTime && (
                         <div className="bg-orange-900/30 border border-orange-700 rounded-lg px-3 py-2 text-sm text-orange-300">
-                          We'll start preparing on {selectedDay?.label} at {scheduledTime}
+                          We'll start preparing on {scheduledDate} at {scheduledTime}
                         </div>
                       )}
                     </div>
