@@ -138,6 +138,11 @@ export default function Order() {
   // Form State
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
 
+  // Scheduled order state
+  const [isScheduled, setIsScheduled] = useState(false);
+  const [scheduledDate, setScheduledDate] = useState("");
+  const [scheduledTime, setScheduledTime] = useState("");
+
   // Payment State
   const [paymentMethod, setPaymentMethod] = useState(null);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
@@ -690,6 +695,11 @@ export default function Order() {
       return;
     }
 
+    if (isScheduled && (!scheduledDate || !scheduledTime)) {
+      setPaymentError("Please select a date and time for your scheduled order.");
+      return;
+    }
+
     setPaymentProcessing(true);
     setPaymentError("");
     trackBeginCheckout(lines, finalTotal);
@@ -733,6 +743,9 @@ export default function Order() {
           applied_code: appliedCode?.code || null,
           applied_code_type: appliedCode?.type || null,
           points_to_redeem: pointsToRedeem > 0 ? pointsToRedeem : 0,
+          is_scheduled: isScheduled && scheduledDate && scheduledTime,
+          scheduled_date: isScheduled ? scheduledDate : null,
+          scheduled_time: isScheduled ? scheduledTime : null,
         }),
       });
 
@@ -910,6 +923,11 @@ export default function Order() {
       return;
     }
 
+    if (isScheduled && (!scheduledDate || !scheduledTime)) {
+      setPaymentError("Please select a date and time for your scheduled order.");
+      return;
+    }
+
     setPaymentProcessing(true);
     setPaymentError("");
 
@@ -943,6 +961,9 @@ export default function Order() {
         applied_code: appliedCode?.code || null,
         applied_code_type: appliedCode?.type || null,
         points_to_redeem: pointsToRedeem > 0 ? pointsToRedeem : 0,
+        is_scheduled: isScheduled && scheduledDate && scheduledTime,
+        scheduled_date: isScheduled ? scheduledDate : null,
+        scheduled_time: isScheduled ? scheduledTime : null,
       };
 
       const url = isEditMode
@@ -1437,6 +1458,108 @@ export default function Order() {
                 <p className="text-neutral-500 text-xs mt-1 text-right">
                   {deliveryInstructions.length}/200 characters
                 </p>
+              </div>
+
+              {/* Schedule Order */}
+              <div className="bg-neutral-800 rounded-lg p-6">
+                <label className="block text-white font-bold text-lg mb-3">
+                  When do you want your order?
+                </label>
+                <div className="flex gap-3 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => { setIsScheduled(false); setScheduledDate(""); setScheduledTime(""); }}
+                    className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                      !isScheduled
+                        ? "bg-orange-500 text-white"
+                        : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
+                    }`}
+                  >
+                    Order Now
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsScheduled(true)}
+                    className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                      isScheduled
+                        ? "bg-orange-500 text-white"
+                        : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
+                    }`}
+                  >
+                    Schedule for Later
+                  </button>
+                </div>
+                {isScheduled && (() => {
+                  const nowIST = new Date(Date.now() + 330 * 60 * 1000);
+                  const toDateStr = (d) => d.toISOString().slice(0, 10);
+                  const days = [0, 1, 2].map(offset => {
+                    const d = new Date(nowIST);
+                    d.setUTCDate(d.getUTCDate() + offset);
+                    return { value: toDateStr(d), label: offset === 0 ? "Today" : offset === 1 ? "Tomorrow" : "Day after" };
+                  });
+                  const selectedDay = days.find(d => d.value === scheduledDate);
+                  const isToday = scheduledDate === toDateStr(nowIST);
+                  const startHour = isToday ? nowIST.getUTCHours() + 2 : 11;
+                  const timeSlots = [];
+                  for (let h = Math.max(startHour, 11); h <= 22; h++) {
+                    const val = `${String(h).padStart(2,"0")}:00`;
+                    const label = h < 12 ? `${h}:00 AM` : h === 12 ? "12:00 PM" : `${h-12}:00 PM`;
+                    timeSlots.push({ value: val, label });
+                  }
+                  return (
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-neutral-400 text-sm mb-2">Select day:</p>
+                        <div className="flex gap-2">
+                          {days.map(d => (
+                            <button
+                              key={d.value}
+                              type="button"
+                              onClick={() => { setScheduledDate(d.value); setScheduledTime(""); }}
+                              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                scheduledDate === d.value
+                                  ? "bg-orange-500 text-white"
+                                  : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
+                              }`}
+                            >
+                              {d.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      {scheduledDate && (
+                        <div>
+                          <p className="text-neutral-400 text-sm mb-2">Select time:</p>
+                          {timeSlots.length === 0 ? (
+                            <p className="text-orange-400 text-sm">No slots available for today. Please choose tomorrow.</p>
+                          ) : (
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                              {timeSlots.map(t => (
+                                <button
+                                  key={t.value}
+                                  type="button"
+                                  onClick={() => setScheduledTime(t.value)}
+                                  className={`py-2 rounded-lg text-xs font-medium transition-colors ${
+                                    scheduledTime === t.value
+                                      ? "bg-orange-500 text-white"
+                                      : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
+                                  }`}
+                                >
+                                  {t.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {scheduledDate && scheduledTime && (
+                        <div className="bg-orange-900/30 border border-orange-700 rounded-lg px-3 py-2 text-sm text-orange-300">
+                          Scheduled: {selectedDay?.label} at {scheduledTime}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
