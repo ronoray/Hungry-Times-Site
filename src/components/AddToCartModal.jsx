@@ -87,13 +87,9 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
   // HANDLERS
   // ============================================================================
 
-  // SELECT VARIANT (from variants table - can deselect by clicking again)
+  // SELECT VARIANT (from variants table)
   const selectVariant = (variant) => {
-    if (selectedVariant?.id === variant.id) {
-      setSelectedVariant(null);
-    } else {
-      setSelectedVariant(variant);
-    }
+    setSelectedVariant(variant);
   };
 
   // SELECT FAMILY VARIANT (radio - can deselect by clicking again)
@@ -435,9 +431,31 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
           {variants.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-base md:text-lg font-semibold text-white mb-3">
-                Variants <span className="text-neutral-500 text-sm font-normal">(Optional)</span>
+                Variants
               </h3>
               <div className="space-y-2">
+                {/* Plain / no variant — pre-selected by default */}
+                <label
+                  onClick={() => setSelectedVariant(null)}
+                  className={`flex items-center justify-between p-3 md:p-4 rounded-lg border-2 cursor-pointer transition ${
+                    selectedVariant === null
+                      ? "border-orange-500 bg-orange-500/10"
+                      : "border-neutral-700 hover:border-neutral-600"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="variant"
+                      checked={selectedVariant === null}
+                      onChange={() => {}}
+                      className="w-5 h-5 text-orange-500 cursor-pointer"
+                    />
+                    <span className="text-white text-sm md:text-base">Plain</span>
+                  </div>
+                  <span className="text-neutral-400 text-sm">base price</span>
+                </label>
+
                 {variants.map((variant) => (
                   <label
                     key={variant.id}
