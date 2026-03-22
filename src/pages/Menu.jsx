@@ -700,17 +700,16 @@ export default function Menu() {
 
         {/* Disabled Message */}
         {isDisabled && it.disabledMessage && (
-          <div style={{
-            color: '#ef4444',
-            fontSize: '0.875rem',
-            fontWeight: 600,
-            marginTop: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px'
-          }}>
-            <span>⚠️</span>
-            <span>{it.disabledMessage}</span>
+          <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <div style={{ color: '#ef4444', fontSize: '0.875rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span>⚠️</span>
+              <span>{it.disabledMessage}</span>
+            </div>
+            {it.outOfStock && it.backInStockAt && (
+              <span style={{ color: '#9ca3af', fontSize: '0.75rem', paddingLeft: '4px' }}>
+                Back in stock: {new Date(it.backInStockAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
           </div>
         )}
 
