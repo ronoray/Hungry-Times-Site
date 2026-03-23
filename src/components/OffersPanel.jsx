@@ -50,7 +50,8 @@ export default function OffersPanel({ cartTotal, customerPhone, onApplyOffer, on
 
   if (loading || ranked.length === 0) return null;
 
-  const bestCode = ranked[0]?.meetsMin ? ranked[0].code : null;
+  // On the website, only the best eligible offer (highest savings, meets min order) is applicable.
+  const bestEligibleCode = ranked.find(o => o.meetsMin)?.code ?? null;
 
   return (
     <div className="py-2">
@@ -59,7 +60,8 @@ export default function OffersPanel({ cartTotal, customerPhone, onApplyOffer, on
         {ranked.map((offer) => {
           const Icon = SOURCE_ICONS[offer.source] || Tag;
           const isApplied = appliedCode?.code === offer.code;
-          const isBest = offer.code === bestCode && offer.meetsMin;
+          const isBest = offer.code === bestEligibleCode;
+          const isSuperseded = offer.meetsMin && !isBest && bestEligibleCode !== null;
 
           return (
             <div
@@ -67,9 +69,11 @@ export default function OffersPanel({ cartTotal, customerPhone, onApplyOffer, on
               className={`rounded-lg p-3 border transition-all ${
                 isApplied
                   ? 'border-green-500 bg-green-500/10'
-                  : offer.meetsMin
-                    ? 'border-neutral-600 bg-neutral-700/50 hover:border-neutral-500'
-                    : 'border-neutral-700 bg-neutral-800/50 opacity-60'
+                  : isSuperseded
+                    ? 'border-neutral-700 bg-neutral-800/50 opacity-50'
+                    : offer.meetsMin
+                      ? 'border-neutral-600 bg-neutral-700/50 hover:border-neutral-500'
+                      : 'border-neutral-700 bg-neutral-800/50 opacity-60'
               }`}
             >
               <div className="flex items-start justify-between gap-2">
@@ -78,7 +82,7 @@ export default function OffersPanel({ cartTotal, customerPhone, onApplyOffer, on
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-white text-sm font-medium">{offer.title}</span>
-                      {isBest && !isApplied && (
+                      {isBest && !isApplied && offer.meetsMin && (
                         <span className="bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
                           Best Value
                         </span>
@@ -101,13 +105,15 @@ export default function OffersPanel({ cartTotal, customerPhone, onApplyOffer, on
                       <Check className="w-3 h-3 inline mr-1" />
                       Applied
                     </button>
-                  ) : (
+                  ) : isBest ? (
                     <button
                       onClick={() => onApplyOffer(offer)}
                       className="flex-shrink-0 px-3 py-1 bg-orange-500/20 text-orange-400 text-xs font-bold rounded hover:bg-orange-500/30 transition-colors"
                     >
                       Apply
                     </button>
+                  ) : (
+                    <span className="flex-shrink-0 text-neutral-500 text-[10px]">Not best deal</span>
                   )
                 )}
               </div>
