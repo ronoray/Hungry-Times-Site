@@ -146,7 +146,9 @@ export default function DeliveryView() {
   try { items = JSON.parse(order.items_json || '[]'); } catch (e) {}
 
   const isPaid = order.payment_status === 'paid';
-  const upiUrl = `upi://pay?pa=8420822919@okbizaxis&pn=HungryTimes&am=${order.total}&tn=Order+%23${order.id}&cu=INR`;
+  const advancePaid = Number(order.advance_payment || 0);
+  const collectAmount = advancePaid > 0 ? Math.max(0, Number(order.total) - advancePaid) : Number(order.total);
+  const upiUrl = `upi://pay?pa=8420822919@okbizaxis&pn=HungryTimes&am=${collectAmount}&tn=Order+%23${order.id}&cu=INR`;
   const canPickUp = ['pending', 'confirmed', 'preparing'].includes(order.status);
   const canDeliver = order.status === 'out_for_delivery';
 
@@ -238,10 +240,23 @@ export default function DeliveryView() {
           </p>
           <p className="text-white text-xl font-bold mt-1">₹{order.total}</p>
         </div>
+      ) : collectAmount === 0 ? (
+        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 mb-6 text-center">
+          <p className="text-emerald-400 text-sm font-medium">Advance Fully Paid</p>
+          <p className="text-white text-xl font-bold mt-1">₹{order.total}</p>
+        </div>
       ) : (
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-6">
-          <p className="text-amber-400 text-sm font-medium text-center mb-1">Collect Payment at Door</p>
-          <p className="text-white text-3xl font-bold text-center mb-4">₹{order.total}</p>
+          {advancePaid > 0 ? (
+            <div className="mb-3 text-center">
+              <p className="text-amber-400 text-sm font-medium mb-1">Collect Balance at Door</p>
+              <p className="text-neutral-400 text-xs">Total ₹{order.total} — Advance paid ₹{advancePaid}</p>
+              <p className="text-white text-3xl font-bold mt-1">₹{collectAmount} due</p>
+            </div>
+          ) : (
+            <p className="text-amber-400 text-sm font-medium text-center mb-1">Collect Payment at Door</p>
+          )}
+          {!advancePaid && <p className="text-white text-3xl font-bold text-center mb-4">₹{collectAmount}</p>}
           {/* GPay QR */}
           <div className="flex flex-col items-center gap-3">
             <div className="bg-white p-3 rounded-xl">
