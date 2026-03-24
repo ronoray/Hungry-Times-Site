@@ -13,7 +13,7 @@ import SEOHead from '../components/SEOHead';
 import KitchenStatus from '../components/KitchenStatus';
 
 import API_BASE from "../config/api";
-import { trackAddToCart, trackSearch, trackPhoneClick, trackWhatsAppClick, trackCtaClick, trackViewItem, trackFavoriteToggle } from "../utils/analytics";
+import { trackAddToCart, trackSearch, trackPhoneClick, trackWhatsAppClick, trackCtaClick, trackViewItem, trackFavoriteToggle, trackViewItemList } from "../utils/analytics";
 
 // Description length limits
 const DESC_MAX_RECOMMENDED = 40;  // compact cards - carousel
@@ -334,6 +334,12 @@ export default function Menu() {
         const s0 = json?.topCategories?.[0]?.subcategories?.[0]?.id ?? null;
         setActiveTop(t0);
         setActiveSub(s0);
+        // Track initial category impression
+        const firstCat = json?.topCategories?.[0];
+        if (firstCat) {
+          const items = firstCat.subcategories?.flatMap(sc => sc.items || []) || [];
+          trackViewItemList(firstCat.name, items);
+        }
       } catch (e) {
         if (!alive) return;
         setErr(String(e?.message || e));
@@ -547,6 +553,11 @@ export default function Menu() {
     setActiveTop(tcId);
     setActiveSub(firstSubId);
     setSidebarOpen(false); // Close sidebar on mobile after selection
+    const tc = tops.find(t => t.id === tcId);
+    if (tc) {
+      const items = tc.subcategories?.flatMap(sc => sc.items || []) || [];
+      trackViewItemList(tc.name, items);
+    }
     
     // Scroll to the subcategory after state updates
     setTimeout(() => {
