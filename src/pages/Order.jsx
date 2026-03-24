@@ -111,6 +111,9 @@ export default function Order() {
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
+  // Order type
+  const [orderType, setOrderType] = useState('delivery');
+
   // Address State
   const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
@@ -582,7 +585,7 @@ export default function Order() {
     return getDeliveryStatus(addr);
   }, [addresses, selectedAddressId]);
 
-  const deliveryCharge = deliveryStatus?.deliveryCharge > 0 ? deliveryStatus.deliveryCharge : 0;
+  const deliveryCharge = orderType === 'pickup' ? 0 : (deliveryStatus?.deliveryCharge > 0 ? deliveryStatus.deliveryCharge : 0);
 
   const { cartTotal, discountAmount, pointsDiscount, maxRedeemablePoints, gstAmount, finalTotal } = useMemo(() => {
     let total = 0;
@@ -679,15 +682,16 @@ export default function Order() {
   // RAZORPAY PAYMENT HANDLER
   // ============================================================================
   const handleRazorpayPayment = async () => {
-    const validation = validateDeliveryArea();
-    if (!validation.valid) {
-      setPaymentError(validation.message);
-      return;
-    }
-
-    if (!selectedAddressId) {
-      setPaymentError("Please select a delivery address");
-      return;
+    if (orderType === 'delivery') {
+      const validation = validateDeliveryArea();
+      if (!validation.valid) {
+        setPaymentError(validation.message);
+        return;
+      }
+      if (!selectedAddressId) {
+        setPaymentError("Please select a delivery address");
+        return;
+      }
     }
 
     if (lines.length === 0) {
@@ -732,9 +736,10 @@ export default function Order() {
         },
         body: JSON.stringify({
           items: orderItems,
-          delivery_address: selectedAddr.fullAddress,
-          delivery_latitude: selectedAddr.latitude,
-          delivery_longitude: selectedAddr.longitude,
+          order_type: orderType,
+          delivery_address: orderType === 'pickup' ? 'Pickup' : selectedAddr?.fullAddress,
+          delivery_latitude: orderType === 'pickup' ? null : selectedAddr?.latitude,
+          delivery_longitude: orderType === 'pickup' ? null : selectedAddr?.longitude,
           delivery_instructions: deliveryInstructions,
           discount: discountAmount,
           delivery_charge: deliveryCharge,
@@ -907,15 +912,16 @@ export default function Order() {
   // COD PAYMENT HANDLER
   // ============================================================================
   const handleCODPayment = async () => {
-    const validation = validateDeliveryArea();
-    if (!validation.valid) {
-      setPaymentError(validation.message);
-      return;
-    }
-
-    if (!selectedAddressId) {
-      setPaymentError("Please select a delivery address");
-      return;
+    if (orderType === 'delivery') {
+      const validation = validateDeliveryArea();
+      if (!validation.valid) {
+        setPaymentError(validation.message);
+        return;
+      }
+      if (!selectedAddressId) {
+        setPaymentError("Please select a delivery address");
+        return;
+      }
     }
 
     if (lines.length === 0) {
@@ -949,9 +955,11 @@ export default function Order() {
 
       const orderPayload = {
         items: orderItems,
-        delivery_address: selectedAddr.fullAddress,
-        delivery_latitude: selectedAddr.latitude,
-        delivery_longitude: selectedAddr.longitude,
+        orderType,
+        order_type: orderType,
+        delivery_address: orderType === 'pickup' ? 'Pickup' : selectedAddr?.fullAddress,
+        delivery_latitude: orderType === 'pickup' ? null : selectedAddr?.latitude,
+        delivery_longitude: orderType === 'pickup' ? null : selectedAddr?.longitude,
         delivery_instructions: deliveryInstructions,
         paymentMethod: "COD",
         discount: discountAmount,
@@ -1171,7 +1179,56 @@ export default function Order() {
           <div className="grid md:grid-cols-3 gap-6">
             {/* LEFT: Delivery Details */}
             <div className="md:col-span-2 space-y-6">
-              {/* Delivery Address */}
+
+              {/* Order Type Toggle */}
+              {!isEditMode && (
+                <div className="bg-neutral-800 rounded-lg p-4 sm:p-6">
+                  <h3 className="text-white font-bold text-lg mb-3">How would you like your order?</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setOrderType('delivery')}
+                      className={`flex flex-col items-center gap-2 py-4 rounded-xl border-2 font-semibold transition-all ${
+                        orderType === 'delivery'
+                          ? 'border-orange-500 bg-orange-500/10 text-orange-400'
+                          : 'border-neutral-600 text-neutral-400 hover:border-neutral-500'
+                      }`}
+                    >
+                      <Truck className="w-6 h-6" />
+                      <span>Delivery</span>
+                    </button>
+                    <button
+                      onClick={() => setOrderType('pickup')}
+                      className={`flex flex-col items-center gap-2 py-4 rounded-xl border-2 font-semibold transition-all ${
+                        orderType === 'pickup'
+                          ? 'border-orange-500 bg-orange-500/10 text-orange-400'
+                          : 'border-neutral-600 text-neutral-400 hover:border-neutral-500'
+                      }`}
+                    >
+                      <MapPin className="w-6 h-6" />
+                      <span>Pickup</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Delivery Address or Pickup Info */}
+              {orderType === 'pickup' ? (
+                <div className="bg-neutral-800 rounded-lg p-4 sm:p-6">
+                  <h3 className="text-white font-bold text-xl mb-4">
+                    <MapPin className="w-5 h-5 inline mr-2" />
+                    Pickup Details
+                  </h3>
+                  <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4">
+                    <p className="text-green-300 font-semibold text-base mb-1">Ready in ~30 minutes</p>
+                    <p className="text-neutral-300 text-sm">
+                      Your order will be ready for pickup at our restaurant. We'll call if it takes a bit longer.
+                    </p>
+                    <p className="text-neutral-400 text-sm mt-3">
+                      <span className="font-medium text-white">Location:</span> 25 Rafi Ahmed Kidwai Rd, Bhowanipore, Kolkata
+                    </p>
+                  </div>
+                </div>
+              ) : (
               <div className="bg-neutral-800 rounded-lg p-4 sm:p-6">
                 <h3 className="text-white font-bold text-xl mb-4">
                   <MapPin className="w-5 h-5 inline mr-2" />
@@ -1436,6 +1493,7 @@ export default function Order() {
                   </>
                 )}
               </div>
+              )}
 
               {/* Special Instructions */}
               <div className="bg-neutral-800 rounded-lg p-4 sm:p-6">
@@ -1672,20 +1730,22 @@ export default function Order() {
                     <span className="text-white">₹{gstAmount}</span>
                   </div>
 
-                  {/* Delivery Charge */}
+                  {/* Delivery Charge / Pickup */}
                   <div className="flex justify-between text-neutral-400">
                     <span className="flex items-center gap-1.5">
-                      <Truck className="w-3.5 h-3.5" />
-                      Delivery
+                      {orderType === 'pickup' ? <MapPin className="w-3.5 h-3.5" /> : <Truck className="w-3.5 h-3.5" />}
+                      {orderType === 'pickup' ? 'Pickup' : 'Delivery'}
                     </span>
-                    {deliveryCharge > 0 ? (
+                    {orderType === 'pickup' ? (
+                      <span className="text-green-400 font-medium">FREE</span>
+                    ) : deliveryCharge > 0 ? (
                       <span className="text-white">₹{deliveryCharge}</span>
                     ) : (
                       <span className="text-green-400 font-medium">FREE</span>
                     )}
                   </div>
                   {/* Free delivery upsell */}
-                  {deliveryStatus && deliveryCharge > 0 && Number(deliveryStatus.distance) <= 4 && (
+                  {orderType === 'delivery' && deliveryStatus && deliveryCharge > 0 && Number(deliveryStatus.distance) <= 4 && (
                     <p className="text-xs text-green-400 text-right">Free delivery within 3km</p>
                   )}
 
@@ -1711,7 +1771,7 @@ export default function Order() {
                 )}
 
                 {/* Delivery Area Warning */}
-                {selectedAddress && (() => {
+                {orderType === 'delivery' && selectedAddress && (() => {
                   const status = getDeliveryStatus(selectedAddress);
                   if (status.canDeliver === null) {
                     return (
@@ -1749,7 +1809,7 @@ export default function Order() {
                   {!isEditMode && (
                     <button
                       onClick={handleRazorpayPayment}
-                      disabled={paymentProcessing || lines.length === 0 || !selectedAddressId || geocodingPending}
+                      disabled={paymentProcessing || lines.length === 0 || (orderType === 'delivery' && (!selectedAddressId || geocodingPending))}
                       className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors"
                     >
                       {paymentProcessing ? (
@@ -1765,7 +1825,7 @@ export default function Order() {
 
                   <button
                     onClick={handleCODPayment}
-                    disabled={paymentProcessing || lines.length === 0 || !selectedAddressId || geocodingPending}
+                    disabled={paymentProcessing || lines.length === 0 || (orderType === 'delivery' && (!selectedAddressId || geocodingPending))}
                     className={`w-full py-3 ${isEditMode ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700'} disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors`}
                   >
                     {paymentProcessing ? (

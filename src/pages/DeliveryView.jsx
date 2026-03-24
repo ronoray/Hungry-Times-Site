@@ -151,10 +151,11 @@ export default function DeliveryView() {
   const upiUrl = `upi://pay?pa=8420822919@okbizaxis&pn=HungryTimes&am=${collectAmount}&tn=Order+%23${order.id}&cu=INR`;
   const canPickUp = ['pending', 'confirmed', 'preparing'].includes(order.status);
   const canDeliver = order.status === 'out_for_delivery';
+  const isPickup = order.delivery_address === 'Pickup' || order.order_type?.includes('pickup');
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
-      <h1 className="text-xl font-bold text-white mb-1">Delivery — Order #{order.id}</h1>
+      <h1 className="text-xl font-bold text-white mb-1">{isPickup ? 'Pickup' : 'Delivery'} — Order #{order.id}</h1>
       <p className="text-neutral-500 text-sm mb-6">
         {new Date(order.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
       </p>
@@ -177,47 +178,61 @@ export default function DeliveryView() {
         )}
       </div>
 
-      {/* Address */}
-      <div className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-4 mb-4">
-        <p className="text-neutral-400 text-xs font-medium mb-2">Delivery Address</p>
-        <p className="text-white text-sm mb-3">{order.delivery_address || 'Not provided'}</p>
+      {/* Address or Pickup Info */}
+      {isPickup ? (
+        <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 mb-4">
+          <p className="text-green-400 text-xs font-medium mb-1">Pickup Order</p>
+          <p className="text-white font-semibold">Customer will collect from restaurant</p>
+          <p className="text-neutral-400 text-sm mt-1">Ready in ~30 min. Call customer if there's a delay.</p>
+          {order.delivery_instructions && (
+            <div className="mt-3 p-2 bg-neutral-700/50 rounded-lg">
+              <p className="text-neutral-400 text-xs">Instructions</p>
+              <p className="text-white text-sm">{order.delivery_instructions}</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-4 mb-4">
+          <p className="text-neutral-400 text-xs font-medium mb-2">Delivery Address</p>
+          <p className="text-white text-sm mb-3">{order.delivery_address || 'Not provided'}</p>
 
-        {order.delivery_latitude && order.delivery_longitude ? (
-          /* GPS-verified location — opens exact pin */
-          <a
-            href={`https://www.google.com/maps?q=${order.delivery_latitude},${order.delivery_longitude}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 px-4 py-3 rounded-lg font-semibold text-base transition-colors"
-          >
-            <Navigation className="w-5 h-5" />
-            Open in Google Maps
-          </a>
-        ) : order.delivery_address && order.delivery_address !== 'Pickup' ? (
-          /* No GPS — text-based search, clearly marked as approximate */
-          <div>
+          {order.delivery_latitude && order.delivery_longitude ? (
+            /* GPS-verified location — opens exact pin */
             <a
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.delivery_address)}`}
+              href={`https://www.google.com/maps?q=${order.delivery_latitude},${order.delivery_longitude}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 px-4 py-3 rounded-lg font-semibold text-base transition-colors"
+              className="flex items-center gap-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 px-4 py-3 rounded-lg font-semibold text-base transition-colors"
             >
-              <MapPin className="w-5 h-5" />
-              Search Address on Maps
+              <Navigation className="w-5 h-5" />
+              Open in Google Maps
             </a>
-            <p className="text-amber-500/70 text-xs mt-1.5 pl-1">
-              Location not GPS-verified — confirm with customer if unsure
-            </p>
-          </div>
-        ) : null}
+          ) : order.delivery_address && order.delivery_address !== 'Pickup' ? (
+            /* No GPS — text-based search, clearly marked as approximate */
+            <div>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.delivery_address)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 px-4 py-3 rounded-lg font-semibold text-base transition-colors"
+              >
+                <MapPin className="w-5 h-5" />
+                Search Address on Maps
+              </a>
+              <p className="text-amber-500/70 text-xs mt-1.5 pl-1">
+                Location not GPS-verified — confirm with customer if unsure
+              </p>
+            </div>
+          ) : null}
 
-        {order.delivery_instructions && (
-          <div className="mt-3 p-2 bg-neutral-700/50 rounded-lg">
-            <p className="text-neutral-400 text-xs">Instructions</p>
-            <p className="text-white text-sm">{order.delivery_instructions}</p>
-          </div>
-        )}
-      </div>
+          {order.delivery_instructions && (
+            <div className="mt-3 p-2 bg-neutral-700/50 rounded-lg">
+              <p className="text-neutral-400 text-xs">Instructions</p>
+              <p className="text-white text-sm">{order.delivery_instructions}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Items */}
       <div className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-4 mb-4">
