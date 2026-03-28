@@ -1224,7 +1224,7 @@ export default function Order() {
                       Your order will be ready for pickup at our restaurant. We'll call if it takes a bit longer.
                     </p>
                     <p className="text-neutral-400 text-sm mt-3">
-                      <span className="font-medium text-white">Location:</span> 25 Rafi Ahmed Kidwai Rd, Bhowanipore, Kolkata
+                      <span className="font-medium text-white">Location:</span> 32/12A, Gariahat Road South, Kolkata 700 031
                     </p>
                   </div>
                 </div>
