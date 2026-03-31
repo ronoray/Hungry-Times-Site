@@ -29,14 +29,15 @@ const RESTAURANT_LOCATION = {
 };
 
 // Maximum delivery radius in km
-const MAX_DELIVERY_RADIUS_KM = 5;
+const MAX_DELIVERY_RADIUS_KM = 8;
 
-// Delivery charge tiers
+// Fallback delivery charge tiers (used when Borzo estimate unavailable)
 function calculateDeliveryCharge(distanceKm) {
   if (distanceKm == null) return 0;
-  if (distanceKm <= 3) return 0;
-  if (distanceKm <= 4) return 30;
-  if (distanceKm <= 5) return 50;
+  if (distanceKm <= 2) return 40;
+  if (distanceKm <= 4) return 70;
+  if (distanceKm <= 6) return 100;
+  if (distanceKm <= 8) return 130;
   return -1; // outside service area
 }
 
@@ -138,6 +139,11 @@ export default function Order() {
   // { [addrId]: { lat, lng } | 'pending' | 'failed' }
   const [geocodedCoords, setGeocodedCoords] = useState({});
 
+  // Borzo live delivery quote: { charge: number|null, loading: bool }
+  // Cache keyed by addressId so we don't re-fetch on every render
+  const [borzoQuote, setBorzoQuote] = useState({ charge: null, loading: false });
+  const borzoQuoteCache = useState({})[0]; // stable cache ref
+
   // Form State
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
 
@@ -164,6 +170,47 @@ export default function Order() {
       fetchAddresses();
     }
   }, [isAuthenticated, customer?.id, customer?.address]);
+
+  // ============================================================================
+  // FETCH BORZO DELIVERY ESTIMATE WHEN ADDRESS CHANGES
+  // ============================================================================
+  useEffect(() => {
+    if (orderType !== 'delivery' || !selectedAddressId) {
+      setBorzoQuote({ charge: null, loading: false });
+      return;
+    }
+    const addr = addresses.find(a => a.id === selectedAddressId);
+    if (!addr || !addr.fullAddress) return;
+
+    // Use cached result if available
+    if (borzoQuoteCache[selectedAddressId] != null) {
+      setBorzoQuote({ charge: borzoQuoteCache[selectedAddressId], loading: false });
+      return;
+    }
+
+    const lat = addr.latitude || geocodedCoords[selectedAddressId]?.lat || null;
+    const lng = addr.longitude || geocodedCoords[selectedAddressId]?.lng || null;
+
+    setBorzoQuote({ charge: null, loading: true });
+    const token = localStorage.getItem('customerToken');
+    fetch(`${API_BASE}/customer/delivery/estimate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ address: addr.fullAddress, lat, lng }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        const charge = data.deliveryCharge != null ? data.deliveryCharge : null;
+        borzoQuoteCache[selectedAddressId] = charge;
+        setBorzoQuote({ charge, loading: false });
+      })
+      .catch(() => {
+        setBorzoQuote({ charge: null, loading: false });
+      });
+  }, [selectedAddressId, orderType, addresses, geocodedCoords]);
 
   // ============================================================================
   // FETCH ACTIVE OFFERS ON LOAD
@@ -585,7 +632,12 @@ export default function Order() {
     return getDeliveryStatus(addr);
   }, [addresses, selectedAddressId]);
 
-  const deliveryCharge = orderType === 'pickup' ? 0 : (deliveryStatus?.deliveryCharge > 0 ? deliveryStatus.deliveryCharge : 0);
+  // Use live Borzo quote if available, otherwise fall back to tiered distance pricing
+  const deliveryCharge = orderType === 'pickup'
+    ? 0
+    : (borzoQuote.charge != null
+        ? borzoQuote.charge
+        : (deliveryStatus?.deliveryCharge > 0 ? deliveryStatus.deliveryCharge : 0));
 
   const { cartTotal, discountAmount, pointsDiscount, maxRedeemablePoints, gstAmount, finalTotal } = useMemo(() => {
     let total = 0;
@@ -1738,16 +1790,14 @@ export default function Order() {
                     </span>
                     {orderType === 'pickup' ? (
                       <span className="text-green-400 font-medium">FREE</span>
+                    ) : borzoQuote.loading ? (
+                      <span className="flex items-center gap-1 text-neutral-400 text-sm"><Loader className="w-3.5 h-3.5 animate-spin" /> Calculating...</span>
                     ) : deliveryCharge > 0 ? (
                       <span className="text-white">₹{deliveryCharge}</span>
                     ) : (
                       <span className="text-green-400 font-medium">FREE</span>
                     )}
                   </div>
-                  {/* Free delivery upsell */}
-                  {orderType === 'delivery' && deliveryStatus && deliveryCharge > 0 && Number(deliveryStatus.distance) <= 4 && (
-                    <p className="text-xs text-green-400 text-right">Free delivery within 3km</p>
-                  )}
 
                   <div className="border-t border-neutral-700 pt-2 mt-2 flex justify-between">
                     <span className="text-lg font-bold text-white">Total</span>
