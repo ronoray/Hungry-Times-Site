@@ -24,8 +24,8 @@ import API_BASE from '../config/api.js';
 
 // Restaurant location for delivery radius calculation
 const RESTAURANT_LOCATION = {
-  latitude: 22.5061956,
-  longitude: 88.3673608
+  latitude: 22.506243716455923,
+  longitude: 88.36730591294373
 };
 
 // Maximum delivery radius in km
@@ -738,8 +738,8 @@ export default function Order() {
           items: orderItems,
           order_type: orderType,
           delivery_address: orderType === 'pickup' ? 'Pickup' : selectedAddr?.fullAddress,
-          delivery_latitude: orderType === 'pickup' ? null : selectedAddr?.latitude,
-          delivery_longitude: orderType === 'pickup' ? null : selectedAddr?.longitude,
+          delivery_latitude: orderType === 'pickup' ? null : (selectedAddr?.latitude || geocodedCoords[selectedAddressId]?.lat || null),
+          delivery_longitude: orderType === 'pickup' ? null : (selectedAddr?.longitude || geocodedCoords[selectedAddressId]?.lng || null),
           delivery_instructions: deliveryInstructions,
           discount: discountAmount,
           delivery_charge: deliveryCharge,
@@ -958,8 +958,8 @@ export default function Order() {
         orderType,
         order_type: orderType,
         delivery_address: orderType === 'pickup' ? 'Pickup' : selectedAddr?.fullAddress,
-        delivery_latitude: orderType === 'pickup' ? null : selectedAddr?.latitude,
-        delivery_longitude: orderType === 'pickup' ? null : selectedAddr?.longitude,
+        delivery_latitude: orderType === 'pickup' ? null : (selectedAddr?.latitude || geocodedCoords[selectedAddressId]?.lat || null),
+        delivery_longitude: orderType === 'pickup' ? null : (selectedAddr?.longitude || geocodedCoords[selectedAddressId]?.lng || null),
         delivery_instructions: deliveryInstructions,
         paymentMethod: "COD",
         discount: discountAmount,
