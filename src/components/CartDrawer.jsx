@@ -24,6 +24,7 @@ export default function CartDrawer({
   paymentProcessing,
   onCODPayment,
   onRazorpayPayment,
+  orderType,
 }) {
   const { removeLine, updateQty } = useCart();
 
@@ -216,13 +217,21 @@ export default function CartDrawer({
                 {paymentProcessing ? "Processing..." : "💳 Pay Online"}
               </button>
 
-              <button
-                onClick={onCODPayment}
-                disabled={paymentProcessing || lines.length === 0}
-                className="w-full py-3 bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-neutral-600 text-white font-bold rounded-lg transition-colors text-sm"
-              >
-                {paymentProcessing ? "Processing..." : "💵 Pay on Delivery"}
-              </button>
+              {orderType === 'delivery' ? (
+                <div className="w-full py-3 px-3 bg-neutral-800 border border-neutral-700 rounded-lg text-neutral-400 text-xs text-center leading-relaxed">
+                  💵 Want to pay cash?{' '}
+                  <a href="tel:+918420822919" className="text-orange-400 font-medium underline">Call +91 84208 22919</a>
+                  {' '}and we'll try to arrange our own delivery.
+                </div>
+              ) : (
+                <button
+                  onClick={onCODPayment}
+                  disabled={paymentProcessing || lines.length === 0}
+                  className="w-full py-3 bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-neutral-600 text-white font-bold rounded-lg transition-colors text-sm"
+                >
+                  {paymentProcessing ? "Processing..." : "💵 Pay on Delivery"}
+                </button>
+              )}
             </div>
           </div>
         )}

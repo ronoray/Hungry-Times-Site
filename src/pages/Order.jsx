@@ -1873,22 +1873,30 @@ export default function Order() {
                     </button>
                   )}
 
-                  <button
-                    onClick={handleCODPayment}
-                    disabled={paymentProcessing || lines.length === 0 || (orderType === 'delivery' && (!selectedAddressId || geocodingPending))}
-                    className={`w-full py-3 ${isEditMode ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700'} disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors`}
-                  >
-                    {paymentProcessing ? (
-                      <>
-                        <Loader className="w-4 h-4 inline animate-spin mr-2" />
-                        {isEditMode ? 'Updating...' : 'Processing...'}
-                      </>
-                    ) : isEditMode ? (
-                      `Update Order #${editOrderId}`
-                    ) : (
-                      "💵 Cash on Delivery"
-                    )}
-                  </button>
+                  {orderType === 'delivery' && !isEditMode ? (
+                    <div className="w-full py-3 px-4 bg-neutral-800 border border-neutral-700 rounded-lg text-neutral-400 text-sm text-center leading-relaxed">
+                      💵 Want to pay cash?{' '}
+                      <a href="tel:+918420822919" className="text-orange-400 font-medium underline">Call us at +91 84208 22919</a>
+                      {' '}and we'll try to arrange our own delivery partner for you.
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleCODPayment}
+                      disabled={paymentProcessing || lines.length === 0 || (orderType === 'delivery' && (!selectedAddressId || geocodingPending))}
+                      className={`w-full py-3 ${isEditMode ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700'} disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors`}
+                    >
+                      {paymentProcessing ? (
+                        <>
+                          <Loader className="w-4 h-4 inline animate-spin mr-2" />
+                          {isEditMode ? 'Updating...' : 'Processing...'}
+                        </>
+                      ) : isEditMode ? (
+                        `Update Order #${editOrderId}`
+                      ) : (
+                        "💵 Cash on Delivery"
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -1912,6 +1920,7 @@ export default function Order() {
         setSpecialNotes={setDeliveryInstructions}
         paymentError={paymentError}
         paymentProcessing={paymentProcessing}
+        orderType={orderType}
         onCODPayment={handleCODPayment}
         onRazorpayPayment={handleRazorpayPayment}
       />
