@@ -936,10 +936,16 @@ export default function Order() {
         },
         modal: {
           ondismiss: function () {
-            // ✅ User cancelled - no order created!
             console.log('⚠️ Payment cancelled by user');
+            // Cancel the pending order so it doesn't linger in the customer's order history
+            if (dbOrderId) {
+              fetch(`${API_BASE}/customer/orders/${dbOrderId}/cancel`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+              }).catch(() => {}); // fire-and-forget
+            }
             setPaymentProcessing(false);
-            setPaymentError("Payment cancelled. No order was created.");
+            setPaymentError("Payment cancelled. No charges were made.");
           },
         },
       };
