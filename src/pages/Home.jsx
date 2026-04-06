@@ -13,11 +13,11 @@ import heroImg from '../assets/hero-1200.jpg'
 const RESTAURANT_SCHEMA = {
   "@context": "https://schema.org",
   "@type": ["Restaurant", "FoodEstablishment"],
-  "@id": "https://hungrytimes.in/#restaurant",
+  "@id": "https://home.hungrytimes.in/#restaurant",
   "name": "Hungry Times",
-  "url": "https://hungrytimes.in",
-  "logo": "https://hungrytimes.in/hungry-times-logo.png",
-  "image": "https://hungrytimes.in/banner.png",
+  "url": "https://home.hungrytimes.in",
+  "logo": "https://home.hungrytimes.in/hungry-times-logo.png",
+  "image": "https://home.hungrytimes.in/banner.png",
   "description": "Order delicious food online from Hungry Times. Indian, Chinese & Continental cuisine with fast delivery in Kolkata.",
   "telephone": "+91-8420822919",
   "address": {
@@ -36,10 +36,10 @@ const RESTAURANT_SCHEMA = {
   }],
   "servesCuisine": ["Indian", "Chinese", "Continental", "North Indian"],
   "priceRange": "$$",
-  "hasMenu": { "@type": "Menu", "url": "https://hungrytimes.in/menu" },
+  "hasMenu": { "@type": "Menu", "url": "https://home.hungrytimes.in/menu" },
   "potentialAction": {
     "@type": "OrderAction",
-    "target": { "@type": "EntryPoint", "urlTemplate": "https://hungrytimes.in/menu" },
+    "target": { "@type": "EntryPoint", "urlTemplate": "https://home.hungrytimes.in/menu" },
     "deliveryMethod": ["http://purl.org/goodrelations/v1#DeliveryModeOwnFleet"]
   }
 };

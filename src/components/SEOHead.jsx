@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
-const BASE_URL = 'https://hungrytimes.in';
+const BASE_URL = 'https://home.hungrytimes.in';
 
 export default function SEOHead({ title, description, canonicalPath, ogImage }) {
   const location = useLocation();
