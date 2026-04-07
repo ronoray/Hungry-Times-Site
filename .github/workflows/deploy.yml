@@ -13,6 +13,10 @@ on:
       - "tailwind.config.*"
       - ".github/workflows/deploy.yml"
 
+concurrency:
+  group: deploy-website
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
