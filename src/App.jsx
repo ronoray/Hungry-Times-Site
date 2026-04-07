@@ -290,6 +290,8 @@ const isUtilityPath = (pathname) => UTILITY_PATHS.some(p => pathname.startsWith(
 
 export default function App() {
   const [swReady, setSwReady] = useState(false);
+  // True once FirstVisitPopup has finished (shown+dismissed, or skipped for returning visitor)
+  const [firstVisitDone, setFirstVisitDone] = useState(false);
   const location = useLocation();
   const isUtility = isUtilityPath(location.pathname);
 
@@ -339,8 +341,8 @@ export default function App() {
             <ToastProvider>
             <div className="min-h-screen flex flex-col bg-[#0B0B0B] text-white">
 
-              {/* Show notification modal when SW is ready — it decides internally whether to show */}
-              {swReady && <NotificationPromptModal onGranted={setupPushNotifications} />}
+              {/* Notification bar — waits for FIRST30 to finish before showing */}
+              {swReady && <NotificationPromptModal onGranted={setupPushNotifications} firstVisitDone={firstVisitDone} />}
 
               {/* PWA Install Prompt */}
               <PWAInstallPrompt />
@@ -365,7 +367,7 @@ export default function App() {
               <Footer />
 
               {/* First-visit welcome offer popup */}
-              <FirstVisitPopup />
+              <FirstVisitPopup onDone={() => setFirstVisitDone(true)} />
 
               {/* WhatsApp floating CTA */}
               <WhatsAppFloat />

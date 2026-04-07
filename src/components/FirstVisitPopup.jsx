@@ -9,7 +9,7 @@ const CODE = 'FIRST30';
 const DISCOUNT = '30%';
 const TIMER_MINUTES = 30;
 
-export default function FirstVisitPopup() {
+export default function FirstVisitPopup({ onDone }) {
   const [show, setShow] = useState(false);
   const [copied, setCopied] = useState(false);
   const [timeLeft, setTimeLeft] = useState(TIMER_MINUTES * 60);
@@ -18,13 +18,14 @@ export default function FirstVisitPopup() {
 
   useEffect(() => {
     // Already seen?
-    if (localStorage.getItem(STORAGE_KEY)) return;
+    if (localStorage.getItem(STORAGE_KEY)) { onDone?.(); return; }
 
     // Already logged in with orders? Don't show.
     const token = localStorage.getItem('customerToken');
     if (token) {
       // Mark as seen — returning customer doesn't need first-visit offer
       localStorage.setItem(STORAGE_KEY, Date.now().toString());
+      onDone?.();
       return;
     }
 
@@ -73,6 +74,7 @@ export default function FirstVisitPopup() {
     setShow(false);
     localStorage.setItem(STORAGE_KEY, Date.now().toString());
     clearInterval(timerRef.current);
+    onDone?.();
   };
 
   const copyCode = async () => {
