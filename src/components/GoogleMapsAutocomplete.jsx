@@ -14,6 +14,7 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
   const [hasSelected, setHasSelected] = useState(false);
   const inputRef = useRef(null);
   const autocompleteRef = useRef(null);
+  const cancelledRef = useRef(false);
 
   // Update searchText when defaultValue prop changes
   useEffect(() => {
@@ -22,55 +23,44 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
   }, [defaultValue]);
 
   useEffect(() => {
-    let cancelled = false;
+    cancelledRef.current = false;
 
     loadGoogleMaps()
       .then(() => {
-        if (cancelled) return;
-        // Verify places library is actually ready (can lag behind onload)
-        const check = (attempts = 0) => {
-          if (window.google?.maps?.places) {
-            setIsLoaded(true);
-            setManualMode(false);
-            setTimeout(() => initAutocomplete(), 100);
-          } else if (attempts < 10) {
-            setTimeout(() => check(attempts + 1), 200);
-          } else {
-            setManualMode(true);
-            setIsLoaded(true);
-          }
-        };
-        check();
+        if (cancelledRef.current) return;
+        setIsLoaded(true);
+        setManualMode(false);
+        setTimeout(() => initAutocomplete(), 100);
       })
       .catch(() => {
-        if (cancelled) return;
+        if (cancelledRef.current) return;
         console.warn('[Maps] Google Maps not available - switching to manual mode');
         setManualMode(true);
         setIsLoaded(true);
       });
 
     return () => {
-      cancelled = true;
+      cancelledRef.current = true;
       if (autocompleteRef.current) {
         window.google?.maps?.event?.clearInstanceListeners(autocompleteRef.current);
       }
     };
   }, []);
 
-  const initAutocomplete = () => {
-    if (!inputRef.current || !window.google) {
-      console.error('[Maps] Cannot initialize - missing refs or Google Maps');
-      return;
-    }
+  const initAutocomplete = async () => {
+    if (cancelledRef.current || !inputRef.current || !window.google?.maps?.importLibrary) return;
 
     try {
-      // Clear any existing autocomplete
       if (autocompleteRef.current) {
         window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
       }
 
-      // Initialize Google Places Autocomplete
-      autocompleteRef.current = new window.google.maps.places.Autocomplete(
+      // Use new importLibrary pattern (required since Google Maps API 2025+)
+      const { Autocomplete } = await window.google.maps.importLibrary('places');
+
+      if (cancelledRef.current || !inputRef.current) return;
+
+      autocompleteRef.current = new Autocomplete(
         inputRef.current,
         {
           componentRestrictions: { country: 'in' },
@@ -79,13 +69,11 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
         }
       );
 
-      // Listen for place selection
       autocompleteRef.current.addListener('place_changed', handlePlaceSelect);
-      
       console.log('[Maps] ✅ Autocomplete initialized successfully');
     } catch (error) {
       console.error('[Maps] ❌ Failed to initialize autocomplete:', error);
-      setManualMode(true);
+      if (!cancelledRef.current) setManualMode(true);
     }
   };
 
