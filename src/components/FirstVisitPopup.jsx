@@ -133,9 +133,12 @@ export default function FirstVisitPopup({ onDone }) {
             <p className="text-sm font-medium text-orange-400 tracking-wider uppercase mb-2">
               Welcome to Hungry Times
             </p>
-            <h2 className="text-3xl font-bold text-white mb-1">
+            <h2 className="text-3xl font-bold text-white mb-2">
               {DISCOUNT} <span className="text-orange-400">OFF</span>
             </h2>
+            <span className="inline-block bg-orange-500/15 border border-orange-500/30 text-orange-400 text-xs font-semibold px-3 py-1 rounded-full mb-3">
+              First-time customers only
+            </span>
             <p className="text-gray-400 text-sm mb-5">
               Your first online order, on us.
             </p>
