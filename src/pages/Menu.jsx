@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import "./Menu.css";
 import { useCart } from "../context/CartContext";
-import { ShoppingCart, Plus, Check, Tag, Sparkles, Search, X, Heart } from "lucide-react";
+import { ShoppingCart, Plus, Check, Tag, Sparkles, Search, X, Heart, ChevronRight } from "lucide-react";
 import AddToCartModal from "../components/AddToCartModal";
 import FloatingCartBar from "../components/FloatingCartBar";
 import VegDot from "../components/VegDot";
@@ -11,6 +11,9 @@ import { useMenuCategory } from '../context/MenuCategoryContext';
 import { useFavorites } from '../context/FavoritesContext';
 import SEOHead from '../components/SEOHead';
 import KitchenStatus from '../components/KitchenStatus';
+import MakeYourMealModal from '../components/MakeYourMealModal';
+import '../components/MakeYourMealModal.css';
+import { useAuth } from '../context/AuthContext';
 
 import API_BASE from "../config/api";
 import { trackAddToCart, trackSearch, trackPhoneClick, trackWhatsAppClick, trackCtaClick, trackViewItem, trackFavoriteToggle, trackViewItemList } from "../utils/analytics";
@@ -207,6 +210,8 @@ export default function Menu() {
    } = useCart();
   const [selectedItem, setSelectedItem] = useState(null);
   const [showAddToCartModal, setShowAddToCartModal] = useState(false);
+  const [showMealModal, setShowMealModal] = useState(false);
+  const { customer } = useAuth();
 
   const [activeTop, setActiveTop] = useState(null);
   const [activeSub, setActiveSub] = useState(null);
@@ -1141,28 +1146,16 @@ export default function Menu() {
                   </div>
                 )}
 
-                {/* Recommended Section - Hidden during search */}
-                {!searchQuery && recommendedItems.length > 0 && (
-                  <div className="recommended-section">
-                    <div className="recommended-header">
-                      <span className="star-icon">⭐</span>
-                      <h2 className="recommended-title">
-                        Chef&apos;s Recommendations
-                      </h2>
-                      <span className="star-icon">⭐</span>
-                    </div>
-                    <div className="recommended-items-grid-wrapper">
-                    <div className="recommended-items-grid">
-                      {recommendedItems.map((it) => (
-                        <MenuItemCard
-                          key={it.id}
-                          it={it}
-                          isRecommendedCard={true}
-                        />
-                      ))}
-                      </div>
-                    </div>
-                  </div>
+                {/* Make Your Meal button - replaces Chef's Recommendations */}
+                {!searchQuery && (
+                  <button className="myom-entry-btn" onClick={() => setShowMealModal(true)}>
+                    <Sparkles size={22} className="myom-entry-icon" />
+                    <span className="myom-entry-text">
+                      <span className="myom-entry-title">Make Your Meal</span>
+                      <span className="myom-entry-sub">Tell us how many people — we'll suggest the perfect order</span>
+                    </span>
+                    <ChevronRight size={18} className="myom-entry-arrow" />
+                  </button>
                 )}
 
                 {/* Subcategory Navigation - Sticky after recommendations, hidden during search */}
@@ -1342,6 +1335,14 @@ export default function Menu() {
         onClose={() =>
           setDescModal({ open: false, title: "", description: "" })
         }
+      />
+
+      {/* Make Your Meal Modal */}
+      <MakeYourMealModal
+        isOpen={showMealModal}
+        onClose={() => setShowMealModal(false)}
+        recommendedItems={recommendedItems}
+        customerPhone={customer?.phone || null}
       />
 
       {/* Add to Cart Modal */}

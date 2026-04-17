@@ -1,0 +1,298 @@
+/* ── Backdrop ─────────────────────────────────────────────── */
+.myom-backdrop {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.65);
+  display: flex; align-items: flex-end;
+  animation: myom-fade-in 0.2s ease;
+}
+@media (min-width: 640px) {
+  .myom-backdrop { align-items: center; justify-content: center; }
+}
+@keyframes myom-fade-in { from { opacity: 0 } to { opacity: 1 } }
+
+/* ── Modal shell ─────────────────────────────────────────── */
+.myom-modal {
+  background: #1a1a1a; color: #f0f0f0;
+  width: 100%; max-height: 92dvh;
+  border-radius: 20px 20px 0 0;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  animation: myom-slide-up 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+}
+@media (min-width: 640px) {
+  .myom-modal {
+    width: min(480px, 95vw); max-height: 85vh;
+    border-radius: 20px;
+    animation: myom-pop-in 0.2s ease;
+  }
+}
+@keyframes myom-slide-up { from { transform: translateY(100%) } to { transform: translateY(0) } }
+@keyframes myom-pop-in { from { transform: scale(0.95); opacity: 0 } to { transform: scale(1); opacity: 1 } }
+
+/* ── Header ──────────────────────────────────────────────── */
+.myom-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid #2e2e2e;
+  flex-shrink: 0;
+}
+.myom-header-left { display: flex; align-items: center; gap: 8px; }
+.myom-header-icon { color: #f59e0b; }
+.myom-header-title { font-size: 16px; font-weight: 700; color: #fff; }
+.myom-close-btn {
+  background: none; border: none; cursor: pointer;
+  color: #888; padding: 4px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  transition: color 0.15s, background 0.15s;
+}
+.myom-close-btn:hover { color: #fff; background: #2e2e2e; }
+
+/* ── Body (scrollable) ────────────────────────────────────── */
+.myom-body {
+  flex: 1; overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0;
+}
+
+/* ── Steps ───────────────────────────────────────────────── */
+.myom-step { padding: 24px 18px; }
+.myom-step-title {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 16px; font-weight: 600; color: #e5e5e5;
+  margin-bottom: 24px; line-height: 1.3;
+}
+.myom-step-icon { color: #f59e0b; flex-shrink: 0; }
+
+/* ── People grid ─────────────────────────────────────────── */
+.myom-people-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+}
+.myom-people-btn {
+  background: #2a2a2a; border: 2px solid #3a3a3a;
+  color: #f0f0f0; border-radius: 16px;
+  font-size: 28px; font-weight: 700;
+  padding: 20px 8px;
+  cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.myom-people-btn:hover, .myom-people-btn:active {
+  background: #f59e0b; border-color: #f59e0b; color: #000;
+  transform: scale(1.04);
+}
+
+/* ── Meal type cards ─────────────────────────────────────── */
+.myom-type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.myom-type-card {
+  background: #2a2a2a; border: 2px solid #3a3a3a;
+  border-radius: 16px; padding: 20px 12px;
+  cursor: pointer; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  transition: all 0.15s;
+}
+.myom-type-card:hover, .myom-type-card:active {
+  border-color: #f59e0b; background: #2e2a1a;
+}
+.myom-type-emoji { font-size: 36px; }
+.myom-type-label { font-size: 14px; font-weight: 700; color: #f0f0f0; }
+.myom-type-sub { font-size: 11px; color: #888; }
+
+/* ── Back button ─────────────────────────────────────────── */
+.myom-back-btn {
+  background: none; border: none; cursor: pointer;
+  color: #888; font-size: 13px;
+  display: flex; align-items: center; gap: 4px;
+  padding: 0 0 16px; transition: color 0.15s;
+}
+.myom-back-btn:hover { color: #f59e0b; }
+
+/* ── Picks wrap ──────────────────────────────────────────── */
+.myom-picks-wrap { position: relative; display: flex; flex-direction: column; height: 100%; }
+
+.myom-picks-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px 4px;
+  flex-shrink: 0;
+}
+.myom-picks-for { font-size: 13px; font-weight: 600; color: #aaa; }
+.myom-chef-btn {
+  background: none; border: 1px solid #3a3a3a;
+  color: #f59e0b; border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+  padding: 5px 10px; cursor: pointer;
+  display: flex; align-items: center; gap: 4px;
+  transition: all 0.15s;
+}
+.myom-chef-btn:hover { background: #2e2a1a; border-color: #f59e0b; }
+
+.myom-personal-notice {
+  font-size: 11px; color: #f59e0b;
+  padding: 4px 18px 0; font-style: italic;
+}
+
+/* ── Sections ────────────────────────────────────────────── */
+.myom-sections { padding: 8px 18px 0; overflow-y: auto; }
+.myom-section { margin-bottom: 20px; }
+.myom-section-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+  color: #666; text-transform: uppercase;
+  margin-bottom: 10px; padding-bottom: 6px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+/* ── Item row ────────────────────────────────────────────── */
+.myom-item-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #242424;
+  transition: background 0.15s;
+}
+.myom-item-row:last-child { border-bottom: none; }
+.myom-item-pickone { cursor: pointer; border-radius: 12px; padding: 10px 8px; }
+.myom-item-pickone:hover { background: #242424; }
+.myom-item-selected.myom-item-pickone { background: #1e2318; border: 1px solid #4ade80; }
+
+.myom-item-img {
+  width: 56px; height: 56px; border-radius: 10px;
+  object-fit: cover; flex-shrink: 0;
+}
+.myom-item-img-placeholder { background: #2a2a2a; }
+
+.myom-item-info { flex: 1; min-width: 0; }
+.myom-item-name-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 2px; }
+.myom-item-name { font-size: 13px; font-weight: 600; color: #e8e8e8; line-height: 1.3; }
+.myom-item-cat { font-size: 11px; color: #666; display: block; margin-bottom: 3px; }
+.myom-item-price { font-size: 13px; font-weight: 700; color: #f59e0b; }
+
+.myom-veg-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #4ade80; flex-shrink: 0;
+}
+.myom-nonveg-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #f87171; flex-shrink: 0;
+}
+.myom-personal-badge {
+  background: #f59e0b22; color: #f59e0b;
+  font-size: 10px; font-weight: 600;
+  padding: 2px 6px; border-radius: 10px; flex-shrink: 0;
+}
+
+/* ── Qty controls ────────────────────────────────────────── */
+.myom-qty-controls {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+}
+.myom-qty-btn {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: #2e2e2e; border: none; color: #e0e0e0;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.myom-qty-btn:hover:not(:disabled) { background: #f59e0b; color: #000; }
+.myom-qty-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.myom-qty-val { min-width: 18px; text-align: center; font-size: 14px; font-weight: 700; color: #fff; }
+.myom-qty-zero { color: #555; }
+
+/* ── Pick-one circle ─────────────────────────────────────── */
+.myom-pick-circle {
+  width: 24px; height: 24px; border-radius: 50%;
+  border: 2px solid #3a3a3a; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.myom-pick-circle-on { background: #4ade80; border-color: #4ade80; color: #000; }
+
+/* ── Guest notice ────────────────────────────────────────── */
+.myom-guest-notice {
+  font-size: 12px; color: #888;
+  background: #222; border-radius: 10px;
+  padding: 10px 14px; margin-top: 8px; margin-bottom: 12px;
+  text-align: center;
+}
+
+/* ── Footer ──────────────────────────────────────────────── */
+.myom-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-top: 1px solid #2e2e2e;
+  background: #1a1a1a;
+  flex-shrink: 0;
+}
+.myom-footer-total { display: flex; flex-direction: column; }
+.myom-total-label { font-size: 11px; color: #666; }
+.myom-total-amt { font-size: 18px; font-weight: 800; color: #fff; }
+
+.myom-add-btn {
+  flex: 1; max-width: 220px;
+  background: #f59e0b; color: #000;
+  border: none; border-radius: 14px;
+  font-size: 14px; font-weight: 700;
+  padding: 14px 20px; cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.myom-add-btn:hover:not(:disabled) { background: #fbbf24; transform: scale(1.02); }
+.myom-add-btn:disabled { background: #3a3a3a; color: #555; cursor: not-allowed; }
+
+/* ── Success ─────────────────────────────────────────────── */
+.myom-success {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 12px;
+  padding: 60px 20px;
+  font-size: 15px; font-weight: 600; color: #4ade80;
+}
+.myom-success-icon { color: #4ade80; }
+
+/* ── Loading skeleton ────────────────────────────────────── */
+.myom-loading { padding: 20px 18px; display: flex; flex-direction: column; gap: 16px; }
+.myom-skeleton-row { display: flex; gap: 12px; align-items: center; }
+.myom-skeleton-img { width: 56px; height: 56px; border-radius: 10px; background: #2a2a2a; flex-shrink: 0; animation: myom-pulse 1.4s ease infinite; }
+.myom-skeleton-lines { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.myom-skeleton-line { height: 12px; border-radius: 6px; background: #2a2a2a; animation: myom-pulse 1.4s ease infinite; }
+.myom-skeleton-line-lg { width: 70%; }
+.myom-skeleton-line-sm { width: 40%; }
+@keyframes myom-pulse { 0%, 100% { opacity: 0.5 } 50% { opacity: 1 } }
+
+/* ── Error ───────────────────────────────────────────────── */
+.myom-error { padding: 40px 20px; text-align: center; color: #f87171; font-size: 14px; }
+
+/* ── Chef's Picks side panel ─────────────────────────────── */
+.myom-chef-panel {
+  position: absolute; inset: 0;
+  background: #1a1a1a;
+  transform: translateX(100%); transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  display: flex; flex-direction: column;
+  border-radius: inherit;
+  z-index: 10;
+}
+.myom-chef-panel-open { transform: translateX(0); }
+.myom-chef-panel-header {
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid #2e2e2e;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.myom-chef-panel-title { font-size: 14px; font-weight: 700; color: #f59e0b; }
+.myom-chef-panel-body { flex: 1; overflow-y: auto; padding: 12px 18px; }
+.myom-chef-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #242424; }
+.myom-chef-img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+.myom-chef-empty { color: #666; font-size: 13px; padding: 20px 0; text-align: center; }
+.myom-chef-overlay { position: absolute; inset: 0; z-index: 9; }
+
+/* ── Entry button (in Menu.jsx) ──────────────────────────── */
+.myom-entry-btn {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a2010 100%);
+  border: 1px solid #f59e0b44;
+  border-radius: 16px; padding: 16px 20px;
+  cursor: pointer; color: #f0f0f0;
+  text-align: left; transition: all 0.18s;
+  margin-bottom: 20px;
+}
+.myom-entry-btn:hover { border-color: #f59e0b; background: linear-gradient(135deg, #1e1e1e 0%, #2e2210 100%); transform: translateY(-1px); }
+.myom-entry-icon { color: #f59e0b; flex-shrink: 0; }
+.myom-entry-text { flex: 1; }
+.myom-entry-title { font-size: 15px; font-weight: 700; display: block; }
+.myom-entry-sub { font-size: 12px; color: #888; display: block; margin-top: 2px; }
+.myom-entry-arrow { color: #f59e0b; flex-shrink: 0; }
