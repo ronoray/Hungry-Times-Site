@@ -51,28 +51,40 @@ jobs:
             | awk '{print $NF}')
           sig="sha256=${sig_hex}"
 
-          echo "Triggering website deployment webhook..."
-          code=$(curl -sS -o /tmp/deploy.out -w '%{http_code}' \
-            -X POST "$WEBHOOK_URL" \
-            -H 'Content-Type: application/json' \
-            -H "X-Hub-Signature-256: $sig" \
-            --data "$body")
+          fire_webhook() {
+            curl -sS -o /tmp/deploy.out -w '%{http_code}' \
+              -X POST "$WEBHOOK_URL" \
+              -H 'Content-Type: application/json' \
+              -H "X-Hub-Signature-256: $sig" \
+              --data "$body"
+          }
 
-          echo "HTTP $code"
-          cat /tmp/deploy.out || true
-          echo ""
+          echo "Triggering website deployment webhook..."
+          code=$(fire_webhook)
+          echo "HTTP $code"; cat /tmp/deploy.out || true; echo ""
+
+          if [[ "$code" == "429" ]]; then
+            echo "⚠️  Deploy in progress. Waiting up to 8 min for it to finish, then retrying..."
+            for attempt in 1 2 3 4; do
+              sleep 120
+              echo "↩️  Retry attempt $attempt..."
+              code=$(fire_webhook)
+              echo "HTTP $code"; cat /tmp/deploy.out || true; echo ""
+              if [[ "$code" == "200" || "$code" == "202" ]]; then
+                echo "✅ Webhook accepted on retry $attempt"
+                break
+              fi
+              if [[ "$code" != "429" ]]; then
+                echo "❌ Unexpected HTTP $code on retry"
+                exit 1
+              fi
+            done
+          fi
 
           case "$code" in
-            200|202)
-              echo "Webhook accepted - deployment started"
-              ;;
-            429)
-              echo "Deploy already in progress on server (HTTP 429)."
-              ;;
-            *)
-              echo "Webhook failed with HTTP $code"
-              exit 1
-              ;;
+            200|202) echo "✅ Webhook accepted - deployment started" ;;
+            429)     echo "❌ Server still busy after all retries"; exit 1 ;;
+            *)       echo "❌ Webhook failed with HTTP $code"; exit 1 ;;
           esac
 
       - name: Wait for deployment (poll website version)
