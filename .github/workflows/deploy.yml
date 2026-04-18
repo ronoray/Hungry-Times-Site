@@ -99,7 +99,7 @@ jobs:
           echo "Timeout: ${TIMEOUT_SEC}s"
 
           get_sha() {
-            curl -fsS --max-time 10 "$VERSION_URL" 2>/dev/null \
+            curl -fsS -L --max-time 10 "$VERSION_URL" 2>/dev/null \
               | sed -n 's/.*"sha"[: ]*"\([^"]*\)".*/\1/p' || echo ""
           }
 
