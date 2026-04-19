@@ -84,7 +84,7 @@ export default function OfferBanner() {
     : `₹${offer.discount_value} OFF`;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[60] bg-gradient-to-r from-orange-600 to-orange-500 text-white px-4 py-2.5 relative">
+    <div className="fixed top-0 left-0 right-0 z-[60] bg-emerald-700 text-white px-4 py-2.5 relative">
       <div className="max-w-7xl mx-auto flex items-center justify-center gap-3 text-sm">
         <span className="font-bold">{discountText}</span>
         <span className="hidden sm:inline">—</span>
@@ -101,7 +101,7 @@ export default function OfferBanner() {
         )}
         <button
           onClick={() => navigate('/menu')}
-          className="bg-white text-orange-600 px-3 py-1 rounded font-bold text-xs hover:bg-orange-50 transition-colors ml-1"
+          className="bg-white text-emerald-700 px-3 py-1 rounded font-bold text-xs hover:bg-emerald-50 transition-colors ml-1"
         >
           Order Now
         </button>
