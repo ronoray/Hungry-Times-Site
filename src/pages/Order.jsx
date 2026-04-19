@@ -20,6 +20,7 @@ import { useToast } from "../components/Toast";
 import OffersPanel from "../components/OffersPanel";
 import { trackBeginCheckout, trackPurchase } from "../utils/analytics";
 
+import './Order.css';
 import API_BASE from '../config/api.js';
 
 // Restaurant location for delivery radius calculation
