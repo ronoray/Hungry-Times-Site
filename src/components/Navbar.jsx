@@ -65,7 +65,7 @@ export default function Navbar() {
   return (
     <>
       {/* TOP NAVBAR */}
-      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-neutral-950/95 border-b border-neutral-800">
+      <header className="fixed left-0 right-0 z-50 backdrop-blur-md bg-neutral-950/95 border-b border-neutral-800" style={{ top: 'var(--banner-h, 0px)' }}>
         <nav className="w-full h-16 flex items-center justify-center px-4">
           <div className="max-w-7xl w-full flex items-center justify-between">
             {/* Logo */}
@@ -236,8 +236,6 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Spacer for fixed bottom nav on mobile */}
-      <div className="md:hidden h-20" />
 
       {/* Auth Modal */}
       <AuthModal

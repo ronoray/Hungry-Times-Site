@@ -14,9 +14,14 @@ export default function WhatsAppOrderBar() {
     () => !!sessionStorage.getItem('wa_order_bar_dismissed')
   );
 
-  // Don't show on menu page — search bar conflict + people already ordering
-  if (location.pathname === '/menu') return null;
-  if (dismissed) return null;
+  const shouldShow = location.pathname !== '/menu' && !dismissed;
+
+  // Drive --wa-bar-h so <main> padding accounts for this bar
+  useEffect(() => {
+    document.documentElement.style.setProperty('--wa-bar-h', shouldShow ? '36px' : '0px');
+  }, [shouldShow]);
+
+  if (!shouldShow) return null;
 
   const handleDismiss = () => {
     setDismissed(true);
@@ -24,8 +29,8 @@ export default function WhatsAppOrderBar() {
   };
 
   return (
-    <div className="fixed top-16 left-0 right-0 z-40 border-b border-neutral-800"
-      style={{ background: 'rgba(15,18,24,0.97)', backdropFilter: 'blur(8px)' }}
+    <div className="fixed left-0 right-0 z-40 border-b border-neutral-800"
+      style={{ top: 'calc(var(--banner-h, 0px) + 64px)', background: 'rgba(15,18,24,0.97)', backdropFilter: 'blur(8px)' }}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-center gap-2.5 px-4 py-2 text-sm relative">
         {/* WhatsApp icon — muted green, not full background */}

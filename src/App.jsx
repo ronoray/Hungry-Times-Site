@@ -356,8 +356,8 @@ export default function App() {
               {/* WhatsApp ordering cross-promo bar (pinned below navbar) */}
               <WhatsAppOrderBar />
 
-              {/* Main Content */}
-              <main className="flex-1">
+              {/* Main Content — padding-top accounts for fixed banner + navbar + optional WA bar */}
+              <main className="flex-1" style={{ paddingTop: 'calc(var(--banner-h, 0px) + 64px + var(--wa-bar-h, 0px))' }}>
                 <ErrorBoundary>
                   <Outlet />
                 </ErrorBoundary>

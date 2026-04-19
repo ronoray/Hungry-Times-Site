@@ -87,7 +87,7 @@
   min-height: 100vh !important;
   min-height: 100dvh !important; /* iOS Safari dynamic viewport height */
   color: var(--color-text) !important;
-  padding-top: 4rem !important; /* Space for fixed top navbar (64px) */
+  padding-top: 0 !important; /* Handled by <main> padding-top via CSS vars */
 }
 
 /* Mobile: Add bottom padding for FloatingCartBar (56px) + bottom nav (80px) + WA FAB + safe area */

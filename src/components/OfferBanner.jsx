@@ -23,6 +23,12 @@ export default function OfferBanner() {
     fetchOffer();
   }, []);
 
+  // Drive the --banner-h CSS var so Navbar and main can react to visibility
+  useEffect(() => {
+    const isVisible = !dismissed && !!offer;
+    document.documentElement.style.setProperty('--banner-h', isVisible ? '40px' : '0px');
+  }, [dismissed, offer]);
+
   useEffect(() => {
     if (!offer?.valid_till) return;
 
@@ -78,7 +84,7 @@ export default function OfferBanner() {
     : `₹${offer.discount_value} OFF`;
 
   return (
-    <div className="bg-gradient-to-r from-orange-600 to-orange-500 text-white px-4 py-2.5 relative">
+    <div className="fixed top-0 left-0 right-0 z-[60] bg-gradient-to-r from-orange-600 to-orange-500 text-white px-4 py-2.5 relative">
       <div className="max-w-7xl mx-auto flex items-center justify-center gap-3 text-sm">
         <span className="font-bold">{discountText}</span>
         <span className="hidden sm:inline">—</span>
