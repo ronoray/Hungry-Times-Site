@@ -144,6 +144,7 @@ export default function Order() {
   // Cache keyed by addressId so we don't re-fetch on every render
   const [borzoQuote, setBorzoQuote] = useState({ charge: null, loading: false });
   const borzoQuoteCache = useState({})[0]; // stable cache ref
+  const [useBorzoDelivery, setUseBorzoDelivery] = useState(false);
 
   // Form State
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
@@ -176,6 +177,7 @@ export default function Order() {
   // FETCH BORZO DELIVERY ESTIMATE WHEN ADDRESS CHANGES
   // ============================================================================
   useEffect(() => {
+    setUseBorzoDelivery(false);
     if (orderType !== 'delivery' || !selectedAddressId) {
       setBorzoQuote({ charge: null, loading: false });
       return;
@@ -633,10 +635,10 @@ export default function Order() {
     return getDeliveryStatus(addr);
   }, [addresses, selectedAddressId]);
 
-  // Use live Borzo quote if available, otherwise fall back to tiered distance pricing
+  // Use Borzo quote only when the customer explicitly opts in; otherwise use tiered distance pricing
   const deliveryCharge = orderType === 'pickup'
     ? 0
-    : (borzoQuote.charge != null
+    : (useBorzoDelivery && borzoQuote.charge != null
         ? borzoQuote.charge
         : (deliveryStatus?.deliveryCharge > 0 ? deliveryStatus.deliveryCharge : 0));
 
@@ -796,6 +798,7 @@ export default function Order() {
           delivery_instructions: deliveryInstructions,
           discount: discountAmount,
           delivery_charge: deliveryCharge,
+          use_borzo: useBorzoDelivery,
           offer_id: appliedOffer?.id || null,
           offer_title: appliedOffer?.title || null,
           applied_code: appliedCode?.code || null,
@@ -1023,6 +1026,7 @@ export default function Order() {
         paymentMethod: "COD",
         discount: discountAmount,
         delivery_charge: deliveryCharge,
+        use_borzo: useBorzoDelivery,
         offer_id: appliedOffer?.id || null,
         offer_title: appliedOffer?.title || null,
         applied_code: appliedCode?.code || null,
@@ -1789,6 +1793,29 @@ export default function Order() {
                     <span className="text-white">₹{gstAmount}</span>
                   </div>
 
+                  {/* Borzo delivery partner toggle — only shown when quote is available */}
+                  {orderType === 'delivery' && borzoQuote.charge != null && (
+                    <div className="bg-neutral-800/60 rounded-lg p-3 space-y-2">
+                      <p className="text-xs text-neutral-400 font-medium">Delivery partner</p>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setUseBorzoDelivery(false)}
+                          className={`flex-1 py-2 px-3 rounded text-xs font-medium transition-colors ${!useBorzoDelivery ? 'bg-orange-500 text-white' : 'bg-neutral-700 text-neutral-400 hover:bg-neutral-600'}`}
+                        >
+                          Standard · ₹{deliveryStatus?.deliveryCharge > 0 ? deliveryStatus.deliveryCharge : 'Free'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setUseBorzoDelivery(true)}
+                          className={`flex-1 py-2 px-3 rounded text-xs font-medium transition-colors ${useBorzoDelivery ? 'bg-orange-500 text-white' : 'bg-neutral-700 text-neutral-400 hover:bg-neutral-600'}`}
+                        >
+                          Borzo · ₹{borzoQuote.charge}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Delivery Charge / Pickup */}
                   <div className="flex justify-between text-neutral-400">
                     <span className="flex items-center gap-1.5">
@@ -1880,30 +1907,22 @@ export default function Order() {
                     </button>
                   )}
 
-                  {orderType === 'delivery' && !isEditMode ? (
-                    <div className="w-full py-3 px-4 bg-neutral-800 border border-neutral-700 rounded-lg text-neutral-400 text-sm text-center leading-relaxed">
-                      💵 Want to pay cash?{' '}
-                      <a href="tel:+918420822919" className="text-orange-400 font-medium underline">Call us at +91 84208 22919</a>
-                      {' '}and we'll try to arrange our own delivery partner for you.
-                    </div>
-                  ) : (
-                    <button
-                      onClick={handleCODPayment}
-                      disabled={paymentProcessing || lines.length === 0 || (orderType === 'delivery' && (!selectedAddressId || geocodingPending))}
-                      className={`w-full py-3 ${isEditMode ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700'} disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors`}
-                    >
-                      {paymentProcessing ? (
-                        <>
-                          <Loader className="w-4 h-4 inline animate-spin mr-2" />
-                          {isEditMode ? 'Updating...' : 'Processing...'}
-                        </>
-                      ) : isEditMode ? (
-                        `Update Order #${editOrderId}`
-                      ) : (
-                        "💵 Cash on Delivery"
-                      )}
-                    </button>
-                  )}
+                  <button
+                    onClick={handleCODPayment}
+                    disabled={paymentProcessing || lines.length === 0 || (orderType === 'delivery' && (!selectedAddressId || geocodingPending))}
+                    className={`w-full py-3 ${isEditMode ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700'} disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors`}
+                  >
+                    {paymentProcessing ? (
+                      <>
+                        <Loader className="w-4 h-4 inline animate-spin mr-2" />
+                        {isEditMode ? 'Updating...' : 'Processing...'}
+                      </>
+                    ) : isEditMode ? (
+                      `Update Order #${editOrderId}`
+                    ) : (
+                      "💵 Cash on Delivery"
+                    )}
+                  </button>
                 </div>
               </div>
             </div>

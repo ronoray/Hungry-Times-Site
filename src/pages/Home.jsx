@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { BRAND } from '../lib/constants'
+import { Truck, Clock, CreditCard, MapPin, UtensilsCrossed, ChefHat, Flame, Utensils, Layers, Coffee, Instagram } from 'lucide-react'
+import { BRAND, SOCIAL } from '../lib/constants'
 import SEOHead from '../components/SEOHead'
 import StructuredData from '../components/StructuredData'
 import KitchenStatus from '../components/KitchenStatus'
@@ -44,14 +45,13 @@ const RESTAURANT_SCHEMA = {
   }
 };
 
-// Quick category tiles for the home page
 const QUICK_CATEGORIES = [
-  { label: 'Chinese', icon: '🥡', search: 'Chinese' },
-  { label: 'Continental', icon: '🍝', search: 'Continental' },
-  { label: 'Starters', icon: '🍗', search: 'Starters' },
-  { label: 'Rice & Noodles', icon: '🍜', search: 'Rice' },
-  { label: 'Rolls & Wraps', icon: '🌯', search: 'Roll' },
-  { label: 'Beverages', icon: '🥤', search: 'Beverage' },
+  { label: 'Chinese', Icon: UtensilsCrossed, search: 'Chinese' },
+  { label: 'Continental', Icon: ChefHat, search: 'Continental' },
+  { label: 'Starters', Icon: Flame, search: 'Starters' },
+  { label: 'Rice & Noodles', Icon: Utensils, search: 'Rice' },
+  { label: 'Rolls & Wraps', Icon: Layers, search: 'Roll' },
+  { label: 'Beverages', Icon: Coffee, search: 'Beverage' },
 ];
 
 export default function Home() {
@@ -86,7 +86,7 @@ export default function Home() {
       <StructuredData data={RESTAURANT_SCHEMA} />
 
       {/* ─── Hero Section ─── */}
-      <section className="relative min-h-[50vh] md:min-h-[70vh] flex items-end bg-neutral-950">
+      <section className="relative min-h-[60vh] md:min-h-[80vh] flex items-end bg-neutral-950">
         <img
           src={heroImg}
           alt="Hungry Times restaurant"
@@ -94,13 +94,18 @@ export default function Home() {
           loading="eager"
           width="1200" height="800"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/70 to-transparent" />
 
         <div className="relative z-10 w-full px-4 pb-8 md:pb-14 max-w-5xl mx-auto">
-          <div className="mb-4">
-            <KitchenStatus />
+          <div className="mb-4 inline-flex">
+            <div className="bg-black/40 backdrop-blur-sm rounded-full px-3 py-1">
+              <KitchenStatus />
+            </div>
           </div>
-          <h1 className="text-3xl md:text-5xl font-bold mb-3 text-white leading-tight">
+          <h1
+            className="text-3xl md:text-5xl font-bold mb-3 text-white leading-tight"
+            style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}
+          >
             Chinese-Continental Fusion.<br className="hidden md:block" />
             <span className="text-orange-500">Fresh. Cozy. Kolkata.</span>
           </h1>
@@ -116,7 +121,7 @@ export default function Home() {
             </Link>
             <a
               href={`tel:${BRAND.phone1}`}
-              className="inline-flex items-center gap-2 bg-neutral-800/80 hover:bg-neutral-700 text-white px-6 py-3 rounded-full border border-neutral-700 transition-colors"
+              className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white px-6 py-3 rounded-full border border-white/20 backdrop-blur-sm transition-colors"
             >
               Call to Order
             </a>
@@ -132,14 +137,14 @@ export default function Home() {
         <div className="max-w-5xl mx-auto">
           <h2 className="text-lg font-semibold mb-4 text-neutral-200">What are you craving?</h2>
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-            {QUICK_CATEGORIES.map(cat => (
+            {QUICK_CATEGORIES.map(({ label, Icon, search }) => (
               <button
-                key={cat.label}
-                onClick={() => navigate(`/menu?search=${encodeURIComponent(cat.search)}`)}
-                className="flex-shrink-0 flex flex-col items-center gap-1.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-2xl px-5 py-3 transition-colors min-w-[90px]"
+                key={label}
+                onClick={() => navigate(`/menu?search=${encodeURIComponent(search)}`)}
+                className="flex-shrink-0 flex flex-col items-center gap-1.5 bg-neutral-800 hover:bg-neutral-750 border border-neutral-700 hover:border-orange-500/50 rounded-2xl px-5 py-3 transition-all active:scale-95 min-w-[90px]"
               >
-                <span className="text-2xl">{cat.icon}</span>
-                <span className="text-xs text-neutral-300 font-medium whitespace-nowrap">{cat.label}</span>
+                <Icon className="w-5 h-5 text-orange-500" />
+                <span className="text-xs text-neutral-300 font-medium whitespace-nowrap">{label}</span>
               </button>
             ))}
           </div>
@@ -202,22 +207,22 @@ export default function Home() {
       <section className="py-8 px-4 bg-neutral-950 border-y border-neutral-800/50">
         <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div>
-            <div className="text-2xl mb-1">🚚</div>
+            <Truck className="w-6 h-6 text-orange-500 mx-auto mb-2" />
             <p className="text-sm font-medium text-neutral-200">Free Delivery</p>
             <p className="text-xs text-neutral-500">Under 3km</p>
           </div>
           <div>
-            <div className="text-2xl mb-1">⏱️</div>
+            <Clock className="w-6 h-6 text-orange-500 mx-auto mb-2" />
             <p className="text-sm font-medium text-neutral-200">30-45 Min</p>
             <p className="text-xs text-neutral-500">Avg. delivery time</p>
           </div>
           <div>
-            <div className="text-2xl mb-1">💳</div>
+            <CreditCard className="w-6 h-6 text-orange-500 mx-auto mb-2" />
             <p className="text-sm font-medium text-neutral-200">Online Payment</p>
             <p className="text-xs text-neutral-500">UPI, Cards & COD</p>
           </div>
           <div>
-            <div className="text-2xl mb-1">📍</div>
+            <MapPin className="w-6 h-6 text-orange-500 mx-auto mb-2" />
             <p className="text-sm font-medium text-neutral-200">5km Radius</p>
             <p className="text-xs text-neutral-500">Delivery coverage</p>
           </div>
@@ -272,13 +277,13 @@ export default function Home() {
       </section>
 
       {/* ─── Final CTA ─── */}
-      <section className="py-10 px-4 bg-gradient-to-r from-orange-600 to-orange-500 text-center">
+      <section className="py-10 px-4 bg-neutral-900 border-t border-b border-neutral-700 text-center">
         <div className="max-w-xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">Hungry? Order Now!</h2>
-          <p className="text-orange-100 mb-6">Free delivery under 3km. Pay online or cash on delivery.</p>
+          <p className="text-neutral-400 mb-6">Free delivery under 3km. Pay online or cash on delivery.</p>
           <Link
             to="/menu"
-            className="inline-flex items-center gap-2 bg-white text-orange-600 font-semibold px-8 py-3 rounded-full hover:bg-orange-50 transition-colors"
+            className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-8 py-3 rounded-full transition-colors"
           >
             Browse Menu
           </Link>
