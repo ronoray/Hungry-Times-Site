@@ -32,9 +32,8 @@ const desktopLinks = [
   { to: '/feedback', label: 'Feedback' }
 ];
 
-const mobileBottomNav = [
-  { to: '/home', label: 'Home', icon: Home },
-  { to: '/menu', label: 'Menu', icon: UtensilsCrossed, showBadge: true },
+const MOBILE_NAV_BASE = [
+  { to: '/menu', label: 'Menu', icon: UtensilsCrossed },
   { to: '/orders', label: 'Orders', icon: Package },
   { to: '/profile', label: 'Account', icon: User },
 ];
@@ -61,6 +60,10 @@ export default function Navbar() {
 
   const { sidebarOpen, setSidebarOpen } = useMenuCategory();
   const isActive = (path) => location.pathname === path;
+
+  const mobileNavTabs = hasItems
+    ? [{ to: '/order', label: 'Cart', icon: ShoppingCart, showCartCount: true }, ...MOBILE_NAV_BASE]
+    : [{ to: '/home', label: 'Home', icon: Home }, ...MOBILE_NAV_BASE];
 
   return (
     <>
@@ -192,10 +195,10 @@ export default function Navbar() {
       {/* MOBILE BOTTOM NAVIGATION — 4 tabs */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-neutral-950 border-t border-neutral-800 pb-safe">
         <div className="flex">
-          {mobileBottomNav.map(item => {
+          {mobileNavTabs.map(item => {
             const Icon = item.icon;
             const active = isActive(item.to);
-            const showBadge = item.showBadge && cartCount > 0;
+            const showBadge = item.showCartCount && cartCount > 0;
 
             // Account tab: open AuthModal if not logged in
             if (item.to === '/profile' && !isAuthenticated) {
