@@ -1,7 +1,7 @@
 // components/WhatsAppOrderBar.jsx
 // Subtle bar pinned below navbar — cross-promotes WhatsApp ordering
 // Not shown on /menu (search bar conflict + redundant on ordering page)
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { X } from 'lucide-react';
 
