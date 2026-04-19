@@ -620,30 +620,30 @@
 .subcategory-btn {
   flex-shrink: 0 !important;
   padding: 0.625rem 1.25rem !important;
-  background: rgba(255, 255, 255, 0.03) !important;
-  border: 1px solid #334155 !important;
-  color: var(--color-text-muted) !important;
+  background: #262626 !important;
+  border: 1px solid #404040 !important;
+  color: #d4d4d4 !important;
   font-size: 0.875rem !important;
   font-weight: 500 !important;
   cursor: pointer !important;
-  transition: all 0.3s ease !important;
+  transition: all 0.2s ease !important;
   border-radius: 999px !important;
   font-family: inherit !important;
   white-space: nowrap !important;
 }
 
 .subcategory-btn:hover {
-  background: rgba(255, 140, 0, 0.1) !important;
-  border-color: #FF8C00 !important;
-  color: var(--color-text) !important;
+  background: #2d2d2d !important;
+  border-color: rgba(249, 115, 22, 0.4) !important;
+  color: #ffffff !important;
 }
 
 .subcategory-btn.active {
-  background: linear-gradient(135deg, #FF8C00, #DC2626) !important;
+  background: #F97316 !important;
   color: #ffffff !important;
   font-weight: 600 !important;
-  border-color: #FF8C00 !important;
-  box-shadow: 0 0 15px rgba(255, 140, 0, 0.5) !important;
+  border-color: #F97316 !important;
+  box-shadow: none !important;
 }
 
 /* Section titles */
@@ -2962,28 +2962,28 @@
   box-shadow: none !important;
 }
 
-/* ── Subcategory pills ── cleaner active ────────────────────────── */
+/* ── Subcategory pills ── orange-500 active ────────────────────── */
 .subcategory-btn {
   font-family: var(--font-body) !important;
   font-weight: 500 !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  background: rgba(255, 255, 255, 0.03) !important;
-  color: var(--color-text-muted) !important;
-  transition: all 0.15s ease !important;
+  border: 1px solid #404040 !important;
+  background: #262626 !important;
+  color: #d4d4d4 !important;
+  transition: all 0.2s ease !important;
 }
 
 .subcategory-btn:hover {
-  background: rgba(245, 158, 11, 0.08) !important;
-  border-color: rgba(245, 158, 11, 0.25) !important;
-  color: var(--color-text) !important;
+  background: #2d2d2d !important;
+  border-color: rgba(249, 115, 22, 0.4) !important;
+  color: #ffffff !important;
 }
 
 .subcategory-btn.active {
-  background: rgba(245, 158, 11, 0.14) !important;
-  color: var(--color-accent) !important;
+  background: #F97316 !important;
+  color: #ffffff !important;
   font-weight: 600 !important;
-  border-color: rgba(245, 158, 11, 0.4) !important;
-  box-shadow: 0 0 12px rgba(245, 158, 11, 0.15) !important;
+  border-color: #F97316 !important;
+  box-shadow: none !important;
 }
 
 /* ── Subcategory bar background ─────────────────────────────────── */

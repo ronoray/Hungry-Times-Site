@@ -235,7 +235,7 @@ export default function Menu() {
 
   // Veg filter
   const [vegOnly, setVegOnly] = useState(() => {
-    try { return localStorage.getItem('ht_veg_only') === '1'; }
+    try { return localStorage.getItem('ht_veg_filter') === '1'; }
     catch { return false; }
   });
 
@@ -276,7 +276,7 @@ export default function Menu() {
 
   // Persist veg filter
   useEffect(() => {
-    try { localStorage.setItem('ht_veg_only', vegOnly ? '1' : '0'); }
+    try { localStorage.setItem('ht_veg_filter', vegOnly ? '1' : '0'); }
     catch {}
   }, [vegOnly]);
 
