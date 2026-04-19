@@ -280,6 +280,18 @@ export default function Menu() {
     catch {}
   }, [vegOnly]);
 
+  // Menu session tracking — fire once per browser session for conversion denominator
+  useEffect(() => {
+    if (sessionStorage.getItem('menu_view_tracked')) return;
+    const sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    fetch(`${API_BASE}/public/menu-view`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sid }),
+    }).catch(() => {});
+    sessionStorage.setItem('menu_view_tracked', '1');
+  }, []);
+
   // Modals
   const [imgModal, setImgModal] = useState({
     open: false,
