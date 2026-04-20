@@ -3,7 +3,7 @@ import { X, ChevronLeft, ChevronRight, Plus, Minus, Sparkles, Users, UtensilsCro
 import { useCart } from "../context/CartContext";
 import API_BASE from "../config/api";
 
-const CDN = "https://cdn.hungrytimes.in/images/";
+const CDN = "https://cdn.hungrytimes.in";
 
 function itemImage(url) {
   if (!url) return null;
