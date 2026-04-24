@@ -370,6 +370,21 @@ export default function Menu() {
     };
   }, []);
 
+  // Poll ordering status every 30s so toggle changes appear without a refresh
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/menu/settings/online-ordering`);
+        if (!res.ok) return;
+        const json = await res.json();
+        setAcceptingOnlineOrders(json.accepting_online_orders === 1);
+        setOrderingDisabledMessage(json.online_orders_disabled_message || "");
+      } catch {}
+    };
+    const id = setInterval(poll, 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   const tops = data?.topCategories || [];
 
   // Fetch active offers
