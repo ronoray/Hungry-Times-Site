@@ -36,12 +36,7 @@
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
-  <url>
-    <loc>https://home.hungrytimes.in/careers</loc>
-    <lastmod>2026-01-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
-  </url>
+
   <url>
     <loc>https://home.hungrytimes.in/feedback</loc>
     <lastmod>2026-01-01</lastmod>
