@@ -385,6 +385,46 @@ export default function Menu() {
     return () => clearInterval(id);
   }, []);
 
+  // Inject FoodEstablishment + Menu JSON-LD for Googlebot (executes JS, sees this)
+  useEffect(() => {
+    if (!data?.topCategories?.length) return;
+    const sections = [];
+    for (const tc of data.topCategories) {
+      for (const sc of (tc.subcategories || [])) {
+        if (!sc.items?.length) continue;
+        sections.push({
+          '@type': 'MenuSection',
+          name: `${tc.name} — ${sc.name}`,
+          hasMenuItem: sc.items.map(item => ({
+            '@type': 'MenuItem',
+            name: item.name,
+            ...(item.description ? { description: item.description } : {}),
+            ...(item.imageUrl ? { image: item.imageUrl } : {}),
+            offers: { '@type': 'Offer', price: String(item.basePrice || 0), priceCurrency: 'INR' },
+          })),
+        });
+      }
+    }
+    const schema = {
+      '@context': 'https://schema.org',
+      '@type': 'FoodEstablishment',
+      name: 'Hungry Times',
+      url: 'https://home.hungrytimes.in',
+      hasMenu: {
+        '@type': 'Menu',
+        name: 'Hungry Times Full Menu',
+        url: 'https://home.hungrytimes.in/menu',
+        hasMenuSection: sections,
+      },
+    };
+    const el = document.createElement('script');
+    el.type = 'application/ld+json';
+    el.id = 'menu-jsonld';
+    el.textContent = JSON.stringify(schema);
+    document.head.appendChild(el);
+    return () => { document.getElementById('menu-jsonld')?.remove(); };
+  }, [data]);
+
   const tops = data?.topCategories || [];
 
   // Fetch active offers

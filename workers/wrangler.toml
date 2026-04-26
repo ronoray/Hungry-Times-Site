@@ -1,0 +1,9 @@
+name = "hungry-times-bot-meta"
+main = "bot-meta.js"
+compatibility_date = "2024-01-01"
+
+# Intercepts all requests to home.hungrytimes.in
+# Real users are passed through; social bots get static meta HTML
+routes = [
+  { pattern = "home.hungrytimes.in/*", zone_name = "hungrytimes.in" }
+]
