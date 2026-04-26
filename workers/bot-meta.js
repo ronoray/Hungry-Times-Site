@@ -47,7 +47,7 @@ const ROUTES = {
   },
   '/feedback': {
     title:       'Share Your Feedback — Hungry Times',
-    description: 'Had a meal at Hungry Times? We'd love to hear your experience. Share your feedback and help us serve you better.',
+    description: 'Had a meal at Hungry Times? Share your experience and help us serve you better.',
   },
   '/testimonials': {
     title:       'Customer Reviews — Hungry Times | Kolkata',
