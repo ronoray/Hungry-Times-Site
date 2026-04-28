@@ -55,8 +55,15 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
         window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
       }
 
-      // Use new importLibrary pattern (required since Google Maps API 2025+)
-      const { Autocomplete } = await window.google.maps.importLibrary('places');
+      // Try new importLibrary first; fall back to classic namespace (loaded via libraries=places)
+      let Autocomplete;
+      try {
+        const lib = await window.google.maps.importLibrary('places');
+        Autocomplete = lib.Autocomplete;
+      } catch {
+        Autocomplete = window.google.maps.places?.Autocomplete;
+      }
+      if (!Autocomplete) throw new Error('Places Autocomplete not available');
 
       if (cancelledRef.current || !inputRef.current) return;
 

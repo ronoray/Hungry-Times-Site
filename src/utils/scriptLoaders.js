@@ -15,7 +15,7 @@ export function loadGoogleMaps() {
     mapsPromise = new Promise((resolve, reject) => {
       const script = document.createElement('script');
       script.src =
-        'https://maps.googleapis.com/maps/api/js?key=AIzaSyC1OsnZiTXao9VqePa8npp1CLVBTzCMXSM&loading=async';
+        'https://maps.googleapis.com/maps/api/js?key=AIzaSyC1OsnZiTXao9VqePa8npp1CLVBTzCMXSM&loading=async&libraries=places';
       script.async = true;
       script.onload = () => {
         // importLibrary is set up asynchronously — poll until ready

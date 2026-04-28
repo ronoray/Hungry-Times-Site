@@ -386,6 +386,23 @@ export default function Order() {
     if (!fullAddress) return;
     setGeocodedCoords(prev => ({ ...prev, [addrId]: 'pending' }));
     try {
+      // Prefer Google Maps Geocoder — far more accurate for Indian addresses
+      if (window.google?.maps?.Geocoder) {
+        const geocoder = new window.google.maps.Geocoder();
+        const result = await geocoder.geocode({
+          address: fullAddress,
+          componentRestrictions: { country: 'IN' },
+        });
+        if (result.results?.length > 0) {
+          const loc = result.results[0].geometry.location;
+          setGeocodedCoords(prev => ({
+            ...prev,
+            [addrId]: { lat: loc.lat(), lng: loc.lng() },
+          }));
+          return;
+        }
+      }
+      // Fallback: Nominatim
       const encoded = encodeURIComponent(fullAddress + ', Kolkata, India');
       const resp = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1&countrycodes=in`,
@@ -395,7 +412,7 @@ export default function Order() {
       if (data.length > 0 && data[0].lat && data[0].lon) {
         setGeocodedCoords(prev => ({
           ...prev,
-          [addrId]: { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
+          [addrId]: { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) },
         }));
       } else {
         setGeocodedCoords(prev => ({ ...prev, [addrId]: 'failed' }));
