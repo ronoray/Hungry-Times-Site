@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import "./Menu.css";
 import { useCart } from "../context/CartContext";
-import { ShoppingCart, Plus, Check, Tag, Sparkles, Search, X, Heart, ChevronRight } from "lucide-react";
+import { ShoppingCart, Plus, Check, Tag, Sparkles, Search, X, Heart, ChevronRight, UtensilsCrossed } from "lucide-react";
 import AddToCartModal from "../components/AddToCartModal";
 import FloatingCartBar from "../components/FloatingCartBar";
 import VegDot from "../components/VegDot";
@@ -207,6 +207,8 @@ export default function Menu() {
      incrementSimpleItem,
      decrementSimpleItem,
      reconcileWithMenu,
+     orderMode,
+     updateOrderMode,
    } = useCart();
   const [selectedItem, setSelectedItem] = useState(null);
   const [showAddToCartModal, setShowAddToCartModal] = useState(false);
@@ -1126,6 +1128,25 @@ export default function Menu() {
           </div>
         </div>
 
+        {/* 🍽️ DINE-IN MODE BANNER */}
+        {orderMode === 'dine_in' && (
+          <div className="mx-4 mb-3 flex items-center justify-between gap-3 bg-orange-500/10 border border-orange-500/30 rounded-xl px-4 py-2.5">
+            <div className="flex items-center gap-2 text-orange-400 text-sm font-medium min-w-0">
+              <UtensilsCrossed className="w-4 h-4 flex-shrink-0" />
+              <span className="truncate">
+                <span className="sm:hidden">Dine-in — no packaging</span>
+                <span className="hidden sm:inline">Dine-in mode — packaging charges removed at checkout</span>
+              </span>
+            </div>
+            <button
+              onClick={() => updateOrderMode('delivery')}
+              className="text-xs text-neutral-400 hover:text-white transition-colors flex-shrink-0"
+            >
+              Switch
+            </button>
+          </div>
+        )}
+
         {/* 🎉 OFFERS BANNER */}
         {appliedOffer && (
           <div className="offers-banner-container">
@@ -1229,6 +1250,27 @@ export default function Menu() {
                 {!searchQuery && (
                   <nav className="subcategory-bar">
                     <div className="subcategory-scroll">
+                      {/* Order mode pill */}
+                      <button
+                        className={`subcategory-btn flex items-center gap-1.5 ${orderMode === 'dine_in' ? 'active' : ''}`}
+                        onClick={() => updateOrderMode(
+                          orderMode === 'delivery' ? 'pickup' : orderMode === 'pickup' ? 'dine_in' : 'delivery'
+                        )}
+                        style={orderMode === 'dine_in' ? {
+                          background: 'linear-gradient(135deg, #f97316, #ea580c)',
+                          borderColor: '#f97316',
+                          boxShadow: '0 0 12px rgba(249,115,22,0.5)'
+                        } : {}}
+                        title="Tap to cycle: Delivery → Pickup → Dine-in"
+                      >
+                        {orderMode === 'dine_in' ? (
+                          <><UtensilsCrossed className="w-3.5 h-3.5" /> Dine-in</>
+                        ) : orderMode === 'pickup' ? (
+                          <>📦 Pickup</>
+                        ) : (
+                          <>🚚 Delivery</>
+                        )}
+                      </button>
                       {/* Veg filter toggle */}
                       <button
                         className={`subcategory-btn flex items-center gap-1.5 ${vegOnly ? 'active' : ''}`}

@@ -4,7 +4,7 @@ import { useCart } from '../context/CartContext';
 import { ShoppingBag, ChevronRight } from 'lucide-react';
 
 export default function FloatingCartBar() {
-  const { lines, total } = useCart();
+  const { lines, total, orderMode } = useCart();
   const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
 
@@ -37,6 +37,11 @@ export default function FloatingCartBar() {
           <span className="font-bold text-sm">
             {itemCount} item{itemCount > 1 ? 's' : ''}
           </span>
+          {(orderMode === 'dine_in' || orderMode === 'pickup') && (
+            <span className="text-xs text-orange-200 opacity-80">
+              · {orderMode === 'dine_in' ? 'Dine-in' : 'Pickup'}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1.5">
           <span className="font-bold">₹{total.toFixed(0)}</span>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Truck, Clock, CreditCard, MapPin, UtensilsCrossed, ChefHat, Flame, Utensils, Layers, Coffee, Instagram } from 'lucide-react'
+import { useCart } from '../context/CartContext'
 import { BRAND, SOCIAL } from '../lib/constants'
 import SEOHead from '../components/SEOHead'
 import StructuredData from '../components/StructuredData'
@@ -56,6 +57,7 @@ const QUICK_CATEGORIES = [
 
 export default function Home() {
   const navigate = useNavigate();
+  const { updateOrderMode } = useCart();
   const [popularItems, setPopularItems] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
 
@@ -115,10 +117,18 @@ export default function Home() {
           <div className="flex flex-wrap gap-3">
             <Link
               to="/menu"
+              onClick={() => updateOrderMode('delivery')}
               className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-3 rounded-full transition-colors"
             >
               Order Now
             </Link>
+            <button
+              onClick={() => { updateOrderMode('dine_in'); navigate('/menu'); }}
+              className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white px-6 py-3 rounded-full backdrop-blur-sm transition-colors font-medium"
+            >
+              <UtensilsCrossed className="w-4 h-4" />
+              Dine-in
+            </button>
             <a
               href={`tel:${BRAND.phone1}`}
               className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white px-6 py-3 rounded-full border border-white/20 backdrop-blur-sm transition-colors"

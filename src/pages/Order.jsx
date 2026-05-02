@@ -15,7 +15,7 @@ import CartDrawer from "../components/CartDrawer";
 import GoogleMapsAutocomplete from "../components/GoogleMapsAutocomplete";
 import { loadRazorpay } from "../utils/scriptLoaders";
 import AuthModal from "../components/AuthModal";
-import { ShoppingCart, MapPin, MessageSquare, Loader, Plus, Check, Edit2, Trash2, X, AlertCircle, Minus, Truck } from "lucide-react";
+import { ShoppingCart, MapPin, MessageSquare, Loader, Plus, Check, Edit2, Trash2, X, AlertCircle, Minus, Truck, UtensilsCrossed } from "lucide-react";
 import { useToast } from "../components/Toast";
 import OffersPanel from "../components/OffersPanel";
 import { trackBeginCheckout, trackPurchase } from "../utils/analytics";
@@ -68,7 +68,7 @@ export default function Order() {
   const [searchParams] = useSearchParams();
   const editOrderId = searchParams.get('editOrderId');
   const { isAuthenticated, customer } = useAuth();
-  const { lines, clearCart, addLine, removeLine, updateQty } = useCart();
+  const { lines, clearCart, addLine, removeLine, updateQty, orderMode, updateOrderMode } = useCart();
   const showToast = useToast();
 
   // Edit mode state
@@ -113,8 +113,21 @@ export default function Order() {
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
-  // Order type
+  // Order type — seeded from CartContext orderMode on mount
   const [orderType, setOrderType] = useState('delivery');
+  const isDineIn = orderType === 'dine_in';
+
+  // Sync from CartContext orderMode (set on Home/Menu pages) once on mount
+  useEffect(() => {
+    if (orderMode === 'dine_in') {
+      setOrderType('dine_in');
+    } else if (orderMode === 'pickup') {
+      setOrderType('pickup');
+    } else {
+      setOrderType('delivery');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Address State
   const [addresses, setAddresses] = useState([]);
@@ -653,21 +666,27 @@ export default function Order() {
   }, [addresses, selectedAddressId]);
 
   // Use Borzo quote only when the customer explicitly opts in; otherwise use tiered distance pricing
-  const deliveryCharge = orderType === 'pickup'
+  const deliveryCharge = (orderType === 'pickup' || orderType === 'dine_in')
     ? 0
     : (useBorzoDelivery && borzoQuote.charge != null
         ? borzoQuote.charge
         : (deliveryStatus?.deliveryCharge > 0 ? deliveryStatus.deliveryCharge : 0));
 
-  const { cartTotal, discountAmount, pointsDiscount, maxRedeemablePoints, gstAmount, finalTotal } = useMemo(() => {
+  const { cartTotal, discountAmount, pointsDiscount, maxRedeemablePoints, gstAmount, finalTotal, packagingDeduction } = useMemo(() => {
     let total = 0;
+    let pkgTotal = 0;
     lines.forEach((line) => {
+      const linePkg = (line.addons || [])
+        .filter(a => /packag/i.test(a.name) && a.locked)
+        .reduce((s, a) => s + (Number(a.priceDelta) || 0), 0);
+      pkgTotal += linePkg * (line.qty || 1);
       const unitPrice =
         (line.basePrice || 0) +
         (line.variants?.reduce((sum, v) => sum + (v.priceDelta || 0), 0) || 0) +
         (line.addons?.reduce((sum, a) => sum + (a.priceDelta || 0), 0) || 0);
       total += unitPrice * (line.qty || 1);
     });
+    if (isDineIn) total -= pkgTotal;
 
   // Apply offer discount
   let discount = 0;
@@ -698,8 +717,9 @@ export default function Order() {
       maxRedeemablePoints: maxPts,
       gstAmount: gst,
       finalTotal: Math.round(afterPoints + gst + deliveryCharge),
+      packagingDeduction: Math.round(pkgTotal),
     };
-  }, [lines, appliedOffer, deliveryCharge, pointsToRedeem, loyaltyPoints]);
+  }, [lines, appliedOffer, deliveryCharge, pointsToRedeem, loyaltyPoints, orderType]);
 
   const cartCount = lines.reduce((sum, line) => sum + (line.qty || 1), 0);
 
@@ -754,6 +774,11 @@ export default function Order() {
   // RAZORPAY PAYMENT HANDLER
   // ============================================================================
   const handleRazorpayPayment = async () => {
+    if (orderType === 'dine_in' && (!scheduledDate || !scheduledTime)) {
+      setPaymentError("Please select your arrival date and time to continue.");
+      return;
+    }
+
     if (orderType === 'delivery') {
       const validation = validateDeliveryArea();
       if (!validation.valid) {
@@ -794,7 +819,9 @@ export default function Order() {
         base_price: line.basePrice || 0,
         basePrice: line.basePrice || 0,  // ✅ Include both formats
         variants: line.variants || [],
-        addons: line.addons || []
+        addons: isDineIn
+          ? (line.addons || []).filter(a => !(/packag/i.test(a.name) && a.locked))
+          : (line.addons || []),
       }));
 
       // ✅ STEP 1: INITIATE order (creates Razorpay order only, NO database order yet!)
@@ -809,7 +836,7 @@ export default function Order() {
         body: JSON.stringify({
           items: orderItems,
           order_type: orderType,
-          delivery_address: orderType === 'pickup' ? 'Pickup' : selectedAddr?.fullAddress,
+          delivery_address: isDineIn ? 'Dine-in' : orderType === 'pickup' ? 'Pickup' : selectedAddr?.fullAddress,
           delivery_latitude: orderType === 'pickup' ? null : (selectedAddr?.latitude || geocodedCoords[selectedAddressId]?.lat || null),
           delivery_longitude: orderType === 'pickup' ? null : (selectedAddr?.longitude || geocodedCoords[selectedAddressId]?.lng || null),
           delivery_instructions: deliveryInstructions,
@@ -821,9 +848,9 @@ export default function Order() {
           applied_code: appliedCode?.code || null,
           applied_code_type: appliedCode?.type || null,
           points_to_redeem: pointsToRedeem > 0 ? pointsToRedeem : 0,
-          is_scheduled: isScheduled && scheduledDate && scheduledTime,
-          scheduled_date: isScheduled ? scheduledDate : null,
-          scheduled_time: isScheduled ? scheduledTime : null,
+          is_scheduled: isDineIn ? true : (isScheduled && scheduledDate && scheduledTime),
+          scheduled_date: (isDineIn || isScheduled) ? scheduledDate : null,
+          scheduled_time: (isDineIn || isScheduled) ? scheduledTime : null,
         }),
       });
 
@@ -991,6 +1018,11 @@ export default function Order() {
   // COD PAYMENT HANDLER
   // ============================================================================
   const handleCODPayment = async () => {
+    if (orderType === 'dine_in' && (!scheduledDate || !scheduledTime)) {
+      setPaymentError("Please select your arrival date and time to continue.");
+      return;
+    }
+
     if (orderType === 'delivery') {
       const validation = validateDeliveryArea();
       if (!validation.valid) {
@@ -1029,14 +1061,16 @@ export default function Order() {
         quantity: line.qty || 1,
         base_price: line.basePrice || 0,
         variants: line.variants || [],
-        addons: line.addons || []
+        addons: isDineIn
+          ? (line.addons || []).filter(a => !(/packag/i.test(a.name) && a.locked))
+          : (line.addons || []),
       }));
 
       const orderPayload = {
         items: orderItems,
         orderType,
         order_type: orderType,
-        delivery_address: orderType === 'pickup' ? 'Pickup' : selectedAddr?.fullAddress,
+        delivery_address: isDineIn ? 'Dine-in' : orderType === 'pickup' ? 'Pickup' : selectedAddr?.fullAddress,
         delivery_latitude: orderType === 'pickup' ? null : (selectedAddr?.latitude || geocodedCoords[selectedAddressId]?.lat || null),
         delivery_longitude: orderType === 'pickup' ? null : (selectedAddr?.longitude || geocodedCoords[selectedAddressId]?.lng || null),
         delivery_instructions: deliveryInstructions,
@@ -1049,9 +1083,9 @@ export default function Order() {
         applied_code: appliedCode?.code || null,
         applied_code_type: appliedCode?.type || null,
         points_to_redeem: pointsToRedeem > 0 ? pointsToRedeem : 0,
-        is_scheduled: isScheduled && scheduledDate && scheduledTime,
-        scheduled_date: isScheduled ? scheduledDate : null,
-        scheduled_time: isScheduled ? scheduledTime : null,
+        is_scheduled: isDineIn ? true : (isScheduled && scheduledDate && scheduledTime),
+        scheduled_date: (isDineIn || isScheduled) ? scheduledDate : null,
+        scheduled_time: (isDineIn || isScheduled) ? scheduledTime : null,
       };
 
       const url = isEditMode
@@ -1264,35 +1298,112 @@ export default function Order() {
               {!isEditMode && (
                 <div className="bg-neutral-800 rounded-lg p-4 sm:p-6">
                   <h3 className="text-white font-bold text-lg mb-3">How would you like your order?</h3>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
                     <button
-                      onClick={() => setOrderType('delivery')}
-                      className={`flex flex-col items-center gap-2 py-4 rounded-xl border-2 font-semibold transition-all ${
-                        orderType === 'delivery'
+                      onClick={() => { setOrderType('dine_in'); updateOrderMode('dine_in'); setIsScheduled(false); setScheduledDate(''); setScheduledTime(''); }}
+                      className={`flex flex-col items-center gap-1.5 sm:gap-2 py-3 sm:py-4 rounded-xl border-2 font-semibold transition-all text-sm sm:text-base ${
+                        orderType === 'dine_in'
                           ? 'border-orange-500 bg-orange-500/10 text-orange-400'
                           : 'border-neutral-600 text-neutral-400 hover:border-neutral-500'
                       }`}
                     >
-                      <Truck className="w-6 h-6" />
-                      <span>Delivery</span>
+                      <UtensilsCrossed className="w-5 h-5 sm:w-6 sm:h-6" />
+                      <span>Dine-in</span>
                     </button>
                     <button
-                      onClick={() => setOrderType('pickup')}
-                      className={`flex flex-col items-center gap-2 py-4 rounded-xl border-2 font-semibold transition-all ${
+                      onClick={() => { setOrderType('pickup'); updateOrderMode('pickup'); }}
+                      className={`flex flex-col items-center gap-1.5 sm:gap-2 py-3 sm:py-4 rounded-xl border-2 font-semibold transition-all text-sm sm:text-base ${
                         orderType === 'pickup'
                           ? 'border-orange-500 bg-orange-500/10 text-orange-400'
                           : 'border-neutral-600 text-neutral-400 hover:border-neutral-500'
                       }`}
                     >
-                      <MapPin className="w-6 h-6" />
+                      <MapPin className="w-5 h-5 sm:w-6 sm:h-6" />
                       <span>Pickup</span>
+                    </button>
+                    <button
+                      onClick={() => { setOrderType('delivery'); updateOrderMode('delivery'); }}
+                      className={`flex flex-col items-center gap-1.5 sm:gap-2 py-3 sm:py-4 rounded-xl border-2 font-semibold transition-all text-sm sm:text-base ${
+                        orderType === 'delivery'
+                          ? 'border-orange-500 bg-orange-500/10 text-orange-400'
+                          : 'border-neutral-600 text-neutral-400 hover:border-neutral-500'
+                      }`}
+                    >
+                      <Truck className="w-5 h-5 sm:w-6 sm:h-6" />
+                      <span>Delivery</span>
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Delivery Address or Pickup Info */}
-              {orderType === 'pickup' ? (
+              {/* Delivery Address / Pickup Info / Dine-in Info */}
+              {orderType === 'dine_in' ? (
+                <div className="bg-neutral-800 rounded-lg p-4 sm:p-6 space-y-5">
+                  <h3 className="text-white font-bold text-xl flex items-center gap-2">
+                    <UtensilsCrossed className="w-5 h-5 text-orange-400" />
+                    Dine-in Details
+                  </h3>
+                  <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4">
+                    <p className="text-orange-300 font-semibold mb-1">Hungry Times</p>
+                    <p className="text-neutral-300 text-sm">32/12A, Gariahat Road South, Kolkata 700 031</p>
+                    {packagingDeduction > 0 && (
+                      <p className="text-green-400 text-sm mt-2 font-medium">
+                        ✓ No packaging charge — saves ₹{packagingDeduction}
+                      </p>
+                    )}
+                  </div>
+                  {/* Arrival time picker — required for dine-in */}
+                  <div>
+                    <p className="text-white font-semibold mb-1">
+                      When would you like to arrive?{' '}
+                      <span className="text-red-400 text-sm">*</span>
+                    </p>
+                    <p className="text-neutral-500 text-xs mb-3">We'll have everything ready at this time.</p>
+                    {(() => {
+                      const nowIST = new Date(Date.now() + 330 * 60 * 1000);
+                      const todayStr = nowIST.toISOString().slice(0, 10);
+                      const maxDate = new Date(nowIST);
+                      maxDate.setUTCDate(maxDate.getUTCDate() + 2);
+                      const maxDateStr = maxDate.toISOString().slice(0, 10);
+                      return (
+                        <div className="space-y-3">
+                          <div className="flex flex-col sm:flex-row gap-3">
+                            <div className="flex-1">
+                              <label className="text-neutral-400 text-xs mb-1 block">Date</label>
+                              <input
+                                type="date"
+                                value={scheduledDate}
+                                min={todayStr}
+                                max={maxDateStr}
+                                onChange={e => { setScheduledDate(e.target.value); setScheduledTime(''); }}
+                                className="w-full px-3 py-2.5 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <label className="text-neutral-400 text-xs mb-1 block">Arrival time (12 PM – 11 PM)</label>
+                              <input
+                                type="time"
+                                value={scheduledTime}
+                                min="12:00"
+                                max="23:00"
+                                onChange={e => setScheduledTime(e.target.value)}
+                                className="w-full px-3 py-2.5 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                              />
+                            </div>
+                          </div>
+                          {scheduledDate && scheduledTime ? (
+                            <div className="bg-green-900/30 border border-green-700 rounded-lg px-3 py-2 text-sm text-green-300">
+                              We'll be ready for you on {scheduledDate} at {scheduledTime} 🍽️
+                            </div>
+                          ) : (
+                            <p className="text-neutral-500 text-xs">Select a date and arrival time to continue.</p>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              ) : orderType === 'pickup' ? (
                 <div className="bg-neutral-800 rounded-lg p-4 sm:p-6">
                   <h3 className="text-white font-bold text-xl mb-4">
                     <MapPin className="w-5 h-5 inline mr-2" />
@@ -1598,7 +1709,8 @@ export default function Order() {
                 </p>
               </div>
 
-              {/* Schedule Order */}
+              {/* Schedule Order — hidden for dine-in (uses arrival time picker instead) */}
+              {orderType !== 'dine_in' && (
               <div className="bg-neutral-800 rounded-lg p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -1660,6 +1772,8 @@ export default function Order() {
                   );
                 })()}
               </div>
+              )}
+
             </div>
 
             {/* RIGHT: Order Summary & Payment */}
@@ -1748,6 +1862,14 @@ export default function Order() {
                         Offer Discount ({appliedOffer?.discount_value}{appliedOffer?.discount_type === 'percent' ? '%' : '₹'})
                       </span>
                       <span className="text-green-400 font-bold">- ₹{discountAmount}</span>
+                    </div>
+                  )}
+
+                  {/* 🍽️ DINE-IN PACKAGING WAIVER */}
+                  {isDineIn && packagingDeduction > 0 && (
+                    <div className="flex justify-between items-center bg-green-500/10 -mx-6 px-6 py-2 rounded">
+                      <span className="text-green-400 font-medium text-sm">No packaging (Dine-in)</span>
+                      <span className="text-green-400 font-bold">- ₹{packagingDeduction}</span>
                     </div>
                   )}
 

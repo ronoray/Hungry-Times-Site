@@ -41,6 +41,16 @@ export function CartProvider({ children }) {
     catch { return []; }
   });
 
+  const [orderMode, setOrderMode] = useState(() => {
+    try { return localStorage.getItem("ht_order_mode") || "delivery"; }
+    catch { return "delivery"; }
+  });
+
+  const updateOrderMode = (mode) => {
+    setOrderMode(mode);
+    try { localStorage.setItem("ht_order_mode", mode); } catch {}
+  };
+
   // Debounce timer ref for server push
   const syncTimer = useRef(null);
 
@@ -327,11 +337,12 @@ export function CartProvider({ children }) {
       total,
       calcUnit,
       reconcileWithMenu,
-      // New helper functions
       findSimpleItem,
       getSimpleItemQty,
       incrementSimpleItem,
-      decrementSimpleItem
+      decrementSimpleItem,
+      orderMode,
+      updateOrderMode,
     }}>
       {children}
     </CartCtx.Provider>
