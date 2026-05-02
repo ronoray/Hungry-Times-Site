@@ -13,7 +13,7 @@ import { X, Plus, Minus, ShoppingCart, AlertCircle } from "lucide-react";
 
 const CDN_BASE = import.meta.env.VITE_CDN_BASE || "http://localhost:5000";
 
-export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
+export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn = false }) {
   if (!isOpen || !item) return null;
 
   // ============================================================================
@@ -52,36 +52,37 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
     // Reset validation error when modal opens
     setValidationError(null);
 
-    // Auto-select packaging from addon groups
-    addonGroups.forEach((group) => {
-      (group.options || []).forEach((opt) => {
-        if (/packag/i.test(opt.name) && opt.locked) {
-          setSelectedAddons((prev) => ({
-            ...prev,
-            [group.id]: {
-              ...prev[group.id],
-              [opt.id]: opt
-            }
-          }));
-        }
+    // Auto-select packaging — skip when dine-in (no packaging charged, no need to add)
+    if (!isDineIn) {
+      addonGroups.forEach((group) => {
+        (group.options || []).forEach((opt) => {
+          if (/packag/i.test(opt.name) && opt.locked) {
+            setSelectedAddons((prev) => ({
+              ...prev,
+              [group.id]: {
+                ...prev[group.id],
+                [opt.id]: opt
+              }
+            }));
+          }
+        });
       });
-    });
 
-    // Auto-select packaging from family addons
-    addonFamilies.forEach((family) => {
-      (family.options || []).forEach((opt) => {
-        if (/packag/i.test(opt.name) && opt.locked) {
-          setSelectedFamilyAddons((prev) => ({
-            ...prev,
-            [family.id]: {
-              ...prev[family.id],
-              [opt.id]: opt
-            }
-          }));
-        }
+      addonFamilies.forEach((family) => {
+        (family.options || []).forEach((opt) => {
+          if (/packag/i.test(opt.name) && opt.locked) {
+            setSelectedFamilyAddons((prev) => ({
+              ...prev,
+              [family.id]: {
+                ...prev[family.id],
+                [opt.id]: opt
+              }
+            }));
+          }
+        });
       });
-    });
-  }, [isOpen]);
+    }
+  }, [isOpen, isDineIn]);
 
   // ============================================================================
   // HANDLERS
@@ -261,6 +262,7 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
         id: a.id,
         name: a.name,
         priceDelta: a.priceDelta,
+        locked: a.locked || false,
       })),
       qty: quantity,
     };
@@ -582,11 +584,13 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
                               )}
                             </span>
                           </div>
-                          {opt.priceDelta > 0 && (
+                          {isDineIn && locked ? (
+                            <span className="text-green-400 text-xs font-medium">Free · Dine-in</span>
+                          ) : opt.priceDelta > 0 ? (
                             <span className="text-orange-400 font-semibold text-sm md:text-base">
                               +₹{opt.priceDelta}
                             </span>
-                          )}
+                          ) : null}
                         </label>
                       );
                     })}
@@ -648,11 +652,13 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd }) {
                                 )}
                               </span>
                             </div>
-                            {opt.priceDelta > 0 && (
+                            {isDineIn && locked ? (
+                              <span className="text-green-400 text-xs font-medium">Free · Dine-in</span>
+                            ) : opt.priceDelta > 0 ? (
                               <span className="text-orange-400 font-semibold text-sm md:text-base">
                                 +₹{opt.priceDelta}
                               </span>
-                            )}
+                            ) : null}
                           </label>
                         );
                       })}

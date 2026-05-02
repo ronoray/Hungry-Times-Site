@@ -1459,6 +1459,7 @@ export default function Menu() {
         <AddToCartModal
           item={selectedItem}
           isOpen={showAddToCartModal}
+          isDineIn={orderMode === 'dine_in'}
           onClose={() => {
             setShowAddToCartModal(false);
             setSelectedItem(null);

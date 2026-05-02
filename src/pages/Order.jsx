@@ -677,7 +677,7 @@ export default function Order() {
     let pkgTotal = 0;
     lines.forEach((line) => {
       const linePkg = (line.addons || [])
-        .filter(a => /packag/i.test(a.name) && a.locked)
+        .filter(a => /packag/i.test(a.name || ''))
         .reduce((s, a) => s + (Number(a.priceDelta) || 0), 0);
       pkgTotal += linePkg * (line.qty || 1);
       const unitPrice =
@@ -820,7 +820,7 @@ export default function Order() {
         basePrice: line.basePrice || 0,  // ✅ Include both formats
         variants: line.variants || [],
         addons: isDineIn
-          ? (line.addons || []).filter(a => !(/packag/i.test(a.name) && a.locked))
+          ? (line.addons || []).filter(a => !/packag/i.test(a.name || ''))
           : (line.addons || []),
       }));
 
@@ -1062,7 +1062,7 @@ export default function Order() {
         base_price: line.basePrice || 0,
         variants: line.variants || [],
         addons: isDineIn
-          ? (line.addons || []).filter(a => !(/packag/i.test(a.name) && a.locked))
+          ? (line.addons || []).filter(a => !/packag/i.test(a.name || ''))
           : (line.addons || []),
       }));
 
@@ -2095,6 +2095,7 @@ export default function Order() {
         <AddToCartModal
           item={selectedItemForModal}
           isOpen={true}
+          isDineIn={isDineIn}
           onClose={() => setSelectedItemForModal(null)}
           onAdd={(lineItem) => {
             addLine(lineItem);
