@@ -248,16 +248,19 @@ export default function Order() {
   }, [isAuthenticated, customer?.phone]);
 
   const fetchActiveOffers = async () => {
+    if (!isAuthenticated || !customer?.phone) {
+      setActiveOffers([]);
+      return;
+    }
     try {
-      const phoneParam = isAuthenticated && customer?.phone ? `?phone=${customer.phone}` : '';
-      const response = await fetch(`${API_BASE}/offers/active${phoneParam}`);
+      const response = await fetch(`${API_BASE}/offers/active?phone=${customer.phone}`);
       if (!response.ok) throw new Error('Failed to fetch offers');
-      
+
       const data = await response.json();
       const offers = data.offers || [];
-      
+
       setActiveOffers(offers);
-      
+
       const autoOffer = offers.find(o => o.apply_automatically);
       if (autoOffer) {
         setAppliedOffer(autoOffer);
