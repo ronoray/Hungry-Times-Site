@@ -298,6 +298,7 @@ export default function Order() {
           max_discount: data.max_discount,
           min_order_value: data.min_order_value,
         });
+        setPointsToRedeem(0);
         setSelectedOfferSource('code');
         setCodeExpanded(false);
         showToast(`Code "${code}" applied!`, 'success');
@@ -335,9 +336,19 @@ export default function Order() {
       max_discount: offer.max_discount,
       min_order_value: offer.min_order_value,
     });
+    setPointsToRedeem(0);
     setSelectedOfferSource('panel');
     setCodeExpanded(false);
     setCodeError('');
+  };
+
+  const handleUsePoints = () => {
+    setPointsToRedeem(Math.min(loyaltyPoints, maxRedeemablePoints));
+    setAppliedCode(null);
+    setAppliedOffer(null);
+    setCodeInput('');
+    setCodeError('');
+    setSelectedOfferSource('auto');
   };
 
   const handlePanelRemoveOffer = () => {
@@ -1894,7 +1905,7 @@ export default function Order() {
                       </div>
                       {pointsToRedeem === 0 ? (
                         <button
-                          onClick={() => setPointsToRedeem(Math.min(loyaltyPoints, maxRedeemablePoints))}
+                          onClick={handleUsePoints}
                           className="w-full py-1.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-sm font-medium rounded transition-colors"
                         >
                           Use {Math.min(loyaltyPoints, maxRedeemablePoints)} points (save ₹{Math.min(loyaltyPoints, maxRedeemablePoints)})
