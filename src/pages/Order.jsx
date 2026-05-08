@@ -1813,6 +1813,16 @@ export default function Order() {
                     />
                   )}
 
+                  {/* FIRST30 hint for new customers */}
+                  {isAuthenticated && loyaltyPoints === 0 && !appliedCode && (
+                    <button
+                      onClick={() => { setCodeInput('FIRST30'); setCodeExpanded(true); }}
+                      className="w-full py-2 text-sm text-green-400 bg-green-500/10 rounded text-center font-medium"
+                    >
+                      New customer? Use <span className="font-bold">FIRST30</span> for 30% off your first order
+                    </button>
+                  )}
+
                   {/* APPLY CODE SECTION */}
                   {!appliedCode ? (
                     <div className="py-1">
@@ -1888,7 +1898,7 @@ export default function Order() {
                   )}
 
                   {/* 🎯 LOYALTY POINTS REDEMPTION */}
-                  {isAuthenticated && loyaltyPoints >= 50 && maxRedeemablePoints >= 50 && (
+                  {isAuthenticated && loyaltyPoints >= 30 && maxRedeemablePoints >= 30 && (
                     <div className="bg-purple-500/10 -mx-6 px-6 py-3 rounded space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="text-purple-400 font-medium text-sm">
@@ -1914,7 +1924,7 @@ export default function Order() {
                         <div className="space-y-1">
                           <input
                             type="range"
-                            min={50}
+                            min={30}
                             max={maxRedeemablePoints}
                             step={10}
                             value={pointsToRedeem}
@@ -1922,7 +1932,7 @@ export default function Order() {
                             className="w-full accent-purple-500"
                           />
                           <div className="flex justify-between text-xs text-purple-300">
-                            <span>50 pts</span>
+                            <span>30 pts</span>
                             <span className="font-bold">Using {pointsToRedeem} pts (- ₹{pointsDiscount})</span>
                             <span>{maxRedeemablePoints} pts</span>
                           </div>
