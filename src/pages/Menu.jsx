@@ -495,19 +495,21 @@ export default function Menu() {
     if (!searchQuery.trim()) return null;
     
     const query = searchQuery.toLowerCase().trim();
+    const words = query.split(/\s+/).filter(Boolean);
+    const allWordsIn = (text) => words.every(w => (text || '').toLowerCase().includes(w));
     const results = [];
-    
+
     // Search through ALL top categories and their subcategories
     tops.forEach((topCat) => {
       topCat.subcategories?.forEach((subCat) => {
         const items = subCat.items || [];
 
-        // Match item name, category name, or subcategory name
-        const catMatch = topCat.name?.toLowerCase().includes(query);
-        const subMatch = subCat.name?.toLowerCase().includes(query);
+        // Match item name, category name, or subcategory name (word-order independent)
+        const catMatch = allWordsIn(topCat.name);
+        const subMatch = allWordsIn(subCat.name);
         const matched = (catMatch || subMatch)
           ? items  // all items if category/subcategory matches
-          : items.filter(item => item.name?.toLowerCase().includes(query));
+          : items.filter(item => allWordsIn(item.name));
 
         // Only add subcategory if it has matching items
         if (matched.length > 0) {
