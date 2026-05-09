@@ -1,6 +1,7 @@
 // File: site/src/pages/Menu.jsx
 
 import { useEffect, useMemo, useState, useRef } from "react";
+import Fuse from "fuse.js";
 import "./Menu.css";
 import { useCart } from "../context/CartContext";
 import { ShoppingCart, Plus, Check, Tag, Sparkles, Search, X, Heart, ChevronRight, UtensilsCrossed } from "lucide-react";
@@ -490,40 +491,48 @@ export default function Menu() {
     return map;
   }, [subs]);
 
+  // Flat list of all items with category context for Fuse.js
+  const searchableItems = useMemo(() => {
+    const list = [];
+    tops.forEach(topCat => {
+      topCat.subcategories?.forEach(subCat => {
+        (subCat.items || []).forEach(item => {
+          list.push({ item, topCat, subCat, name: item.name, catName: topCat.name, subName: subCat.name });
+        });
+      });
+    });
+    return list;
+  }, [tops]);
+
+  const fuse = useMemo(() => new Fuse(searchableItems, {
+    keys: [
+      { name: 'name', weight: 3 },
+      { name: 'subName', weight: 2 },
+      { name: 'catName', weight: 1 },
+    ],
+    threshold: 0.4,
+    minMatchCharLength: 2,
+    ignoreLocation: true,
+  }), [searchableItems]);
+
   // Global search across ALL categories
   const globalSearchResults = useMemo(() => {
     if (!searchQuery.trim()) return null;
-    
-    const query = searchQuery.toLowerCase().trim();
-    const words = query.split(/\s+/).filter(Boolean);
-    const allWordsIn = (text) => words.every(w => (text || '').toLowerCase().includes(w));
-    const results = [];
 
-    // Search through ALL top categories and their subcategories
-    tops.forEach((topCat) => {
-      topCat.subcategories?.forEach((subCat) => {
-        const items = subCat.items || [];
+    const fuseResults = fuse.search(searchQuery.trim());
 
-        // Match item name, category name, or subcategory name (word-order independent)
-        const catMatch = allWordsIn(topCat.name);
-        const subMatch = allWordsIn(subCat.name);
-        const matched = (catMatch || subMatch)
-          ? items  // all items if category/subcategory matches
-          : items.filter(item => allWordsIn(item.name));
-
-        // Only add subcategory if it has matching items
-        if (matched.length > 0) {
-          results.push({
-            topCategory: topCat,
-            subCategory: subCat,
-            items: matched
-          });
-        }
-      });
+    // Re-group by subcategory preserving order
+    const subMap = new Map();
+    fuseResults.forEach(({ item: record }) => {
+      const key = record.subCat.id;
+      if (!subMap.has(key)) {
+        subMap.set(key, { topCategory: record.topCat, subCategory: record.subCat, items: [] });
+      }
+      subMap.get(key).items.push(record.item);
     });
-    
-    return results;
-  }, [tops, searchQuery]);
+
+    return Array.from(subMap.values());
+  }, [fuse, searchQuery]);
 
   // When searching, use global results; otherwise use current category
   // Also apply veg filter
