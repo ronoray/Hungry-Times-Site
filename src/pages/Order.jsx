@@ -283,7 +283,7 @@ export default function Order() {
       const response = await fetch(`${API_BASE}/offers/validate-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, customerPhone: customer?.phone }),
+        body: JSON.stringify({ code, customerPhone: customer?.phone, channel: 'web', orderValue: cartTotal }),
       });
       const data = await response.json();
 
