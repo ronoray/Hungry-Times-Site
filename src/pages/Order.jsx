@@ -635,8 +635,7 @@ export default function Order() {
         return { canDeliver: null, distance: null, message: "Checking delivery area..." };
       }
       if (geocoded === 'failed') {
-        // Can't verify — allow through rather than blocking a loyal customer
-        return { canDeliver: true, distance: null, message: "Address accepted" };
+        return { canDeliver: false, distance: null, message: "Map pin required — tap Edit to fix" };
       }
       lat = geocoded.lat;
       lng = geocoded.lng;
@@ -761,7 +760,7 @@ export default function Order() {
         return { valid: false, message: "Checking your delivery area, please wait..." };
       }
       if (geocoded === 'failed') {
-        return { valid: true }; // Can't verify — allow through
+        return { valid: false, message: "We couldn't locate your address. Please edit it and drop a map pin to continue." };
       }
       lat = geocoded.lat;
       lng = geocoded.lng;

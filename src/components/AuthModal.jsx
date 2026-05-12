@@ -386,9 +386,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
       return;
     }
 
-    // Validate address
+    // Validate address — must have coordinates so delivery can be charged correctly
     if (!address || !address.address) {
       setError('Please select an address');
+      return;
+    }
+    if (!address.latitude) {
+      setError('Please search and select your address from the map — we need a location pin to calculate delivery');
       return;
     }
 
