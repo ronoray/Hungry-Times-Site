@@ -908,6 +908,11 @@ export default function Menu() {
                   if (!isDisabled) {
                     incrementSimpleItem(it);
                     trackAddToCart(it, 1);
+                    fetch('/api/site-activity/cart-add', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ item_id: it.id, item_name: it.name, price: it.basePrice }),
+                    }).catch(() => {});
                   }
                 }}
                 className="add-to-cart-btn"

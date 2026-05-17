@@ -270,8 +270,7 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
     trackAddToCart(item, quantity);
 
     // Fire-and-forget: log cart add to our DB for ops panel visibility
-    const API = import.meta.env.VITE_API_BASE || 'https://hungrytimes.in';
-    fetch(`${API}/api/site-activity/cart-add`, {
+    fetch('/api/site-activity/cart-add', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
