@@ -199,6 +199,37 @@ export default function OrderSuccess() {
     );
   }
 
+  // Razorpay order that was never paid — payment failed or was abandoned
+  const isUnpaidRazorpay = order.payment_mode === 'RAZORPAY' && order.payment_status !== 'paid' && !awaitingConfirmation;
+  if (isUnpaidRazorpay) {
+    return (
+      <div className="min-h-screen bg-neutral-900 flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <div className="text-5xl mb-4">❌</div>
+          <h2 className="text-2xl font-bold text-white mb-3">Payment Not Completed</h2>
+          <p className="text-neutral-300 mb-4">
+            Your order was not placed because the payment did not go through. No amount has been charged.
+          </p>
+          <button
+            onClick={() => navigate('/order')}
+            className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg transition-colors mb-3"
+          >
+            Try Again
+          </button>
+          <button
+            onClick={() => navigate('/menu')}
+            className="w-full py-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition-colors"
+          >
+            Back to Menu
+          </button>
+          <p className="text-neutral-500 text-xs mt-4">
+            Need help? WhatsApp us: <span className="text-orange-400">+91 62904 71281</span>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const items = parseItems(order.items_json);
 
   return (
