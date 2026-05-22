@@ -12,10 +12,10 @@ import { trackReorder } from '../utils/analytics';
 // Date grouping helper
 const getDateGroup = (dateString) => {
   if (!dateString) return 'Earlier';
-  const utcDate = dateString.includes('Z') || dateString.includes('+')
+  const istDate = dateString.includes('Z') || dateString.includes('+')
     ? dateString
-    : dateString.replace(' ', 'T') + 'Z';
-  const date = new Date(utcDate);
+    : dateString.replace(' ', 'T') + '+05:30';
+  const date = new Date(istDate);
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
@@ -42,12 +42,11 @@ const CANCELLED_STATUSES = ['cancelled', 'rejected'];
 const formatOrderDate = (dateString, style = 'medium') => {
   if (!dateString) return '—';
   
-  // Force UTC interpretation by adding 'Z' if missing
-  const utcDate = dateString.includes('Z') || dateString.includes('+')
-    ? dateString 
-    : dateString.replace(' ', 'T') + 'Z';
+  const istDate = dateString.includes('Z') || dateString.includes('+')
+    ? dateString
+    : dateString.replace(' ', 'T') + '+05:30';
   
-  return new Date(utcDate).toLocaleString('en-IN', {
+  return new Date(istDate).toLocaleString('en-IN', {
     dateStyle: style === 'long' ? 'long' : 'medium',
     timeStyle: 'short',
     timeZone: 'Asia/Kolkata'

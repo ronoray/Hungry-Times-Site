@@ -145,9 +145,13 @@ export default function OrderDetails() {
             <div>
               <h1 className="text-3xl font-bold text-white mb-1">Order #{order.id}</h1>
               <p className="text-neutral-400 text-sm">
-                {new Date(order.created_at).toLocaleString('en-IN', {
+                {new Date(
+                  order.created_at?.includes('Z') || order.created_at?.includes('+')
+                    ? order.created_at
+                    : (order.created_at || '').replace(' ', 'T') + '+05:30'
+                ).toLocaleString('en-IN', {
                   day: 'numeric', month: 'short', year: 'numeric',
-                  hour: '2-digit', minute: '2-digit'
+                  hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata'
                 })}
               </p>
             </div>
