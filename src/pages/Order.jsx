@@ -35,7 +35,7 @@ const MAX_DELIVERY_RADIUS_KM = 8;
 // Fallback delivery charge tiers (used when Borzo estimate unavailable)
 function calculateDeliveryCharge(distanceKm) {
   if (distanceKm == null) return 0;
-  if (distanceKm <= 2) return 40;
+  if (distanceKm <= 2) return 0;
   if (distanceKm <= 4) return 70;
   if (distanceKm <= 6) return 100;
   if (distanceKm <= 8) return 130;
