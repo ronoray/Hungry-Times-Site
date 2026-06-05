@@ -837,6 +837,14 @@ export default function Order() {
           : (line.addons || []),
       }));
 
+      // Ad attribution — UTM campaign + promo fallback from the combo landing page
+      const utm = (() => {
+        try { return JSON.parse(sessionStorage.getItem('ht_utm') ?? '{}'); } catch { return {}; }
+      })();
+      const promoFallback = (() => {
+        try { return sessionStorage.getItem('ht_promo') || null; } catch { return null; }
+      })();
+
       // ✅ STEP 1: INITIATE order (creates Razorpay order only, NO database order yet!)
       console.log('🔄 Step 1: Initiating payment...');
 
@@ -858,8 +866,9 @@ export default function Order() {
           use_borzo: useBorzoDelivery,
           offer_id: appliedOffer?.id || null,
           offer_title: appliedOffer?.title || null,
-          applied_code: appliedCode?.code || null,
+          applied_code: appliedCode?.code || promoFallback || null,
           applied_code_type: appliedCode?.type || null,
+          utm_campaign: utm.campaign || undefined,
           points_to_redeem: pointsToRedeem > 0 ? pointsToRedeem : 0,
           is_scheduled: isDineIn ? true : (isScheduled && scheduledDate && scheduledTime),
           scheduled_date: (isDineIn || isScheduled) ? scheduledDate : null,
@@ -1079,6 +1088,14 @@ export default function Order() {
           : (line.addons || []),
       }));
 
+      // Ad attribution — UTM campaign + promo fallback from the combo landing page
+      const utm = (() => {
+        try { return JSON.parse(sessionStorage.getItem('ht_utm') ?? '{}'); } catch { return {}; }
+      })();
+      const promoFallback = (() => {
+        try { return sessionStorage.getItem('ht_promo') || null; } catch { return null; }
+      })();
+
       const orderPayload = {
         items: orderItems,
         orderType,
@@ -1093,8 +1110,9 @@ export default function Order() {
         use_borzo: useBorzoDelivery,
         offer_id: appliedOffer?.id || null,
         offer_title: appliedOffer?.title || null,
-        applied_code: appliedCode?.code || null,
+        applied_code: appliedCode?.code || promoFallback || null,
         applied_code_type: appliedCode?.type || null,
+        utm_campaign: utm.campaign || undefined,
         points_to_redeem: pointsToRedeem > 0 ? pointsToRedeem : 0,
         is_scheduled: isDineIn ? true : (isScheduled && scheduledDate && scheduledTime),
         scheduled_date: (isDineIn || isScheduled) ? scheduledDate : null,

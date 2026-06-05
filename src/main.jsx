@@ -27,6 +27,7 @@ const OrderDetails = lazy(() => import("./pages/OrderDetails"));
 const OrderSuccess = lazy(() => import("./pages/OrderSuccess"));
 const TrackOrder = lazy(() => import("./pages/TrackOrder"));
 const DeliveryView = lazy(() => import("./pages/DeliveryView"));
+const ComboPage = lazy(() => import("./pages/ComboPage"));
 
 // Helper to wrap a lazy component with a specific skeleton
 function withSkeleton(Component, Skeleton) {
@@ -139,6 +140,9 @@ const router = createBrowserRouter(
         { path: "*", element: <Navigate to="/menu" replace /> },
       ],
     },
+
+    // Standalone ad landing page — no nav/footer chrome
+    { path: "/combo", element: withSkeleton(ComboPage, DefaultSkeleton) },
   ],
   {
     future: {
