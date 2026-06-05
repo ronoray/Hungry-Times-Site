@@ -156,7 +156,7 @@ export default function ComboPage() {
             ⏱️ 30–45 min
           </div>
           <div className="bg-[#161616] rounded-xl py-2.5 border border-white/5">
-            📍 Behala, Kolkata
+            📍 Dhakuria, Kolkata
           </div>
           <div className="bg-[#161616] rounded-xl py-2.5 border border-white/5">
             🕛 12–11 PM
