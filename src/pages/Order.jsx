@@ -6,7 +6,7 @@
 // ✅ Active offers system with automatic discount application
 // ✅ Persistent banner showing active offers
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
@@ -273,17 +273,26 @@ export default function Order() {
   // ============================================================================
   // APPLY CODE HANDLER
   // ============================================================================
-  const handleApplyCode = async () => {
-    const code = codeInput.trim();
+  const handleApplyCode = async (codeArg, opts = {}) => {
+    const code = (typeof codeArg === 'string' ? codeArg : codeInput).trim();
     if (!code) return;
+    const silent = !!opts.silent;
 
     setCodeValidating(true);
     setCodeError('');
     try {
+      // Send the cart so the server can enforce item-restricted offers (e.g. COMBO50)
+      const cartItemsPayload = lines.map(l => ({
+        itemId: l.itemId,
+        basePrice: l.basePrice,
+        variants: l.variants || [],
+        addons: l.addons || [],
+        quantity: l.qty || 1,
+      }));
       const response = await fetch(`${API_BASE}/offers/validate-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, customerPhone: customer?.phone, channel: 'web', orderValue: cartTotal }),
+        body: JSON.stringify({ code, customerPhone: customer?.phone, channel: 'web', orderValue: cartTotal, items: cartItemsPayload }),
       });
       const data = await response.json();
 
@@ -297,16 +306,17 @@ export default function Order() {
           discount_value: data.discount_value,
           max_discount: data.max_discount,
           min_order_value: data.min_order_value,
+          applicable_item_ids: data.applicable_item_ids || null,
         });
         setPointsToRedeem(0);
         setSelectedOfferSource('code');
         setCodeExpanded(false);
         showToast(`Code "${code}" applied!`, 'success');
-      } else {
+      } else if (!silent) {
         setCodeError(data.error || 'Invalid code');
       }
-    } catch (err) {
-      setCodeError('Failed to validate code');
+    } catch {
+      if (!silent) setCodeError('Failed to validate code');
     } finally {
       setCodeValidating(false);
     }
@@ -314,6 +324,24 @@ export default function Order() {
 
   // Track where the current offer came from: 'auto' | 'panel' | 'code'
   const [selectedOfferSource, setSelectedOfferSource] = useState('auto');
+
+  // ── Auto-apply ?promo= (or the combo landing page's stored code) once cart is ready ──
+  const autoPromoTried = useRef(false);
+  useEffect(() => {
+    if (autoPromoTried.current) return;
+    if (!lines.length) return;                 // wait for cart to load
+    if (appliedCode) { autoPromoTried.current = true; return; } // user already chose an offer
+    let promo = null;
+    try {
+      promo = new URLSearchParams(window.location.search).get('promo')
+        || sessionStorage.getItem('ht_promo');
+    } catch { /* ignore */ }
+    if (!promo) return;
+    autoPromoTried.current = true;
+    setCodeInput(promo);
+    // silent: if the cart has no qualifying item yet, just prefill — no error toast
+    handleApplyCode(promo, { silent: true });
+  }, [lines, appliedCode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRemoveCode = () => {
     setAppliedCode(null);
@@ -335,6 +363,7 @@ export default function Order() {
       discount_value: offer.discount_value,
       max_discount: offer.max_discount,
       min_order_value: offer.min_order_value,
+      applicable_item_ids: offer.applicable_item_ids || null,
     });
     setPointsToRedeem(0);
     setSelectedOfferSource('panel');
@@ -704,10 +733,32 @@ export default function Order() {
   // Apply offer discount
   let discount = 0;
   if (appliedOffer && total >= (appliedOffer.min_order_value || 0)) {
+    // Item-restricted offers (e.g. COMBO50): the discount applies to the
+    // qualifying items' value only, not the whole cart.
+    // applicable_item_ids may arrive as an array (validate-code) or CSV string (offer list).
+    const restrictRaw = appliedOffer.applicable_item_ids;
+    const restrictIds = Array.isArray(restrictRaw)
+      ? restrictRaw
+      : (typeof restrictRaw === 'string' && restrictRaw.trim()
+          ? restrictRaw.split(',').map(s => s.trim()).filter(Boolean)
+          : null);
+    let base = total;
+    if (restrictIds && restrictIds.length) {
+      const allow = new Set(restrictIds.map(String));
+      base = lines.reduce((sum, line) => {
+        if (!allow.has(String(line.itemId))) return sum;
+        const unit =
+          (line.basePrice || 0) +
+          (line.variants?.reduce((s, v) => s + (v.priceDelta || 0), 0) || 0) +
+          (line.addons?.reduce((s, a) => s + (a.priceDelta || 0), 0) || 0);
+        return sum + unit * (line.qty || 1);
+      }, 0);
+    }
+
     if (appliedOffer.discount_type === 'percent') {
-      discount = total * (appliedOffer.discount_value / 100);
+      discount = base * (appliedOffer.discount_value / 100);
     } else {
-      discount = appliedOffer.discount_value;
+      discount = Math.min(appliedOffer.discount_value, base);
     }
 
     // Apply max discount cap if set
@@ -827,6 +878,7 @@ export default function Order() {
       }
 
       const orderItems = lines.map(line => ({
+        itemId: line.itemId,                    // ✅ needed for item-restricted offers (COMBO50)
         itemName: line.itemName || line.name,  // ✅ Add fallback
         quantity: line.qty || 1,
         base_price: line.basePrice || 0,
@@ -1079,6 +1131,7 @@ export default function Order() {
       }
 
       const orderItems = lines.map(line => ({
+        itemId: line.itemId,                    // ✅ needed for item-restricted offers (COMBO50)
         itemName: line.itemName || line.name,
         quantity: line.qty || 1,
         base_price: line.basePrice || 0,
