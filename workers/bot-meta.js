@@ -19,8 +19,14 @@ const SOCIAL_BOT =
 
 const BASE      = 'https://home.hungrytimes.in';
 const OG_IMAGE  = `${BASE}/og-image.jpg`;
+const DEFAULT_IMAGE = { url: OG_IMAGE, width: '1200', height: '630', type: 'image/jpeg' };
 
 const ROUTES = {
+  '/combo': {
+    title:       '50% OFF — Chilli Pork Combo at ₹145 🔥 | Hungry Times',
+    description: 'Veg Fried Rice or Chowmein + Chilli Pork at ₹145. Use code COMBO50 for 50% off. Order online, at the counter or on WhatsApp.',
+    image:       { url: 'https://cdn.hungrytimes.in/images/gallery/combo-chilli-pork.png', width: '1124', height: '1055', type: 'image/png' },
+  },
   '/': {
     title:       'Hungry Times — Chinese-Continental in Kolkata',
     description: 'Order Chinese-Continental fusion food online from Hungry Times, Kolkata. Fast delivery within 5 km. Dine in, takeaway, and online ordering available.',
@@ -55,8 +61,9 @@ const ROUTES = {
   },
 };
 
-function buildHTML(path, { title, description }) {
+function buildHTML(path, { title, description, image }) {
   const url = `${BASE}${path}`;
+  const img = image ?? DEFAULT_IMAGE;
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -69,14 +76,14 @@ function buildHTML(path, { title, description }) {
 <meta property="og:url" content="${url}">
 <meta property="og:site_name" content="Hungry Times">
 <meta property="og:locale" content="en_IN">
-<meta property="og:image" content="${OG_IMAGE}">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image" content="${img.url}">
+<meta property="og:image:width" content="${img.width}">
+<meta property="og:image:height" content="${img.height}">
+<meta property="og:image:type" content="${img.type}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${title}">
 <meta name="twitter:description" content="${description}">
-<meta name="twitter:image" content="${OG_IMAGE}">
+<meta name="twitter:image" content="${img.url}">
 <link rel="canonical" href="${url}">
 <meta http-equiv="refresh" content="0;url=${url}">
 </head>
