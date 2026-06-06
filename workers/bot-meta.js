@@ -75,7 +75,7 @@ function buildHTML(path, { title, description, image }) {
 <meta property="og:type" content="restaurant">
 <meta property="og:url" content="${url}">
 <meta property="og:site_name" content="Hungry Times">
-<meta property="og:locale" content="en_IN">
+<meta property="og:locale" content="en_US">
 <meta property="og:image" content="${img.url}">
 <meta property="og:image:width" content="${img.width}">
 <meta property="og:image:height" content="${img.height}">
