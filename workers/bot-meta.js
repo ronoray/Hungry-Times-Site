@@ -25,6 +25,7 @@ const ROUTES = {
   '/combo': {
     title:       '50% OFF — Chilli Pork Combo at ₹145 🔥 | Hungry Times',
     description: 'Veg Fried Rice or Chowmein + Chilli Pork at ₹145. Use code COMBO50 for 50% off. Order online, at the counter or on WhatsApp.',
+    type:        'website',
     image:       { url: 'https://cdn.hungrytimes.in/images/gallery/combo-chilli-pork.png', width: '1124', height: '1055', type: 'image/png' },
   },
   '/': {
@@ -61,9 +62,10 @@ const ROUTES = {
   },
 };
 
-function buildHTML(path, { title, description, image }) {
+function buildHTML(path, { title, description, image, type }) {
   const url = `${BASE}${path}`;
   const img = image ?? DEFAULT_IMAGE;
+  const ogType = type ?? 'restaurant';
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -72,7 +74,7 @@ function buildHTML(path, { title, description, image }) {
 <meta name="description" content="${description}">
 <meta property="og:title" content="${title}">
 <meta property="og:description" content="${description}">
-<meta property="og:type" content="restaurant">
+<meta property="og:type" content="${ogType}">
 <meta property="og:url" content="${url}">
 <meta property="og:site_name" content="Hungry Times">
 <meta property="og:locale" content="en_US">
