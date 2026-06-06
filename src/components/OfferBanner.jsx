@@ -84,7 +84,7 @@ export default function OfferBanner() {
     : `₹${offer.discount_value} OFF`;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[60] bg-emerald-700 text-white px-4 py-2.5 relative">
+    <div className="fixed top-0 left-0 right-0 z-[60] bg-emerald-700 text-white px-4 py-2.5">
       <div className="max-w-7xl mx-auto flex items-center justify-center gap-3 text-sm">
         <span className="font-bold">{discountText}</span>
         <span className="hidden sm:inline">—</span>
