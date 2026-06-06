@@ -9,7 +9,7 @@ const COMBO = {
   price: 145,
   mrp: 290,
   ogImage:
-    'https://cdn.hungrytimes.in/images/gallery/gallery-1764246486003-781123859.jpg',
+    'https://cdn.hungrytimes.in/images/gallery/combo-chilli-pork.png',
 };
 
 const WA_NUMBER = '916290471281';
