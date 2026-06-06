@@ -166,7 +166,7 @@ export default function ComboPage() {
         {/* Fine print */}
         <p className="mt-5 text-[11px] leading-relaxed text-[#f0ece6]/45 text-center">
           Code {COMBO.code} · 50% off · Min order ₹200 · One use per customer ·
-          Order online, at the counter or on WhatsApp · Valid till 31 July 2026
+          Order online, at the counter or on WhatsApp · Valid till 21 June 2026
         </p>
       </div>
     </div>

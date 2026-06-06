@@ -100,7 +100,12 @@ export default function OfferBanner() {
           </span>
         )}
         <button
-          onClick={() => navigate('/menu')}
+          onClick={() => {
+            if (offer.promo_code) {
+              try { sessionStorage.setItem('ht_promo', offer.promo_code); } catch { /* private mode */ }
+            }
+            navigate(offer.promo_code === 'COMBO50' ? '/combo' : '/menu');
+          }}
           className="bg-white text-emerald-700 px-3 py-1 rounded font-bold text-xs hover:bg-emerald-50 transition-colors ml-1"
         >
           Order Now
