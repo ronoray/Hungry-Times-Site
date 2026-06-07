@@ -42,6 +42,38 @@ function calculateDeliveryCharge(distanceKm) {
   return -1; // outside service area
 }
 
+// Resolve coordinates for a free-text address (Google Geocoder → OpenStreetMap).
+// Returns { lat, lng } or null. Used so a typed address still gets a pin without forcing
+// the customer to pick from Google's autocomplete dropdown.
+async function geocodeFreeAddress(fullAddress) {
+  if (!fullAddress) return null;
+  try {
+    if (window.google?.maps?.Geocoder) {
+      const geocoder = new window.google.maps.Geocoder();
+      const result = await geocoder.geocode({
+        address: fullAddress,
+        componentRestrictions: { country: 'IN' },
+      });
+      if (result.results?.length > 0) {
+        const loc = result.results[0].geometry.location;
+        return { lat: loc.lat(), lng: loc.lng() };
+      }
+    }
+  } catch { /* fall through to OSM */ }
+  try {
+    const encoded = encodeURIComponent(fullAddress + ', Kolkata, India');
+    const resp = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1&countrycodes=in`,
+      { headers: { 'User-Agent': 'HungryTimes/1.0 (ronoray@gmail.com)' } }
+    );
+    const data = await resp.json();
+    if (data.length > 0 && data[0].lat && data[0].lon) {
+      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
 // Calculate distance between two coordinates (Haversine formula)
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371; // Earth's radius in km
@@ -493,9 +525,17 @@ export default function Order() {
   const handleAddNewAddress = async (e) => {
     e.preventDefault();
 
-    if (!newAddressData.fullAddress || !newAddressData.latitude) {
-      showToast("Please select a valid address from the map", "warning");
+    if (!newAddressData.fullAddress?.trim()) {
+      showToast("Please enter your delivery address", "warning");
       return;
+    }
+
+    // No map pin? Resolve coords from the typed address in the background.
+    // If that also fails we still save — staff confirms the area (we're hyperlocal).
+    let payload = newAddressData;
+    if (!newAddressData.latitude) {
+      const coords = await geocodeFreeAddress(newAddressData.fullAddress);
+      if (coords) payload = { ...newAddressData, latitude: coords.lat, longitude: coords.lng };
     }
 
     try {
@@ -506,7 +546,7 @@ export default function Order() {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(newAddressData),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) throw new Error("Failed to add address");
@@ -590,9 +630,16 @@ export default function Order() {
   // SAVE EDITED ADDRESS
   // ============================================================================
   const handleSaveEdit = async (addressId) => {
-    if (!editAddressData.fullAddress || !editAddressData.latitude) {
-      alert('Please select a valid address from the map');
+    if (!editAddressData.fullAddress?.trim()) {
+      showToast('Please enter your delivery address', 'warning');
       return;
+    }
+
+    // No map pin? Resolve coords from the typed address; save regardless if it fails.
+    let payload = editAddressData;
+    if (!editAddressData.latitude) {
+      const coords = await geocodeFreeAddress(editAddressData.fullAddress);
+      if (coords) payload = { ...editAddressData, latitude: coords.lat, longitude: coords.lng };
     }
 
     try {
@@ -603,7 +650,7 @@ export default function Order() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(editAddressData)
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
@@ -664,7 +711,8 @@ export default function Order() {
         return { canDeliver: null, distance: null, message: "Checking delivery area..." };
       }
       if (geocoded === 'failed') {
-        return { canDeliver: false, distance: null, message: "Map pin required — tap Edit to fix" };
+        // Couldn't auto-locate — accept anyway (hyperlocal; staff confirms on the call).
+        return { canDeliver: true, distance: null, deliveryCharge: 0, message: "We'll confirm delivery details on the call." };
       }
       lat = geocoded.lat;
       lng = geocoded.lng;
@@ -807,11 +855,13 @@ export default function Order() {
 
     if (!lat || !lng) {
       const geocoded = geocodedCoords[selectedAddressId];
-      if (!geocoded || geocoded === 'pending') {
+      if (geocoded === 'pending') {
         return { valid: false, message: "Checking your delivery area, please wait..." };
       }
-      if (geocoded === 'failed') {
-        return { valid: false, message: "We couldn't locate your address. Please edit it and drop a map pin to continue." };
+      if (!geocoded || geocoded === 'failed') {
+        // Couldn't auto-locate — don't strand the customer. Accept the order; we're
+        // hyperlocal and staff confirms the area on the delivery call.
+        return { valid: true, unverified: true };
       }
       lat = geocoded.lat;
       lng = geocoded.lng;

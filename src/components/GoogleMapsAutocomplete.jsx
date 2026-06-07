@@ -1,7 +1,27 @@
 // components/GoogleMapsAutocomplete.jsx - FIXED AUTOCOMPLETE
 import { useState, useRef, useEffect } from 'react';
-import { Search, MapPin, AlertCircle, Check } from 'lucide-react';
+import { Search, MapPin, AlertCircle, Check, LocateFixed, Loader } from 'lucide-react';
 import { loadGoogleMaps } from '../utils/scriptLoaders';
+
+// Reverse-geocode GPS coords → a human address. Google first, then OpenStreetMap, else a coord label.
+async function reverseGeocode(lat, lng) {
+  try {
+    if (window.google?.maps?.Geocoder) {
+      const geocoder = new window.google.maps.Geocoder();
+      const result = await geocoder.geocode({ location: { lat, lng } });
+      if (result.results?.length > 0) return result.results[0].formatted_address;
+    }
+  } catch { /* fall through to OSM */ }
+  try {
+    const resp = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+      { headers: { 'User-Agent': 'HungryTimes/1.0 (ronoray@gmail.com)' } }
+    );
+    const data = await resp.json();
+    if (data?.display_name) return data.display_name;
+  } catch { /* ignore */ }
+  return `Pinned location (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
+}
 
 /**
  * Google Maps Autocomplete Component with Manual Fallback
@@ -12,6 +32,7 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
   const [manualMode, setManualMode] = useState(false);
   const [searchText, setSearchText] = useState(defaultValue);
   const [hasSelected, setHasSelected] = useState(false);
+  const [locating, setLocating] = useState(false);
   const inputRef = useRef(null);
   const autocompleteRef = useRef(null);
   const cancelledRef = useRef(false);
@@ -148,10 +169,56 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
     const value = e.target.value;
     setSearchText(value);
     setHasSelected(false);
-    
+
     // Log to verify input is working
     console.log('[Maps] Input changed:', value);
   };
+
+  // One-tap GPS pin — most reliable for Indian addresses Google can't autocomplete.
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      alert('Your browser does not support location. Please type your address instead.');
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const latitude = pos.coords.latitude;
+        const longitude = pos.coords.longitude;
+        const resolved = await reverseGeocode(latitude, longitude);
+        // Keep any details the customer already typed (flat/floor) by prepending it.
+        const typed = searchText.trim();
+        const address = typed && !typed.startsWith('Pinned location')
+          ? `${typed} (near ${resolved})`
+          : resolved;
+        setSearchText(address);
+        setHasSelected(true);
+        setLocating(false);
+        onSelect({ address, latitude, longitude, name: null });
+      },
+      (err) => {
+        setLocating(false);
+        const msg = err.code === err.PERMISSION_DENIED
+          ? 'Location permission was blocked. Allow it in your browser, or just type your address below.'
+          : 'Could not get your location. Please type your address below.';
+        alert(msg);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
+  const LocationButton = () => (
+    <button
+      type="button"
+      onClick={handleUseMyLocation}
+      disabled={locating}
+      className="w-full py-2.5 flex items-center justify-center gap-2 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 disabled:opacity-60 transition-colors"
+    >
+      {locating
+        ? (<><Loader className="w-4 h-4 animate-spin" /> Getting your location…</>)
+        : (<><LocateFixed className="w-4 h-4" /> Use my current location</>)}
+    </button>
+  );
 
   // Loading state
   if (!isLoaded && !manualMode) {
@@ -180,9 +247,11 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
           Enter Address
         </label>
         
-        <div className="p-3 bg-yellow-500/10 border border-yellow-500/50 rounded-lg text-yellow-400 text-sm mb-2">
-          <AlertCircle className="w-4 h-4 inline mr-1" />
-          Google Maps unavailable. Manual entry mode.
+        <LocationButton />
+        <div className="flex items-center gap-2 my-1">
+          <div className="flex-1 h-px bg-neutral-700" />
+          <span className="text-xs text-neutral-500">or type it</span>
+          <div className="flex-1 h-px bg-neutral-700" />
         </div>
 
         <textarea
@@ -207,8 +276,8 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
           Use This Address
         </button>
         
-        <p className="text-xs text-yellow-400">
-          ⚠️ Without map pin, we cannot verify delivery distance
+        <p className="text-xs text-neutral-500">
+          Tip: "Use my current location" gives the most accurate delivery pin.
         </p>
       </div>
     );
@@ -218,10 +287,17 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-neutral-300 mb-2">
-        <Search className="w-4 h-4 inline mr-1" />
-        Search Address (Recommended)
+        <MapPin className="w-4 h-4 inline mr-1" />
+        Delivery Address
       </label>
-      
+
+      <LocationButton />
+      <div className="flex items-center gap-2 my-2">
+        <div className="flex-1 h-px bg-neutral-700" />
+        <span className="text-xs text-neutral-500">or search</span>
+        <div className="flex-1 h-px bg-neutral-700" />
+      </div>
+
       <div className="relative">
         <input
           ref={inputRef}
