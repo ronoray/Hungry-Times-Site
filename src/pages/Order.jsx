@@ -711,8 +711,10 @@ export default function Order() {
         return { canDeliver: null, distance: null, message: "Checking delivery area..." };
       }
       if (geocoded === 'failed') {
-        // Couldn't auto-locate — accept anyway (hyperlocal; staff confirms on the call).
-        return { canDeliver: true, distance: null, deliveryCharge: 0, message: "We'll confirm delivery details on the call." };
+        // Couldn't auto-locate — accept anyway (hyperlocal; staff confirms on the
+        // call), but NEVER waive delivery: charge the default floor. The server
+        // re-geocodes and may set the exact tiered fee; this is the "from" estimate.
+        return { canDeliver: true, distance: null, deliveryCharge: 70, message: "Delivery: ₹70 (exact distance confirmed on the call)" };
       }
       lat = geocoded.lat;
       lng = geocoded.lng;
