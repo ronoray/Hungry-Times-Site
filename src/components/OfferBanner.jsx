@@ -1,6 +1,6 @@
 // components/OfferBanner.jsx
 // Dismissible banner showing active offers with countdown
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import API_BASE from '../config/api.js';
@@ -11,6 +11,7 @@ export default function OfferBanner() {
   const [offer, setOffer] = useState(null);
   const [dismissed, setDismissed] = useState(false);
   const [timeLeft, setTimeLeft] = useState('');
+  const bannerRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,11 +24,24 @@ export default function OfferBanner() {
     fetchOffer();
   }, []);
 
-  // Drive the --banner-h CSS var so Navbar and main can react to visibility
+  // Drive the --banner-h CSS var from the banner's ACTUAL height (not a hardcoded
+  // 40px) so the Navbar below it never gets overlapped — on narrow phones the
+  // banner wraps taller, which was clipping the logo.
   useEffect(() => {
     const isVisible = !dismissed && !!offer;
-    document.documentElement.style.setProperty('--banner-h', isVisible ? '40px' : '0px');
-  }, [dismissed, offer]);
+    if (!isVisible) {
+      document.documentElement.style.setProperty('--banner-h', '0px');
+      return;
+    }
+    const el = bannerRef.current;
+    if (!el) return;
+    const apply = () => document.documentElement.style.setProperty('--banner-h', `${el.offsetHeight}px`);
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    window.addEventListener('resize', apply);
+    return () => { ro.disconnect(); window.removeEventListener('resize', apply); };
+  }, [dismissed, offer, timeLeft]);
 
   useEffect(() => {
     if (!offer?.valid_till) return;
@@ -84,7 +98,7 @@ export default function OfferBanner() {
     : `₹${offer.discount_value} OFF`;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[60] bg-emerald-700 text-white px-4 py-2.5">
+    <div ref={bannerRef} className="fixed top-0 left-0 right-0 z-[60] bg-emerald-700 text-white px-4 py-2.5">
       <div className="max-w-7xl mx-auto flex items-center justify-center gap-3 text-sm">
         <span className="font-bold">{discountText}</span>
         <span className="hidden sm:inline">—</span>
