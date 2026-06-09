@@ -89,7 +89,7 @@ export default function ComboPage() {
           <img
             src={COMBO.ogImage}
             alt="Chilli Pork Combo"
-            className="w-full h-56 object-cover"
+            className="block w-full h-auto"
             loading="eager"
           />
         </div>
