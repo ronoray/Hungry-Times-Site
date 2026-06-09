@@ -178,6 +178,20 @@
         } else { done(); }
       });
     })();
+
+    // ── Auto-expire: if COMBO50 is no longer live, don't show a stale ₹145 page ──
+    (function () {
+      try {
+        fetch('/api/offers/active')
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (d) {
+            var offers = (d && d.offers) || [];
+            var live = offers.some(function (o) { return (o.promo_code || '').toUpperCase() === 'COMBO50'; });
+            if (!live) window.location.replace('/menu');
+          })
+          .catch(function () { /* network issue — leave page as-is */ });
+      } catch (e) { /* ignore */ }
+    })();
   </script>
 </body>
 </html>

@@ -8,6 +8,7 @@ import { ShoppingCart, Plus, Check, Tag, Sparkles, Search, X, Heart, ChevronRigh
 import AddToCartModal from "../components/AddToCartModal";
 import FloatingCartBar from "../components/FloatingCartBar";
 import VegDot from "../components/VegDot";
+import ComboPromoCard from "../components/ComboPromoCard";
 import { useMenuCategory } from '../context/MenuCategoryContext';
 import { useFavorites } from '../context/FavoritesContext';
 import SEOHead from '../components/SEOHead';
@@ -1081,6 +1082,11 @@ export default function Menu() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Combo offer — pinned, auto-hides when COMBO50 is off */}
+        <div className="max-w-5xl mx-auto w-full px-4 mt-3">
+          <ComboPromoCard />
         </div>
 
         {/* 🔍 SEARCH BAR */}

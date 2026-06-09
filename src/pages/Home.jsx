@@ -9,6 +9,7 @@ import KitchenStatus from '../components/KitchenStatus'
 import TodaysSpecial from '../components/TodaysSpecial'
 import LiveOrderCount from '../components/LiveOrderCount'
 import VegDot from '../components/VegDot'
+import ComboPromoCard from '../components/ComboPromoCard'
 import API_BASE from '../config/api'
 import heroImg from '../assets/hero-1200.jpg'
 
@@ -137,6 +138,11 @@ export default function Home() {
             </a>
           </div>
         </div>
+      </section>
+
+      {/* ─── Combo offer (auto-hides when COMBO50 is off) ─── */}
+      <section className="px-4 pt-5 -mb-3 max-w-5xl mx-auto w-full">
+        <ComboPromoCard />
       </section>
 
       {/* ─── Live Order Count (social proof) ─── */}

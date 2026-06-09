@@ -1,8 +1,9 @@
 // /combo — Facebook ad landing page for the ₹145 Chilli Pork Combo.
 // SPA mirror of the static public/combo/index.html. Self-contained, dark theme.
 import { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { pageView, addToCart, custom } from '../lib/fbpixel';
+import { useCombo50 } from '../hooks/useCombo50';
 
 const COMBO = {
   code: 'COMBO50',
@@ -12,12 +13,54 @@ const COMBO = {
     'https://cdn.hungrytimes.in/images/gallery/combo-chilli-pork.png',
 };
 
+// The two combo menu items COMBO50 is restricted to (server-enforced too).
+const VARIANTS = [
+  { id: 231, name: 'Veg Fried Rice with Chilli Pork', label: 'Veg Fried Rice + Chilli Pork', basePrice: 290 },
+  { id: 236, name: 'Veg Chowmein with Chilli Pork',   label: 'Veg Chowmein + Chilli Pork',   basePrice: 290 },
+];
+
 const WA_NUMBER = '916290471281';
+
+// Append the chosen combo item to the persisted cart (ht_cart in localStorage),
+// matching CartContext's line shape so /order picks it up. No CartProvider needed
+// on this standalone page.
+function addComboToLocalCart(combo) {
+  let cart = [];
+  try { cart = JSON.parse(localStorage.getItem('ht_cart') || '[]'); } catch { cart = []; }
+  const idx = cart.findIndex(
+    l => l.itemId === combo.id && (l.variants || []).length === 0 && (l.addons || []).length === 0
+  );
+  if (idx >= 0) {
+    cart[idx].qty = (cart[idx].qty || 1) + 1;
+  } else {
+    cart.push({
+      key: globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2),
+      itemId: combo.id,
+      itemName: combo.name,
+      name: combo.name,
+      basePrice: combo.basePrice,
+      variants: [],
+      addons: [],
+      qty: 1,
+    });
+  }
+  try {
+    localStorage.setItem('ht_cart', JSON.stringify(cart));
+    sessionStorage.setItem('ht_promo', COMBO.code);
+  } catch { /* storage blocked — ignore */ }
+}
 
 export default function ComboPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const [selected, setSelected] = useState(null); // chosen combo item id
+  const { active, loading } = useCombo50();
+
+  // Offer ended → don't show a stale ₹145 page; send them to the live menu.
+  useEffect(() => {
+    if (!loading && !active) navigate('/menu', { replace: true });
+  }, [loading, active, navigate]);
 
   // Capture UTMs + promo on mount, fire PageView, set title.
   useEffect(() => {
@@ -37,32 +80,28 @@ export default function ComboPage() {
     document.title = '50% OFF — Chilli Pork Combo at ₹145 🔥 | Hungry Times';
   }, [params]);
 
-  // Build the menu deep-link with UTMs forwarded.
-  const menuLink = (() => {
-    const qs = new URLSearchParams({ promo: COMBO.code });
-    const src = params.get('utm_source');
-    const med = params.get('utm_medium');
-    const camp = params.get('utm_campaign');
-    if (src) qs.set('utm_source', src);
-    if (med) qs.set('utm_medium', med);
-    if (camp) qs.set('utm_campaign', camp);
-    return `/?${qs.toString()}#menu`;
-  })();
+  const chosen = VARIANTS.find(v => v.id === selected) || null;
 
   const waText = encodeURIComponent(
-    `Hi Hungry Times! I want the Chilli Pork Combo at ₹145 (50% OFF) using code ${COMBO.code}. Please take my order.`
+    `Hi Hungry Times! I want the ${chosen ? chosen.label : 'Chilli Pork Combo'} at ₹145 (50% OFF) using code ${COMBO.code}. Please take my order.`
   );
   const waLink = `https://wa.me/${WA_NUMBER}?text=${waText}`;
 
   const handleAddToCart = () => {
-    addToCart({ name: 'Chilli Pork Combo', id: COMBO.code, price: COMBO.price });
-    navigate(menuLink);
+    if (!chosen) return; // must pick a combo first
+    addComboToLocalCart(chosen);
+    addToCart({ name: chosen.name, id: COMBO.code, price: COMBO.price });
+    navigate('/order');
   };
 
   const handleWhatsApp = () => {
     custom('WhatsAppOrder', { value: COMBO.price, currency: 'INR' });
     window.open(waLink, '_blank', 'noopener');
   };
+
+  // While the offer-active check resolves, render the page (FB clickers see it
+  // instantly). The effect above redirects if it turns out inactive.
+  if (!loading && !active) return null;
 
   const copyCode = async () => {
     try {
@@ -77,11 +116,11 @@ export default function ComboPage() {
   return (
     <div className="min-h-screen bg-[#0b0b0b] text-[#f0ece6] px-4 py-8 flex flex-col items-center">
       <div className="w-full max-w-md">
-        {/* Brand */}
+        {/* Brand — tappable so it's not a dead-end */}
         <div className="text-center mb-5">
-          <div className="text-2xl font-extrabold tracking-tight">
+          <Link to="/menu" className="text-2xl font-extrabold tracking-tight inline-block">
             Hungry <span className="text-[#dc5f1e]">Times</span>
-          </div>
+          </Link>
         </div>
 
         {/* Hero image */}
@@ -133,12 +172,38 @@ export default function ComboPage() {
             </button>
           </div>
 
-          {/* Primary CTA */}
+          {/* Pick your combo — required before adding to cart */}
+          <div className="mt-5">
+            <div className="text-xs font-semibold text-[#f0ece6]/70 mb-2">Choose your combo</div>
+            <div className="grid grid-cols-1 gap-2">
+              {VARIANTS.map(v => {
+                const on = selected === v.id;
+                return (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => setSelected(v.id)}
+                    className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left transition ${
+                      on ? 'border-[#dc5f1e] bg-[#dc5f1e]/10' : 'border-white/10 bg-[#0b0b0b]'
+                    }`}
+                  >
+                    <span className="font-semibold text-sm">{v.label}</span>
+                    <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-[11px] ${
+                      on ? 'border-[#dc5f1e] bg-[#dc5f1e] text-white' : 'border-white/30'
+                    }`}>{on ? '✓' : ''}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Primary CTA — disabled until a combo is chosen */}
           <button
             onClick={handleAddToCart}
-            className="mt-5 w-full bg-[#dc5f1e] hover:bg-[#c5531a] text-white font-bold text-lg py-3.5 rounded-xl active:scale-[0.98] transition shadow-lg shadow-[#dc5f1e]/20"
+            disabled={!chosen}
+            className="mt-4 w-full bg-[#dc5f1e] hover:bg-[#c5531a] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-lg py-3.5 rounded-xl active:scale-[0.98] transition shadow-lg shadow-[#dc5f1e]/20"
           >
-            Add to Cart — Order Online
+            {chosen ? 'Add to Cart — Order Online' : 'Pick a combo above'}
           </button>
 
           {/* Secondary CTA */}
@@ -149,6 +214,14 @@ export default function ComboPage() {
             Order on WhatsApp
           </button>
         </div>
+
+        {/* Escape hatch — explore the rest of the menu (no dead-end) */}
+        <Link
+          to="/menu"
+          className="mt-4 block text-center text-sm text-[#f0ece6]/60 hover:text-[#f5b944] transition"
+        >
+          View full menu →
+        </Link>
 
         {/* Trust strip */}
         <div className="mt-5 grid grid-cols-3 gap-2 text-center text-[11px] text-[#f0ece6]/70">
