@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- combo ad landing · build 2026-06-05b · Dhakuria -->
+<!-- combo ad landing · build 2026-06-10 · Dhakuria · combo picker + /order cart -->
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -71,6 +71,15 @@
     .cta-primary:active{transform:scale(.98)}
     .cta-wa{margin-top:12px;background:transparent;border:1px solid rgba(37,211,102,.6);color:#25D366;font-size:16px;padding:12px}
     .cta-wa:active{transform:scale(.98)}
+    .cta-primary:disabled{opacity:.4;cursor:not-allowed}
+    .pick{margin-top:20px}
+    .pick .lbl{font-size:12px;font-weight:600;color:rgba(240,236,230,.7);margin-bottom:8px}
+    .pick .opts{display:grid;grid-template-columns:1fr;gap:8px}
+    .opt{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;border:1px solid rgba(255,255,255,.1);background:var(--bg);border-radius:12px;padding:12px 16px;cursor:pointer;color:var(--brand)}
+    .opt .name{font-size:14px;font-weight:600}
+    .opt .dot{width:20px;height:20px;border-radius:999px;border:1px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+    .opt.on{border-color:var(--orange);background:rgba(220,95,30,.1)}
+    .opt.on .dot{border-color:var(--orange);background:var(--orange);color:#fff}
     .trust{margin-top:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;font-size:11px;color:rgba(240,236,230,.7)}
     .trust div{background:var(--card);border:1px solid rgba(255,255,255,.05);border-radius:12px;padding:10px 4px}
     .fine{margin-top:20px;font-size:11px;line-height:1.6;color:rgba(240,236,230,.45);text-align:center}
@@ -103,7 +112,19 @@
         <button class="copy" id="copyBtn">Copy</button>
       </div>
 
-      <a class="cta cta-primary" id="orderBtn" href="#">Add to Cart — Order Online</a>
+      <div class="pick">
+        <div class="lbl">Choose your combo</div>
+        <div class="opts">
+          <button type="button" class="opt" data-id="231" data-label="Veg Fried Rice + Chilli Pork">
+            <span class="name">Veg Fried Rice + Chilli Pork</span><span class="dot"></span>
+          </button>
+          <button type="button" class="opt" data-id="236" data-label="Veg Chowmein + Chilli Pork">
+            <span class="name">Veg Chowmein + Chilli Pork</span><span class="dot"></span>
+          </button>
+        </div>
+      </div>
+
+      <button class="cta cta-primary" id="orderBtn" disabled>Pick a combo above</button>
       <a class="cta cta-wa" id="waBtn" href="#">Order on WhatsApp</a>
     </div>
 
@@ -132,35 +153,83 @@
         sessionStorage.setItem('ht_promo', 'COMBO50');
       } catch (e) {}
 
-      // ── Build menu deep-link, forwarding UTMs ──
-      var qs = new URLSearchParams({ promo: 'COMBO50' });
-      if (utm.source)   qs.set('utm_source', utm.source);
-      if (utm.medium)   qs.set('utm_medium', utm.medium);
-      if (utm.campaign) qs.set('utm_campaign', utm.campaign);
-      var menuLink = 'https://home.hungrytimes.in/?' + qs.toString() + '#menu';
+      // ── Combo items COMBO50 is restricted to (231/236, server-enforced too) ──
+      var VARIANTS = {
+        231: { id: 231, name: 'Veg Fried Rice with Chilli Pork', label: 'Veg Fried Rice + Chilli Pork', basePrice: 290 },
+        236: { id: 236, name: 'Veg Chowmein with Chilli Pork',   label: 'Veg Chowmein + Chilli Pork',   basePrice: 290 }
+      };
+      var selected = null;
 
-      // ── WhatsApp link ──
-      var waText = encodeURIComponent(
-        'Hi Hungry Times! I want the Chilli Pork Combo at ₹145 (50% OFF) using code COMBO50. Please take my order.'
-      );
-      var waLink = 'https://wa.me/916290471281?text=' + waText;
-
-      // ── Wire CTAs ──
       var orderBtn = document.getElementById('orderBtn');
-      orderBtn.setAttribute('href', menuLink);
+      var waBtn = document.getElementById('waBtn');
+
+      // ── WhatsApp link — reflects the chosen combo ──
+      function buildWaLink() {
+        var label = selected ? VARIANTS[selected].label : 'Chilli Pork Combo';
+        var text = encodeURIComponent(
+          'Hi Hungry Times! I want the ' + label + ' at ₹145 (50% OFF) using code COMBO50. Please take my order.'
+        );
+        return 'https://wa.me/916290471281?text=' + text;
+      }
+
+      // ── Append chosen combo to persisted cart (ht_cart), matching CartContext
+      //    line shape so /order picks it up. Mirrors ComboPage.jsx. ──
+      function addComboToLocalCart(combo) {
+        var cart = [];
+        try { cart = JSON.parse(localStorage.getItem('ht_cart') || '[]'); } catch (e) { cart = []; }
+        var idx = -1;
+        for (var i = 0; i < cart.length; i++) {
+          var l = cart[i];
+          if (l.itemId === combo.id && (l.variants || []).length === 0 && (l.addons || []).length === 0) { idx = i; break; }
+        }
+        if (idx >= 0) {
+          cart[idx].qty = (cart[idx].qty || 1) + 1;
+        } else {
+          cart.push({
+            key: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).slice(2),
+            itemId: combo.id, itemName: combo.name, name: combo.name,
+            basePrice: combo.basePrice, variants: [], addons: [], qty: 1
+          });
+        }
+        try {
+          localStorage.setItem('ht_cart', JSON.stringify(cart));
+          sessionStorage.setItem('ht_promo', 'COMBO50');
+        } catch (e) {}
+      }
+
+      // ── Wire combo picker ──
+      var opts = Array.prototype.slice.call(document.querySelectorAll('.opt'));
+      opts.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          selected = parseInt(btn.getAttribute('data-id'), 10);
+          opts.forEach(function (b) {
+            var on = b === btn;
+            b.classList.toggle('on', on);
+            b.querySelector('.dot').textContent = on ? '✓' : '';
+          });
+          orderBtn.disabled = false;
+          orderBtn.textContent = 'Add to Cart — Order Online';
+          waBtn.setAttribute('href', buildWaLink());
+        });
+      });
+
+      // ── Primary CTA: add to cart, then go to the order page ──
       orderBtn.addEventListener('click', function () {
+        if (!selected) return;
+        addComboToLocalCart(VARIANTS[selected]);
         if (window.fbq) {
           fbq('track', 'AddToCart', {
-            content_name: 'Chilli Pork Combo',
+            content_name: VARIANTS[selected].name,
             content_ids: ['COMBO50'],
             value: 145,
             currency: 'INR'
           });
         }
+        window.location.href = '/order';
       });
 
-      var waBtn = document.getElementById('waBtn');
-      waBtn.setAttribute('href', waLink);
+      // ── WhatsApp CTA ──
+      waBtn.setAttribute('href', buildWaLink());
       waBtn.setAttribute('target', '_blank');
       waBtn.setAttribute('rel', 'noopener');
       waBtn.addEventListener('click', function () {
