@@ -321,10 +321,14 @@ export default function Order() {
         addons: l.addons || [],
         quantity: l.qty || 1,
       }));
+      const selectedAddr = addresses.find(a => a.id === selectedAddressId);
       const response = await fetch(`${API_BASE}/offers/validate-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, customerPhone: customer?.phone, channel: 'web', orderValue: cartTotal, items: cartItemsPayload }),
+        body: JSON.stringify({
+          code, customerPhone: customer?.phone, channel: 'web', orderValue: cartTotal, items: cartItemsPayload,
+          deliveryAddress: orderType === 'delivery' ? (selectedAddr?.fullAddress || null) : null,
+        }),
       });
       const data = await response.json();
 
