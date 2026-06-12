@@ -14,13 +14,14 @@ export default defineConfig({
         main: './index.html'
       },
       output: {
-        manualChunks: {
-          // React core (~140 KB)
-          'vendor-react': ['react', 'react-dom'],
-          // Router (~30 KB)
-          'vendor-router': ['react-router-dom'],
-          // Icons (~tree-shaken per page)
-          'vendor-icons': ['lucide-react'],
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+          // react-dom is the heavy one (~130 KB) — keep it in a stable vendor
+          // chunk so it caches across deploys instead of riding in main.
+          if (id.includes('react-dom') || id.includes('/scheduler/') ||
+              /[\\/]react[\\/]/.test(id)) return 'vendor-react';
+          if (id.includes('react-router')) return 'vendor-router';
+          if (id.includes('lucide-react')) return 'vendor-icons';
         }
       }
     }

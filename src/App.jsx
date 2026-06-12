@@ -1,10 +1,8 @@
 // site/src/App.jsx - COMPLETE: All push notification logic preserved, SW registration moved to main.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import NotificationPromptModal from "./components/NotificationPromptModal";
-import PWAInstallPrompt from "./components/PWAInstallPrompt";
 
 import ErrorBoundary from "./components/ErrorBoundary";
 import { AuthProvider } from "./context/AuthContext";
@@ -14,13 +12,18 @@ import { MenuCategoryProvider } from './context/MenuCategoryContext';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { ToastProvider } from "./components/Toast";
 import OfferBanner from "./components/OfferBanner";
-import FirstVisitPopup from "./components/FirstVisitPopup";
-import WhatsAppFloat from "./components/WhatsAppFloat";
-import SiteFeedbackWidget from "./components/SiteFeedbackWidget";
-import ActiveOrderBar from "./components/ActiveOrderBar";
 import WhatsAppOrderBar from "./components/WhatsAppOrderBar";
 import API_BASE from "./config/api.js";
 import "./styles/index.css";
+
+// Non-critical overlays — lazy + idle-mounted so they stay out of the
+// critical bundle and never block the menu's first paint.
+const NotificationPromptModal = lazy(() => import("./components/NotificationPromptModal"));
+const PWAInstallPrompt = lazy(() => import("./components/PWAInstallPrompt"));
+const FirstVisitPopup = lazy(() => import("./components/FirstVisitPopup"));
+const WhatsAppFloat = lazy(() => import("./components/WhatsAppFloat"));
+const SiteFeedbackWidget = lazy(() => import("./components/SiteFeedbackWidget"));
+const ActiveOrderBar = lazy(() => import("./components/ActiveOrderBar"));
 
 /**
  * Helper: Convert base64 VAPID key to Uint8Array
@@ -292,6 +295,8 @@ export default function App() {
   const [swReady, setSwReady] = useState(false);
   // True once FirstVisitPopup has finished (shown+dismissed, or skipped for returning visitor)
   const [firstVisitDone, setFirstVisitDone] = useState(false);
+  // Gate non-critical overlays until the browser is idle (after first paint)
+  const [deferredReady, setDeferredReady] = useState(false);
   const location = useLocation();
   const isUtility = isUtilityPath(location.pathname);
 
@@ -302,6 +307,15 @@ export default function App() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
+
+  // Defer non-critical overlays to browser idle so they don't compete with
+  // the menu's first paint / hydration.
+  useEffect(() => {
+    const ric = window.requestIdleCallback || ((cb) => setTimeout(cb, 200));
+    const cancel = window.cancelIdleCallback || clearTimeout;
+    const id = ric(() => setDeferredReady(true));
+    return () => cancel(id);
+  }, []);
 
   useEffect(() => {
     setupServiceWorkerMessages();
@@ -341,12 +355,6 @@ export default function App() {
             <ToastProvider>
             <div className="min-h-screen flex flex-col bg-[#0B0B0B] text-white">
 
-              {/* Notification bar — waits for FIRST30 to finish before showing */}
-              {swReady && <NotificationPromptModal onGranted={setupPushNotifications} firstVisitDone={firstVisitDone} />}
-
-              {/* PWA Install Prompt */}
-              <PWAInstallPrompt />
-
               {/* Offer Banner */}
               <OfferBanner />
 
@@ -366,17 +374,23 @@ export default function App() {
               {/* Footer */}
               <Footer />
 
-              {/* First-visit welcome offer popup */}
-              <FirstVisitPopup onDone={() => setFirstVisitDone(true)} />
-
-              {/* WhatsApp floating CTA */}
-              <WhatsAppFloat />
-
-              {/* Active order tracking bar */}
-              <ActiveOrderBar />
-
-              {/* Visitor feedback widget — appears bottom-left after 60s */}
-              <SiteFeedbackWidget />
+              {/* Non-critical overlays — mount after first paint, lazy-loaded */}
+              {deferredReady && (
+                <Suspense fallback={null}>
+                  {/* Notification bar — waits for FIRST30 to finish before showing */}
+                  {swReady && <NotificationPromptModal onGranted={setupPushNotifications} firstVisitDone={firstVisitDone} />}
+                  {/* PWA Install Prompt */}
+                  <PWAInstallPrompt />
+                  {/* First-visit welcome offer popup */}
+                  <FirstVisitPopup onDone={() => setFirstVisitDone(true)} />
+                  {/* WhatsApp floating CTA */}
+                  <WhatsAppFloat />
+                  {/* Active order tracking bar */}
+                  <ActiveOrderBar />
+                  {/* Visitor feedback widget — appears bottom-left after 60s */}
+                  <SiteFeedbackWidget />
+                </Suspense>
+              )}
 
             </div>
             </ToastProvider>
