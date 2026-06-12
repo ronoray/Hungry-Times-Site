@@ -108,7 +108,7 @@
 /* Search bar - only sticky on menu page */
 .menu-page .search-bar-container {
   position: sticky;
-  top: 64px; /* Below fixed navbar */
+  top: calc(var(--banner-h, 0px) + 64px); /* Below offer banner + fixed navbar */
   z-index: 39; /* Below modal overlay (appears to be ~40-50) */
   background: var(--color-bg);
   padding: 1rem 0;
@@ -585,7 +585,7 @@
 .menu-page .subcategory-bar {
   position: -webkit-sticky !important; /* Safari */
   position: sticky !important;
-  top: 144px !important; /* 64px navbar + ~80px search bar */
+  top: calc(var(--banner-h, 0px) + 144px) !important; /* offer banner + 64px navbar + ~80px search bar */
   z-index: 40 !important; /* Below search bar and modals */
   background: rgba(15, 23, 42, 0.98) !important;
   border: 1px solid #334155 !important;
@@ -2367,7 +2367,7 @@
 @media (max-width: 768px) {
   .subcategory-bar {
     position: sticky !important;
-    top: calc(64px + 76px) !important; /* navbar + mobile search bar */
+    top: calc(var(--banner-h, 0px) + 64px + 76px) !important; /* offer banner + navbar + mobile search bar */
     padding: 0.5rem 0.5rem 0.75rem !important;
     background: rgba(15, 23, 42, 0.98) !important;
     margin: 0 -0.5rem 1.5rem -0.5rem !important;

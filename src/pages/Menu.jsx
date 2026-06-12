@@ -620,10 +620,11 @@ export default function Menu() {
     setActiveSub(subId);
     const el = rightPaneRef.current?.querySelector(`[data-sub="${subId}"]`);
     if (el) {
-      // Calculate offset for sticky subcategory bar + search bar
+      // Calculate offset for sticky subcategory bar + search bar (+ offer banner if shown)
       const subcategoryBarHeight = 60; // Approximate height of subcategory bar
       const searchBarHeight = 80; // Approximate height of search bar
-      const totalOffset = subcategoryBarHeight + searchBarHeight + 10; // 10px extra padding
+      const bannerH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--banner-h')) || 0;
+      const totalOffset = bannerH + subcategoryBarHeight + searchBarHeight + 10; // 10px extra padding
       
       const elementPosition = el.getBoundingClientRect().top + window.scrollY;
       const offsetPosition = elementPosition - totalOffset;
