@@ -12,6 +12,7 @@ import { MenuCategoryProvider } from './context/MenuCategoryContext';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { ToastProvider } from "./components/Toast";
 import OfferBanner from "./components/OfferBanner";
+import JamaiBanner, { isJamaiBannerActive } from "./components/JamaiBanner";
 import WhatsAppOrderBar from "./components/WhatsAppOrderBar";
 import API_BASE from "./config/api.js";
 import "./styles/index.css";
@@ -355,8 +356,9 @@ export default function App() {
             <ToastProvider>
             <div className="min-h-screen flex flex-col bg-[#0B0B0B] text-white">
 
-              {/* Offer Banner */}
-              <OfferBanner />
+              {/* Top banner — Jamai Sasthi headline takes over until 20 Jun 2026
+                  (IST), then auto-reverts to the regular offer banner */}
+              {isJamaiBannerActive() ? <JamaiBanner /> : <OfferBanner />}
 
               {/* Navigation */}
               <Navbar />
