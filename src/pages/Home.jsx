@@ -25,7 +25,7 @@ const RESTAURANT_SCHEMA = {
   "telephone": "+91-8420822919",
   "address": {
     "@type": "PostalAddress",
-    "streetAddress": "32 12A, Gariahat Road (South), Dhakuria, Selimpur",
+    "streetAddress": "32, 12A, Gariahat Road South, Dhakuria",
     "addressLocality": "Kolkata",
     "addressRegion": "West Bengal",
     "postalCode": "700031",
