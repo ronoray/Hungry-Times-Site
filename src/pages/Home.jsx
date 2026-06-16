@@ -21,11 +21,11 @@ const RESTAURANT_SCHEMA = {
   "url": "https://home.hungrytimes.in",
   "logo": "https://home.hungrytimes.in/hungry-times-logo.png",
   "image": "https://home.hungrytimes.in/banner.png",
-  "description": "Order delicious food online from Hungry Times. Indian, Chinese & Continental cuisine with fast delivery in Kolkata.",
+  "description": "Hungry Times — Chinese, Continental & Indian restaurant in Dhakuria / Gariahat, South Kolkata. Order online with fast home delivery within 5 km, plus dine-in and takeaway.",
   "telephone": "+91-8420822919",
   "address": {
     "@type": "PostalAddress",
-    "streetAddress": "Selimpur, Ballygunge",
+    "streetAddress": "32 12A, Gariahat Road (South), Dhakuria, Selimpur",
     "addressLocality": "Kolkata",
     "addressRegion": "West Bengal",
     "postalCode": "700031",
@@ -44,7 +44,16 @@ const RESTAURANT_SCHEMA = {
     "@type": "OrderAction",
     "target": { "@type": "EntryPoint", "urlTemplate": "https://home.hungrytimes.in/menu" },
     "deliveryMethod": ["http://purl.org/goodrelations/v1#DeliveryModeOwnFleet"]
-  }
+  },
+  "acceptsReservations": "True",
+  "areaServed": ["Dhakuria", "Gariahat", "Ballygunge", "Selimpur", "Jadavpur", "Kasba", "South Kolkata"],
+  // sameAs links the website to the same real-world entity as the Google Business
+  // Profile + social pages — helps Google consolidate signals and rank the listing.
+  "sameAs": [
+    "https://www.google.com/maps/place/?q=place_id:ChIJvWGYyyhxAjoRjhl2_3xBiuM",
+    "https://www.facebook.com/171145592738581",
+    "https://www.instagram.com/hungrytimes2023"
+  ]
 };
 
 const QUICK_CATEGORIES = [
