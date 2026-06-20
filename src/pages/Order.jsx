@@ -122,7 +122,7 @@ export default function Order() {
         const order = data.order;
 
         // Verify editable
-        if (!['pending', 'confirmed'].includes(order.status) || order.payment_mode !== 'COD') {
+        if (!['pending', 'confirmed', 'preparing'].includes(order.status) || order.payment_mode !== 'COD') {
           showToast('This order cannot be edited', 'error');
           navigate(`/orders/${editOrderId}`);
           return;
