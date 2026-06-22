@@ -11,6 +11,34 @@ import OrderSkeleton from "./components/skeletons/OrderSkeleton";
 import OrdersSkeleton from "./components/skeletons/OrdersSkeleton";
 import DefaultSkeleton from "./components/skeletons/DefaultSkeleton";
 
+// Self-heal stale-cache clients. After a deploy, a browser holding an old index.html
+// requests chunk hashes that no longer exist (404) → React.lazy import rejects with
+// "Failed to fetch dynamically imported module" and the page dies ("Something went wrong").
+// Vite fires `vite:preloadError`; we also catch the raw error/rejection. Force ONE reload
+// to pull the fresh index + chunks. The 10s sessionStorage guard prevents a reload loop
+// if the chunk is genuinely gone (bad deploy / offline) — user then sees the normal error UI.
+(function setupChunkReloadSelfHeal() {
+  const KEY = "ht_chunk_reload_at";
+  const CHUNK_ERR = /dynamically imported module|ChunkLoadError|Loading chunk|Importing a module script failed/i;
+  function reloadOnce() {
+    const last = Number(sessionStorage.getItem(KEY) || 0);
+    if (Date.now() - last > 10000) {
+      sessionStorage.setItem(KEY, String(Date.now()));
+      window.location.reload();
+    }
+  }
+  window.addEventListener("vite:preloadError", (e) => {
+    e.preventDefault();
+    reloadOnce();
+  });
+  window.addEventListener("error", (e) => {
+    if (CHUNK_ERR.test(e?.message || "")) reloadOnce();
+  });
+  window.addEventListener("unhandledrejection", (e) => {
+    if (CHUNK_ERR.test(e?.reason?.message || String(e?.reason || ""))) reloadOnce();
+  });
+})();
+
 // Lazy-loaded pages
 const Menu = lazy(() => import("./pages/Menu"));
 const Home = lazy(() => import("./pages/Home"));
