@@ -203,6 +203,14 @@ export default function Order() {
   const [paymentMethod, setPaymentMethod] = useState(null);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState("");
+  // Surface errors loudly — scroll the message into view so a failed "Place Order"
+  // is never silent (customers were retrying because nothing visibly happened).
+  const paymentErrorRef = useRef(null);
+  useEffect(() => {
+    if (paymentError && paymentErrorRef.current) {
+      paymentErrorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [paymentError]);
 
   // Loyalty Points State
   const [pointsToRedeem, setPointsToRedeem] = useState(0);
@@ -894,6 +902,7 @@ export default function Order() {
   // RAZORPAY PAYMENT HANDLER
   // ============================================================================
   const handleRazorpayPayment = async () => {
+    if (paymentProcessing) return; // guard against re-entry / rapid duplicate submits
     if (orderType === 'dine_in' && (!scheduledDate || !scheduledTime)) {
       setPaymentError("Please select your arrival date and time to continue.");
       return;
@@ -929,8 +938,9 @@ export default function Order() {
       const token = localStorage.getItem("customerToken");
       const selectedAddr = addresses.find(a => a.id === selectedAddressId);
 
-      if (!selectedAddr) {
-        throw new Error("Selected address not found");
+      // Only delivery needs a saved address; pickup & dine-in don't.
+      if (orderType === 'delivery' && !selectedAddr) {
+        throw new Error("Please select a delivery address");
       }
 
       const orderItems = lines.map(line => ({
@@ -1148,6 +1158,7 @@ export default function Order() {
   // COD PAYMENT HANDLER
   // ============================================================================
   const handleCODPayment = async () => {
+    if (paymentProcessing) return; // guard against re-entry / rapid duplicate submits
     if (orderType === 'dine_in' && (!scheduledDate || !scheduledTime)) {
       setPaymentError("Please select your arrival date and time to continue.");
       return;
@@ -1182,8 +1193,9 @@ export default function Order() {
       const token = localStorage.getItem("customerToken");
       const selectedAddr = addresses.find(a => a.id === selectedAddressId);
 
-      if (!selectedAddr) {
-        throw new Error("Selected address not found");
+      // Only delivery needs a saved address; pickup & dine-in don't.
+      if (orderType === 'delivery' && !selectedAddr) {
+        throw new Error("Please select a delivery address");
       }
 
       const orderItems = lines.map(line => ({
@@ -1519,17 +1531,52 @@ export default function Order() {
                                 className="w-full px-3 py-2.5 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                               />
                             </div>
-                            <div className="flex-1">
-                              <label className="text-neutral-400 text-xs mb-1 block">Arrival time (12 PM – 11 PM)</label>
-                              <input
-                                type="time"
-                                value={scheduledTime}
-                                min="12:00"
-                                max="23:00"
-                                onChange={e => setScheduledTime(e.target.value)}
-                                className="w-full px-3 py-2.5 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                              />
-                            </div>
+                          </div>
+                          <div>
+                            <label className="text-neutral-400 text-xs mb-1 block">Arrival time (12 PM – 11 PM)</label>
+                            {!scheduledDate ? (
+                              <p className="text-neutral-500 text-xs px-1 py-2">Pick a date above first.</p>
+                            ) : (() => {
+                              const isToday = scheduledDate === todayStr;
+                              const nowMins = nowIST.getUTCHours() * 60 + nowIST.getUTCMinutes();
+                              const slots = [];
+                              for (let m = 12 * 60; m <= 23 * 60; m += 30) {
+                                if (isToday && m < nowMins + 30) continue; // 30-min lead time
+                                const hh = String(Math.floor(m / 60)).padStart(2, '0');
+                                const mm = String(m % 60).padStart(2, '0');
+                                slots.push(`${hh}:${mm}`);
+                              }
+                              if (slots.length === 0) {
+                                return <p className="text-neutral-500 text-xs px-1 py-2">No slots left today — pick tomorrow above.</p>;
+                              }
+                              const label12 = (t) => {
+                                const [h, mn] = t.split(':').map(Number);
+                                const ap = h < 12 ? 'AM' : 'PM';
+                                const h12 = h % 12 === 0 ? 12 : h % 12;
+                                return `${h12}:${String(mn).padStart(2, '0')} ${ap}`;
+                              };
+                              return (
+                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                  {slots.map(t => {
+                                    const on = scheduledTime === t;
+                                    return (
+                                      <button
+                                        key={t}
+                                        type="button"
+                                        onClick={() => setScheduledTime(t)}
+                                        className={`rounded-lg border px-2 py-2 text-xs font-semibold transition ${
+                                          on
+                                            ? 'border-orange-500 bg-orange-500/15 text-orange-300'
+                                            : 'border-neutral-600 bg-neutral-700 text-neutral-200 hover:border-neutral-500'
+                                        }`}
+                                      >
+                                        {label12(t)}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })()}
                           </div>
                           {scheduledDate && scheduledTime ? (
                             <div className="bg-green-900/30 border border-green-700 rounded-lg px-3 py-2 text-sm text-green-300">
@@ -2138,7 +2185,7 @@ export default function Order() {
                 </div>
 
                 {paymentError && (
-                  <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-400 text-sm">
+                  <div ref={paymentErrorRef} className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-400 text-sm">
                     {paymentError}
                   </div>
                 )}

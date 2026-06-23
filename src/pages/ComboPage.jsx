@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { pageView, addToCart, custom } from '../lib/fbpixel';
 import { useCombo50 } from '../hooks/useCombo50';
+import API_BASE from '../config/api.js';
 
 const COMBO = {
   code: 'COMBO50',
@@ -24,11 +25,13 @@ const WA_NUMBER = '916290471281';
 // Append the chosen combo item to the persisted cart (ht_cart in localStorage),
 // matching CartContext's line shape so /order picks it up. No CartProvider needed
 // on this standalone page.
-function addComboToLocalCart(combo) {
+function addComboToLocalCart(combo, addons = []) {
   let cart = [];
   try { cart = JSON.parse(localStorage.getItem('ht_cart') || '[]'); } catch { cart = []; }
+  const addonKey = (arr) => (arr || []).map(a => a.id).sort().join(',');
+  const wantKey = addonKey(addons);
   const idx = cart.findIndex(
-    l => l.itemId === combo.id && (l.variants || []).length === 0 && (l.addons || []).length === 0
+    l => l.itemId === combo.id && (l.variants || []).length === 0 && addonKey(l.addons) === wantKey
   );
   if (idx >= 0) {
     cart[idx].qty = (cart[idx].qty || 1) + 1;
@@ -40,7 +43,7 @@ function addComboToLocalCart(combo) {
       name: combo.name,
       basePrice: combo.basePrice,
       variants: [],
-      addons: [],
+      addons,
       qty: 1,
     });
   }
@@ -56,6 +59,47 @@ export default function ComboPage() {
   const [copied, setCopied] = useState(false);
   const [selected, setSelected] = useState(null); // chosen combo item id
   const { active, loading } = useCombo50();
+
+  // Per-item add-ons (packaging + optional extras) pulled from the live menu so the
+  // combo flow carries the SAME packaging + add-ons the normal menu modal would.
+  // Without this the combo line was sent with addons:[] — dropping the ₹10 packaging
+  // and hiding the Prawns/Pork/Egg/Chicken extras. Keyed by item id →
+  // { packaging: {id,name,priceDelta,locked}|null, extras: [...] }.
+  const [addonsByItem, setAddonsByItem] = useState({});
+  const [selectedExtras, setSelectedExtras] = useState({}); // { [optionId]: option }
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/public/menu`, { headers: { 'Cache-Control': 'no-cache' } });
+        if (!res.ok) return;
+        const json = await res.json();
+        const allItems = [];
+        for (const tc of (json.topCategories || [])) {
+          for (const sc of (tc.subcategories || [])) {
+            for (const it of (sc.items || [])) allItems.push(it);
+          }
+        }
+        const map = {};
+        for (const v of VARIANTS) {
+          const it = allItems.find(i => Number(i.id) === v.id);
+          if (!it) continue;
+          const opts = (it.addonGroups || []).flatMap(g => g.options || []);
+          const packaging = opts.find(o => /packag/i.test(o.name || '') || o.locked) || null;
+          const extras = opts.filter(o => !/packag/i.test(o.name || '') && !o.locked);
+          map[v.id] = {
+            packaging: packaging
+              ? { id: packaging.id, name: packaging.name, priceDelta: Number(packaging.priceDelta) || 0, locked: true }
+              : null,
+            extras: extras.map(o => ({ id: o.id, name: o.name, priceDelta: Number(o.priceDelta) || 0, locked: false })),
+          };
+        }
+        if (alive) setAddonsByItem(map);
+      } catch { /* ignore — server still enforces packaging at checkout */ }
+    })();
+    return () => { alive = false; };
+  }, []);
 
   // Offer ended → don't show a stale ₹145 page; send them to the live menu.
   useEffect(() => {
@@ -81,6 +125,17 @@ export default function ComboPage() {
   }, [params]);
 
   const chosen = VARIANTS.find(v => v.id === selected) || null;
+  const chosenAddons = (chosen && addonsByItem[chosen.id]) || { packaging: null, extras: [] };
+
+  const toggleExtra = (opt) => {
+    setSelectedExtras(prev => {
+      const next = { ...prev };
+      if (next[opt.id]) delete next[opt.id]; else next[opt.id] = opt;
+      return next;
+    });
+  };
+
+  const extrasTotal = Object.values(selectedExtras).reduce((s, o) => s + (Number(o.priceDelta) || 0), 0);
 
   const waText = encodeURIComponent(
     `Hi Hungry Times! I want the ${chosen ? chosen.label : 'Chilli Pork Combo'} at ₹145 (50% OFF) using code ${COMBO.code}. Please take my order.`
@@ -89,7 +144,10 @@ export default function ComboPage() {
 
   const handleAddToCart = () => {
     if (!chosen) return; // must pick a combo first
-    addComboToLocalCart(chosen);
+    const addons = [];
+    if (chosenAddons.packaging) addons.push(chosenAddons.packaging);
+    addons.push(...Object.values(selectedExtras));
+    addComboToLocalCart(chosen, addons);
     addToCart({ name: chosen.name, id: COMBO.code, price: COMBO.price });
     navigate('/order');
   };
@@ -182,7 +240,7 @@ export default function ComboPage() {
                   <button
                     key={v.id}
                     type="button"
-                    onClick={() => setSelected(v.id)}
+                    onClick={() => { setSelected(v.id); setSelectedExtras({}); }}
                     className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left transition ${
                       on ? 'border-[#dc5f1e] bg-[#dc5f1e]/10' : 'border-white/10 bg-[#0b0b0b]'
                     }`}
@@ -196,6 +254,43 @@ export default function ComboPage() {
               })}
             </div>
           </div>
+
+          {/* Add-ons — packaging (auto-added for pickup/delivery) + optional extras */}
+          {chosen && (
+            <div className="mt-4">
+              {chosenAddons.packaging && (
+                <div className="flex items-center justify-between text-xs text-[#f0ece6]/60 mb-2">
+                  <span>{chosenAddons.packaging.name} — added for pickup/delivery</span>
+                  <span>+₹{chosenAddons.packaging.priceDelta}</span>
+                </div>
+              )}
+              {chosenAddons.extras.length > 0 && (
+                <>
+                  <div className="text-xs font-semibold text-[#f0ece6]/70 mb-2">Add extras (optional)</div>
+                  <div className="flex flex-wrap gap-2">
+                    {chosenAddons.extras.map(opt => {
+                      const on = !!selectedExtras[opt.id];
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => toggleExtra(opt)}
+                          className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                            on ? 'border-[#dc5f1e] bg-[#dc5f1e]/15 text-[#f5b944]' : 'border-white/15 bg-[#0b0b0b] text-[#f0ece6]/70'
+                          }`}
+                        >
+                          {opt.name} +₹{opt.priceDelta}{on ? ' ✓' : ''}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {extrasTotal > 0 && (
+                    <div className="mt-2 text-xs text-[#f0ece6]/50">Extras: +₹{extrasTotal} (added to your bill)</div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
           {/* Primary CTA — disabled until a combo is chosen */}
           <button
