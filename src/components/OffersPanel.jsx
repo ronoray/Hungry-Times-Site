@@ -4,7 +4,7 @@ import API_BASE from '../config/api.js';
 
 const SOURCE_ICONS = { promo: Tag, crm: Gift };
 
-export default function OffersPanel({ cartTotal, customerPhone, onApplyOffer, onRemoveOffer, appliedCode }) {
+export default function OffersPanel({ cartTotal, customerPhone, cartItemIds = [], onApplyOffer, onRemoveOffer, appliedCode }) {
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,9 +26,25 @@ export default function OffersPanel({ cartTotal, customerPhone, onApplyOffer, on
     return () => { cancelled = true; };
   }, [customerPhone]);
 
+  // Cart item ids as a string set, for item-restricted offer matching.
+  const cartIdSet = useMemo(
+    () => new Set((cartItemIds || []).map(id => String(id))),
+    [cartItemIds]
+  );
+
   // Calculate savings and sort
   const ranked = useMemo(() => {
     return offers
+      .filter(o => {
+        // Item-restricted offers (e.g. COMBO50, locked to specific dishes) must NEVER
+        // appear unless one of those exact items is in the cart — a 50%-off combo code
+        // can't be allowed to apply across all items.
+        if (!o.applicable_item_ids) return true;
+        const ids = String(o.applicable_item_ids)
+          .split(',').map(s => s.trim()).filter(Boolean);
+        if (!ids.length) return true;
+        return ids.some(id => cartIdSet.has(id));
+      })
       .map(o => {
         let savings = 0;
         const meetsMin = cartTotal >= (o.min_order_value || 0);
@@ -46,7 +62,7 @@ export default function OffersPanel({ cartTotal, customerPhone, onApplyOffer, on
       })
       .filter(o => o.meetsMin ? o.savings > 0 : o.shortfall > 0)
       .sort((a, b) => b.savings - a.savings);
-  }, [offers, cartTotal]);
+  }, [offers, cartTotal, cartIdSet]);
 
   if (loading || ranked.length === 0) return null;
 

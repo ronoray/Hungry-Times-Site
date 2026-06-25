@@ -1980,6 +1980,7 @@ export default function Order() {
                     <OffersPanel
                       cartTotal={cartTotal}
                       customerPhone={customer.phone}
+                      cartItemIds={lines.map(l => l.itemId)}
                       onApplyOffer={handlePanelApplyOffer}
                       onRemoveOffer={handlePanelRemoveOffer}
                       appliedCode={appliedCode}
