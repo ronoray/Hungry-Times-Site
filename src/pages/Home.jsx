@@ -10,6 +10,7 @@ import TodaysSpecial from '../components/TodaysSpecial'
 import LiveOrderCount from '../components/LiveOrderCount'
 import VegDot from '../components/VegDot'
 import ComboPromoCard from '../components/ComboPromoCard'
+import MidWeekComboCard from '../components/MidWeekComboCard'
 import API_BASE from '../config/api'
 import heroImg from '../assets/hero-1200.jpg'
 
@@ -147,6 +148,11 @@ export default function Home() {
             </a>
           </div>
         </div>
+      </section>
+
+      {/* ─── Mid-Week Combo (auto-hides after 30 Jun 2026 IST) ─── */}
+      <section className="px-4 pt-5 -mb-3 max-w-5xl mx-auto w-full">
+        <MidWeekComboCard />
       </section>
 
       {/* ─── Combo offer (auto-hides when COMBO50 is off) ─── */}

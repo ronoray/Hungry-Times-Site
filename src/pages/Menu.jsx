@@ -222,8 +222,12 @@ export default function Menu() {
   const { sidebarOpen, setSidebarOpen } = useMenuCategory();
   const { toggleFavorite, isFavorite } = useFavorites();
 
-  // Search state
-  const [searchQuery, setSearchQuery] = useState("");
+  // Search state — seed from ?search= so deep-links (home Quick Categories,
+  // the Mid-Week Combo card) land pre-filtered instead of on the bare menu.
+  const [searchQuery, setSearchQuery] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get('search') || ''; }
+    catch { return ''; }
+  });
   const [searchFocused, setSearchFocused] = useState(false);
   const [recentSearches, setRecentSearches] = useState(() => {
     try { return JSON.parse(localStorage.getItem('ht_recent_searches') || '[]'); }
