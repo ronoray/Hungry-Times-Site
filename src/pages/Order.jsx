@@ -1539,24 +1539,43 @@ export default function Order() {
                             ) : (() => {
                               const isToday = scheduledDate === todayStr;
                               const nowMins = nowIST.getUTCHours() * 60 + nowIST.getUTCMinutes();
-                              const slots = [];
-                              for (let m = 12 * 60; m <= 23 * 60; m += 30) {
-                                if (isToday && m < nowMins + 30) continue; // 30-min lead time
-                                const hh = String(Math.floor(m / 60)).padStart(2, '0');
-                                const mm = String(m % 60).padStart(2, '0');
-                                slots.push(`${hh}:${mm}`);
-                              }
-                              if (slots.length === 0) {
-                                return <p className="text-neutral-500 text-xs px-1 py-2">No slots left today — pick tomorrow above.</p>;
-                              }
+                              const OPEN = 12 * 60, CLOSE = 23 * 60, LEAD = 10;
+                              const fmt = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
                               const label12 = (t) => {
                                 const [h, mn] = t.split(':').map(Number);
                                 const ap = h < 12 ? 'AM' : 'PM';
                                 const h12 = h % 12 === 0 ? 12 : h % 12;
                                 return `${h12}:${String(mn).padStart(2, '0')} ${ap}`;
                               };
+                              // ASAP = next 15-min mark after a short lead (walk-in diner arriving now)
+                              const asapMins = isToday ? Math.ceil((nowMins + LEAD) / 15) * 15 : null;
+                              const showAsap = asapMins != null && asapMins >= OPEN && asapMins <= CLOSE;
+                              const asapTime = showAsap ? fmt(asapMins) : null;
+                              const slots = [];
+                              for (let m = OPEN; m <= CLOSE; m += 15) {
+                                if (isToday && asapMins != null && m <= asapMins) continue; // ASAP covers the earliest slot
+                                if (isToday && asapMins == null && m < nowMins + LEAD) continue;
+                                slots.push(fmt(m));
+                              }
+                              if (!showAsap && slots.length === 0) {
+                                return <p className="text-neutral-500 text-xs px-1 py-2">No slots left today — pick tomorrow above.</p>;
+                              }
                               return (
                                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                  {showAsap && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setScheduledTime(asapTime)}
+                                      className={`rounded-lg border px-2 py-2 text-xs font-semibold transition flex flex-col items-center leading-tight ${
+                                        scheduledTime === asapTime
+                                          ? 'border-orange-500 bg-orange-500/15 text-orange-300'
+                                          : 'border-orange-500/50 bg-orange-500/5 text-orange-200 hover:border-orange-500'
+                                      }`}
+                                    >
+                                      <span>⚡ ASAP</span>
+                                      <span className="text-[10px] opacity-80">~{label12(asapTime)}</span>
+                                    </button>
+                                  )}
                                   {slots.map(t => {
                                     const on = scheduledTime === t;
                                     return (
