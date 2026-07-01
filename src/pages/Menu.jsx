@@ -9,6 +9,7 @@ import AddToCartModal from "../components/AddToCartModal";
 import FloatingCartBar from "../components/FloatingCartBar";
 import VegDot from "../components/VegDot";
 import ComboPromoCard from "../components/ComboPromoCard";
+import MidWeekComboCard from "../components/MidWeekComboCard";
 import { useMenuCategory } from '../context/MenuCategoryContext';
 import { useFavorites } from '../context/FavoritesContext';
 import SEOHead from '../components/SEOHead';
@@ -1087,6 +1088,11 @@ export default function Menu() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Mid-Week Combo — pinned at top, shows Mon–Thu IST, hidden Fri–Sun */}
+        <div className="max-w-5xl mx-auto w-full px-4 mt-3">
+          <MidWeekComboCard />
         </div>
 
         {/* Combo offer — pinned, auto-hides when COMBO50 is off */}
