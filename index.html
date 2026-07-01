@@ -59,52 +59,7 @@
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
     <link rel="preconnect" href="https://cdn.hungrytimes.in" crossorigin />
 
-    <!-- GA loaded after first interaction or after 3s idle -->
-    <script>
-      function loadGA() {
-        if (window.__gaLoaded) return;
-        window.__gaLoaded = true;
-        fetch('/api/public/analytics-config')
-          .then(function(r){return r.json()})
-          .then(function(d){
-            if (!d.measurementId) return;
-            var s=document.createElement('script');
-            s.async=true;
-            s.src='https://www.googletagmanager.com/gtag/js?id='+d.measurementId;
-            document.head.appendChild(s);
-            window.dataLayer=window.dataLayer||[];
-            window.gtag=function(){dataLayer.push(arguments);};
-            window.gtag('js',new Date());
-            window.gtag('config',d.measurementId);
-          })
-          .catch(function(){});
-      }
-      // Defer GA: load on first interaction or after 3s
-      ['click','scroll','keydown','touchstart'].forEach(function(e){
-        document.addEventListener(e,loadGA,{once:true,passive:true});
-      });
-      setTimeout(loadGA,3000);
-    </script>
-
-    <!-- Meta Pixel — deferred like GA -->
-    <script>
-      function loadMetaPixel() {
-        if (window.__fbLoaded) return;
-        window.__fbLoaded = true;
-        !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-        n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
-        n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
-        t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
-        document,'script','https://connect.facebook.net/en_US/fbevents.js');
-        fbq('init','1885676585400371');
-        fbq('track','PageView');
-      }
-      ['click','scroll','keydown','touchstart'].forEach(function(e){
-        document.addEventListener(e,loadMetaPixel,{once:true,passive:true});
-      });
-      setTimeout(loadMetaPixel,3000);
-    </script>
-    <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1885676585400371&ev=PageView&noscript=1"/></noscript>
+    <!-- GA4 (G-C8X64732N3) + Meta Pixel (1885676585400371) now managed via GTM (GTM-MKKVG7GR) — see head/body GTM snippets -->
 
     <!-- ✅ Global styles for Google Places dropdown -->
     <style>
