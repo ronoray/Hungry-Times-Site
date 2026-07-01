@@ -1,13 +1,14 @@
 // MidWeekComboCard — homepage promo card for the Mid-Week Combo (menu item 1188).
-// Self-gating by IST date: renders nothing outside 29–30 Jun 2026, matching the
-// menu item's available_till='2026-06-30'. So it auto-disappears on 1 Jul with no
-// code removal needed — same idiom as the Jamai headline on the WhatsApp bot.
+// Self-gating by IST day-of-week: renders every week Mon–Thu, matching the menu
+// item's available_days='mon,tue,wed,thu' (no end date). Hidden Fri–Sun. To stop
+// the offer entirely, blank the menu item's availability in the Menu Manager.
 import { Link } from 'react-router-dom';
 import { trackCtaClick } from '../utils/analytics';
 
 function comboActive() {
-  const istDate = new Date(Date.now() + 330 * 60 * 1000).toISOString().slice(0, 10);
-  return istDate >= '2026-06-29' && istDate <= '2026-06-30';
+  // IST day of week: 0=Sun … 6=Sat. Active Mon(1)–Thu(4).
+  const istDow = new Date(Date.now() + 330 * 60 * 1000).getUTCDay();
+  return istDow >= 1 && istDow <= 4;
 }
 
 export default function MidWeekComboCard({ className = '' }) {
@@ -22,7 +23,7 @@ export default function MidWeekComboCard({ className = '' }) {
       <div className="flex items-center gap-3 p-3 sm:p-4">
         <div className="min-w-0 flex-1">
           <div className="inline-flex items-center gap-1 bg-[#dc5f1e]/15 text-[#f5b944] text-[10px] font-bold px-2 py-0.5 rounded-full">
-            ★ MID-WEEK COMBO — TODAY &amp; TOMORROW ONLY
+            ★ MID-WEEK COMBO — MON–THU ONLY
           </div>
           <div className="mt-1 font-extrabold text-white leading-tight">
             Chilli Chicken + Prawn Mixed Fried Rice

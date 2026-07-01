@@ -150,7 +150,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── Mid-Week Combo (auto-hides after 30 Jun 2026 IST) ─── */}
+      {/* ─── Mid-Week Combo (shows Mon–Thu IST, hidden Fri–Sun) ─── */}
       <section className="px-4 pt-5 -mb-3 max-w-5xl mx-auto w-full">
         <MidWeekComboCard />
       </section>
