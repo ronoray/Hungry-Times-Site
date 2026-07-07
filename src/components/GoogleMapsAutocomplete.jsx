@@ -1,47 +1,47 @@
-// components/GoogleMapsAutocomplete.jsx - FIXED AUTOCOMPLETE
+// components/GoogleMapsAutocomplete.jsx
+// Address input: Google autocomplete + GPS + manual entry, with a visible
+// draggable pin map (PinConfirmMap) so the customer can always see AND correct
+// their delivery pin. Never blocks: typed address with no pin still proceeds.
 import { useState, useRef, useEffect } from 'react';
-import { Search, MapPin, AlertCircle, Check, LocateFixed, Loader } from 'lucide-react';
+import { Search, MapPin, Check, LocateFixed, Loader, Map as MapIcon } from 'lucide-react';
 import { loadGoogleMaps } from '../utils/scriptLoaders';
-
-// Reverse-geocode GPS coords → a human address. Google first, then OpenStreetMap, else a coord label.
-async function reverseGeocode(lat, lng) {
-  try {
-    if (window.google?.maps?.Geocoder) {
-      const geocoder = new window.google.maps.Geocoder();
-      const result = await geocoder.geocode({ location: { lat, lng } });
-      if (result.results?.length > 0) return result.results[0].formatted_address;
-    }
-  } catch { /* fall through to OSM */ }
-  try {
-    const resp = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
-      { headers: { 'User-Agent': 'HungryTimes/1.0 (ronoray@gmail.com)' } }
-    );
-    const data = await resp.json();
-    if (data?.display_name) return data.display_name;
-  } catch { /* ignore */ }
-  return `Pinned location (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
-}
+import { reverseGeocode } from '../utils/geo';
+import PinConfirmMap from './PinConfirmMap';
 
 /**
- * Google Maps Autocomplete Component with Manual Fallback
- * Fixes: Autocomplete dropdown not appearing when typing
+ * @param {function} onSelect - ({ address, latitude, longitude, name, place_id? })
+ * @param {string} defaultValue - prefill address text (edit flows)
+ * @param {{latitude:number|null, longitude:number|null}|null} defaultCoords - prefill pin (edit flows)
  */
-export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) {
+export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '', defaultCoords = null }) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [manualMode, setManualMode] = useState(false);
   const [searchText, setSearchText] = useState(defaultValue);
   const [hasSelected, setHasSelected] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [coords, setCoords] = useState(() =>
+    defaultCoords?.latitude != null && defaultCoords?.longitude != null
+      ? { lat: defaultCoords.latitude, lng: defaultCoords.longitude }
+      : null
+  );
+  const [showMap, setShowMap] = useState(false);
   const inputRef = useRef(null);
   const autocompleteRef = useRef(null);
   const cancelledRef = useRef(false);
+  const searchTextRef = useRef(defaultValue);
+  searchTextRef.current = searchText;
 
-  // Update searchText when defaultValue prop changes
+  // Update searchText/pin when defaults change (parent starts a new add/edit)
   useEffect(() => {
     setSearchText(defaultValue);
     setHasSelected(false);
   }, [defaultValue]);
+
+  useEffect(() => {
+    if (defaultCoords?.latitude != null && defaultCoords?.longitude != null) {
+      setCoords({ lat: defaultCoords.latitude, lng: defaultCoords.longitude });
+    }
+  }, [defaultCoords?.latitude, defaultCoords?.longitude]);
 
   useEffect(() => {
     cancelledRef.current = false;
@@ -98,26 +98,19 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
       );
 
       autocompleteRef.current.addListener('place_changed', handlePlaceSelect);
-      console.log('[Maps] ✅ Autocomplete initialized successfully');
     } catch (error) {
-      console.error('[Maps] ❌ Failed to initialize autocomplete:', error);
+      console.error('[Maps] Failed to initialize autocomplete:', error);
       if (!cancelledRef.current) setManualMode(true);
     }
   };
 
   const handlePlaceSelect = () => {
-    if (!autocompleteRef.current) {
-      console.error('[Maps] No autocomplete reference');
-      return;
-    }
+    if (!autocompleteRef.current) return;
 
     const place = autocompleteRef.current.getPlace();
-    
-    console.log('[Maps] Place changed:', place);
 
     if (!place.geometry || !place.geometry.location) {
-      console.error('[Maps] ❌ No geometry for selected place');
-      alert('Could not get location. Please select from the dropdown suggestions.');
+      // No geometry — keep the typed text, customer can still proceed manually
       return;
     }
 
@@ -125,18 +118,11 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
     const latitude = place.geometry.location.lat();
     const longitude = place.geometry.location.lng();
 
-    console.log('[Maps] ✅ Place selected:', { 
-      address, 
-      latitude, 
-      longitude,
-      place_id: place.place_id 
-    });
-
-    // Update UI
     setSearchText(address);
     setHasSelected(true);
+    setCoords({ lat: latitude, lng: longitude });
+    setShowMap(true);
 
-    // Call parent callback with selected address data
     onSelect({
       address,
       latitude,
@@ -152,26 +138,20 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
       return;
     }
 
-    console.log('[Maps] Manual address entry:', searchText);
+    setHasSelected(true);
 
-    // In manual mode, we don't have coordinates
+    // Keep any pin the customer already placed on the map
     onSelect({
       address: searchText,
-      latitude: null,
-      longitude: null,
+      latitude: coords?.lat ?? null,
+      longitude: coords?.lng ?? null,
       name: null
     });
-
-    setHasSelected(true);
   };
 
   const handleInputChange = (e) => {
-    const value = e.target.value;
-    setSearchText(value);
+    setSearchText(e.target.value);
     setHasSelected(false);
-
-    // Log to verify input is working
-    console.log('[Maps] Input changed:', value);
   };
 
   // One-tap GPS pin — most reliable for Indian addresses Google can't autocomplete.
@@ -187,12 +167,14 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
         const longitude = pos.coords.longitude;
         const resolved = await reverseGeocode(latitude, longitude);
         // Keep any details the customer already typed (flat/floor) by prepending it.
-        const typed = searchText.trim();
+        const typed = searchTextRef.current.trim();
         const address = typed && !typed.startsWith('Pinned location')
           ? `${typed} (near ${resolved})`
           : resolved;
         setSearchText(address);
         setHasSelected(true);
+        setCoords({ lat: latitude, lng: longitude });
+        setShowMap(true);
         setLocating(false);
         onSelect({ address, latitude, longitude, name: null });
       },
@@ -207,6 +189,18 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
     );
   };
 
+  // Customer dragged the pin or tapped the map — this is the source of truth.
+  const handlePinChange = async (lat, lng) => {
+    setCoords({ lat, lng });
+    setHasSelected(true);
+    let address = searchTextRef.current.trim();
+    if (!address) {
+      address = await reverseGeocode(lat, lng);
+      setSearchText(address);
+    }
+    onSelect({ address, latitude: lat, longitude: lng, name: null });
+  };
+
   const LocationButton = () => (
     <button
       type="button"
@@ -219,6 +213,31 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
         : (<><LocateFixed className="w-4 h-4" /> Use my current location</>)}
     </button>
   );
+
+  // Pin map: always shown once we have coords; otherwise offered as an option.
+  const MapSection = () => {
+    if (coords || showMap) {
+      return (
+        <div className="mt-2">
+          <PinConfirmMap
+            lat={coords?.lat ?? null}
+            lng={coords?.lng ?? null}
+            onChange={handlePinChange}
+          />
+        </div>
+      );
+    }
+    return (
+      <button
+        type="button"
+        onClick={() => setShowMap(true)}
+        className="mt-1 w-full py-2 flex items-center justify-center gap-2 bg-neutral-800 border border-neutral-700 text-neutral-300 text-sm rounded-xl hover:border-orange-500 transition-colors"
+      >
+        <MapIcon className="w-4 h-4" />
+        Set delivery pin on map (optional)
+      </button>
+    );
+  };
 
   // Loading state
   if (!isLoaded && !manualMode) {
@@ -246,7 +265,7 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
           <MapPin className="w-4 h-4 inline mr-1" />
           Enter Address
         </label>
-        
+
         <LocationButton />
         <div className="flex items-center gap-2 my-1">
           <div className="flex-1 h-px bg-neutral-700" />
@@ -267,7 +286,7 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
           className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
           rows={3}
         />
-        
+
         <button
           type="button"
           onClick={handleManualSelect}
@@ -275,7 +294,9 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
         >
           Use This Address
         </button>
-        
+
+        <MapSection />
+
         <p className="text-xs text-neutral-500">
           Tip: "Use my current location" gives the most accurate delivery pin.
         </p>
@@ -307,25 +328,25 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
           placeholder="Start typing your address..."
           autoComplete="off"
           className={`w-full px-4 py-3 pl-10 pr-10 bg-neutral-800 border rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:ring-2 transition-all ${
-            hasSelected 
-              ? 'border-green-500 focus:ring-green-500' 
+            hasSelected
+              ? 'border-green-500 focus:ring-green-500'
               : 'border-neutral-700 focus:ring-orange-500'
           }`}
         />
         <MapPin className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${
           hasSelected ? 'text-green-500' : 'text-neutral-500'
         }`} />
-        
+
         {hasSelected && (
           <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
         )}
       </div>
-      
+
       <div className="flex items-start gap-2 text-xs">
         {hasSelected ? (
-          <p className="text-green-400 flex items-center gap-1">
+          <p className={coords ? 'text-green-400 flex items-center gap-1' : 'text-yellow-400 flex items-center gap-1'}>
             <Check className="w-3 h-3" />
-            Location pinned! Address verified.
+            {coords ? 'Location pinned! Drag the pin below to fine-tune.' : "Address saved — no pin yet, we'll confirm on the call."}
           </p>
         ) : (
           <p className="text-neutral-500">
@@ -345,10 +366,12 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '' }) 
             onClick={handleManualSelect}
             className="w-full py-2 bg-neutral-700 text-white text-sm rounded-lg hover:bg-neutral-600 transition-colors"
           >
-            Use "{searchText}" (without map pin)
+            Use "{searchText}" as my address
           </button>
         </div>
       )}
+
+      <MapSection />
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { useToast } from '../components/Toast';
 import { Package, Clock, CheckCircle, XCircle, Truck, ChefHat, AlertCircle, RefreshCw, Filter } from 'lucide-react';
 import API_BASE from '../config/api.js';
 import { trackReorder } from '../utils/analytics';
+import { reorderIntoCart } from '../utils/reorder';
 
 // Date grouping helper
 const getDateGroup = (dateString) => {
@@ -76,30 +77,28 @@ const STATUS_COLORS = {
 export default function Orders() {
   const { isAuthenticated, customer, token } = useAuth();
   const navigate = useNavigate();
-  const { addLine, clearCart } = useCart();
+  const { lines, addLine, clearCart } = useCart();
   const showToast = useToast();
 
-  const handleReorder = (order) => {
-    const items = parseItems(order.items_json);
-    clearCart();
-    items.forEach(item => {
-      addLine({
-        itemId: item.itemId,
-        itemName: item.itemName,
-        name: item.itemName,
-        basePrice: item.basePrice || 0,
-        variants: (item.variants || []).map(v => ({
-          id: v.id, name: v.name, priceDelta: v.priceDelta || v.price || 0,
-        })),
-        addons: (item.addons || []).map(a => ({
-          id: a.id, name: a.name, priceDelta: a.priceDelta || a.price || 0,
-        })),
-        qty: item.quantity || 1,
+  const [reordering, setReordering] = useState(false);
+
+  const handleReorder = async (order) => {
+    if (reordering) return;
+    setReordering(true);
+    try {
+      const ok = await reorderIntoCart(order, {
+        cartLines: lines,
+        clearCart,
+        addLine,
+        showToast,
       });
-    });
-    trackReorder(order.id);
-    showToast('Items added to cart', 'success');
-    navigate('/order');
+      if (ok) {
+        trackReorder(order.id);
+        navigate('/order');
+      }
+    } finally {
+      setReordering(false);
+    }
   };
   
   const [orders, setOrders] = useState([]);
@@ -346,9 +345,10 @@ export default function Orders() {
                         {(order.status === 'delivered' || order.status === 'cancelled') && (
                           <button
                             onClick={() => handleReorder(order)}
-                            className="flex items-center gap-1.5 text-green-500 hover:text-green-400 text-sm font-medium"
+                            disabled={reordering}
+                            className="flex items-center gap-1.5 text-green-500 hover:text-green-400 disabled:opacity-50 text-sm font-medium"
                           >
-                            <RefreshCw className="w-3.5 h-3.5" />
+                            <RefreshCw className={`w-3.5 h-3.5 ${reordering ? 'animate-spin' : ''}`} />
                             Reorder
                           </button>
                         )}

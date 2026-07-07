@@ -1,12 +1,8 @@
-// hungrytimes-frontend/src/pages/Gallery.jsx - FIXED VERSION
+// hungrytimes-frontend/src/pages/Gallery.jsx
 import { useState, useEffect } from 'react'
 import Section from '../components/Section'
 import SEOHead from '../components/SEOHead'
-
-// Get API base from environment or use default
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'
-
-console.log('🔧 Gallery initialized with API_BASE:', API_BASE)
+import API_BASE from '../config/api'
 
 export default function Gallery() {
   const [images, setImages] = useState([])
@@ -23,28 +19,16 @@ export default function Gallery() {
       setLoading(true)
       setError(null)
       
-      const url = `${API_BASE}/gallery/public`
-      console.log('📡 Fetching from:', url)
-      
-      const response = await fetch(url)
-      
+      const response = await fetch(`${API_BASE}/gallery/public`)
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
-      
+
       const data = await response.json()
-      console.log('✅ Gallery data received:', data)
-      
       setImages(data.images || [])
-      
-      if (data.images && data.images.length > 0) {
-        console.log(`✅ Loaded ${data.images.length} active images`)
-        data.images.forEach(img => {
-          console.log(`  - ${img.dish_name}: ${img.image_url}`)
-        })
-      }
     } catch (err) {
-      console.error('❌ Gallery fetch error:', err)
+      console.error('Gallery fetch error:', err)
       setError(err.message)
     } finally {
       setLoading(false)
@@ -81,8 +65,7 @@ export default function Gallery() {
             </svg>
           </div>
           <h3 className="font-semibold mb-2">Unable to Load Gallery</h3>
-          <p className="text-neutral-400 mb-2">{error}</p>
-          <p className="text-xs text-neutral-500 mb-4">API Endpoint: {API_BASE}/gallery/public</p>
+          <p className="text-neutral-400 mb-4">{error}</p>
           <button 
             onClick={fetchGalleryImages}
             className="btn btn-primary"

@@ -80,7 +80,7 @@ export default function Home() {
       .catch(() => {});
 
     // Fetch testimonials
-    fetch(`${API_BASE}/public/feedback/testimonials/public`)
+    fetch(`${API_BASE}/feedback/testimonials/public`)
       .then(r => r.ok ? r.json() : [])
       .then(data => {
         const list = Array.isArray(data) ? data : data?.testimonials || [];

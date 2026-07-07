@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Phone, Lock, User, Mail, MapPin, Check, AlertCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import GoogleMapsAutocomplete from './GoogleMapsAutocomplete';
+import { geocodeFreeAddress } from '../utils/geo';
 import { trackCompleteRegistration } from '../utils/analytics';
 
 const STEPS = {
@@ -386,18 +387,24 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
       return;
     }
 
-    // Validate address — must have coordinates so delivery can be charged correctly
+    // Validate address — text is required, a pin is NOT. Never block a signup
+    // on a map pin: we try to geocode a typed address, and if that fails we
+    // accept it anyway (staff confirms the area on the delivery call).
     if (!address || !address.address) {
-      setError('Please select an address');
-      return;
-    }
-    if (!address.latitude) {
-      setError('Please search and select your address from the map — we need a location pin to calculate delivery');
+      setError('Please enter your address');
       return;
     }
 
     setLoading(true);
     try {
+      let { latitude, longitude } = address;
+      if (!latitude || !longitude) {
+        try {
+          const coords = await geocodeFreeAddress(address.address);
+          if (coords) { latitude = coords.lat; longitude = coords.lng; }
+        } catch { /* proceed without a pin */ }
+      }
+
       console.log('[Registration] Step 1: Setting credentials...');
       await auth.setCredentials(tempToken, username, password);
 
@@ -408,8 +415,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
       const result = await auth.setAddress(
         tempToken,
         address.address,
-        address.latitude,
-        address.longitude
+        latitude ?? null,
+        longitude ?? null
       );
 
       setServiceAreaData({

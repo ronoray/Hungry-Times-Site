@@ -383,11 +383,15 @@ export default function Menu() {
   useEffect(() => {
     const poll = async () => {
       try {
-        const res = await fetch(`${API_BASE}/menu/settings/online-ordering`);
+        // Public endpoint — the old /menu/settings/online-ordering target is
+        // admin-auth'd, so this poll silently 401'd forever and never updated.
+        const res = await fetch(`${API_BASE}/public/kitchen-status`);
         if (!res.ok) return;
         const json = await res.json();
-        setAcceptingOnlineOrders(json.accepting_online_orders === 1);
-        setOrderingDisabledMessage(json.online_orders_disabled_message || "");
+        if (json.accepting_online_orders !== undefined) {
+          setAcceptingOnlineOrders(Number(json.accepting_online_orders) === 1);
+          setOrderingDisabledMessage(json.online_orders_disabled_message || "");
+        }
       } catch {}
     };
     const id = setInterval(poll, 30_000);

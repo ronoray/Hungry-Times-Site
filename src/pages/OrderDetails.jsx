@@ -10,6 +10,7 @@ import {
   Truck, ChefHat, ClipboardCheck, RefreshCw, ArrowLeft
 } from 'lucide-react';
 import API_BASE from '../config/api.js';
+import { reorderIntoCart } from '../utils/reorder';
 
 // Progress bar steps
 const STEPS = [
@@ -27,7 +28,7 @@ export default function OrderDetails() {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const { addLine, clearCart } = useCart();
+  const { lines, addLine, clearCart } = useCart();
   const showToast = useToast();
 
   const [order, setOrder] = useState(null);
@@ -36,7 +37,8 @@ export default function OrderDetails() {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate('/login', { state: { from: `/orders/${orderId}` } });
+      // No /login route exists — Profile shows the login prompt
+      navigate('/profile', { state: { from: `/orders/${orderId}` } });
       return;
     }
 
@@ -78,26 +80,22 @@ export default function OrderDetails() {
     catch { return []; }
   };
 
-  const handleReorder = () => {
-    const items = parseItems(order.items_json);
-    clearCart();
-    items.forEach(item => {
-      addLine({
-        itemId: item.itemId,
-        itemName: item.itemName,
-        name: item.itemName,
-        basePrice: item.basePrice || 0,
-        variants: (item.variants || []).map(v => ({
-          id: v.id, name: v.name, priceDelta: v.priceDelta || v.price || 0,
-        })),
-        addons: (item.addons || []).map(a => ({
-          id: a.id, name: a.name, priceDelta: a.priceDelta || a.price || 0,
-        })),
-        qty: item.quantity || 1,
+  const [reordering, setReordering] = useState(false);
+
+  const handleReorder = async () => {
+    if (reordering) return;
+    setReordering(true);
+    try {
+      const ok = await reorderIntoCart(order, {
+        cartLines: lines,
+        clearCart,
+        addLine,
+        showToast,
       });
-    });
-    showToast('Items added to cart', 'success');
-    navigate('/order');
+      if (ok) navigate('/order');
+    } finally {
+      setReordering(false);
+    }
   };
 
   if (loading) {

@@ -1695,6 +1695,7 @@ export default function Order() {
                                           });
                                         }}
                                         defaultValue={editAddressData.fullAddress}
+                                        defaultCoords={{ latitude: editAddressData.latitude, longitude: editAddressData.longitude }}
                                       />
                                     </div>
                                     <div className="flex gap-2 pt-2">

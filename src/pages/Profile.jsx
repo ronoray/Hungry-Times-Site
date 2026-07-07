@@ -12,16 +12,17 @@ import { useCart } from '../context/CartContext';
 import {
   User, MapPin, Phone, Mail, Edit2, Plus, Trash2,
   Save, X, Check, AlertCircle, LogOut, Key,
-  Share2, Gift, Heart, HelpCircle, Package, RefreshCw, Loader
+  Gift, Heart, HelpCircle, Package, RefreshCw, Loader
 } from 'lucide-react';
 import GoogleMapsAutocomplete from '../components/GoogleMapsAutocomplete';
 import AuthModal from '../components/AuthModal';
+import { reorderIntoCart } from '../utils/reorder';
 
 import API_BASE from '../config/api.js';
 
 export default function Profile() {
   const { customer, isAuthenticated, logout, token, login } = useAuth();
-  const { addLine, clearCart } = useCart();
+  const { lines, addLine, clearCart } = useCart();
   const navigate = useNavigate();
   const [showAuthModal, setShowAuthModal] = useState(false);
 
@@ -61,9 +62,7 @@ export default function Profile() {
   // Recent orders state
   const [recentOrders, setRecentOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
-
-  // Referral state
-  const [referralCode, setReferralCode] = useState(null);
+  const [reordering, setReordering] = useState(false);
 
   // Loyalty state
   const [loyaltyData, setLoyaltyData] = useState(null);
@@ -73,6 +72,19 @@ export default function Profile() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Auto-dismiss banners
+  useEffect(() => {
+    if (!success) return;
+    const t = setTimeout(() => setSuccess(''), 4000);
+    return () => clearTimeout(t);
+  }, [success]);
+
+  useEffect(() => {
+    if (!error) return;
+    const t = setTimeout(() => setError(''), 6000);
+    return () => clearTimeout(t);
+  }, [error]);
 
   useEffect(() => {
     if (customer) {
@@ -86,8 +98,6 @@ export default function Profile() {
       loadAddresses();
       // Load recent orders
       loadRecentOrders();
-      // Load referral code
-      loadReferralCode();
       // Load loyalty data
       loadLoyaltyData();
     }
@@ -136,23 +146,6 @@ export default function Profile() {
     }
   };
 
-  const loadReferralCode = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/referrals?phone=${customer?.phone}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const codes = data.codes || [];
-        // Find most recent pending or active code
-        const active = codes.find(c => c.status === 'active' || c.status === 'pending');
-        if (active) setReferralCode(active);
-      }
-    } catch (err) {
-      console.error('Load referral error:', err);
-    }
-  };
-
   const loadLoyaltyData = async () => {
     setLoyaltyLoading(true);
     try {
@@ -192,32 +185,23 @@ export default function Profile() {
     catch { return []; }
   };
 
-  const handleReorder = (order) => {
-    const items = parseItems(order.items_json);
-    clearCart();
-    items.forEach(item => {
-      addLine({
-        itemId: item.itemId,
-        itemName: item.itemName,
-        name: item.itemName,
-        basePrice: item.basePrice || 0,
-        variants: (item.variants || []).map(v => ({
-          id: v.id, name: v.name, priceDelta: v.priceDelta || v.price || 0,
-        })),
-        addons: (item.addons || []).map(a => ({
-          id: a.id, name: a.name, priceDelta: a.priceDelta || a.price || 0,
-        })),
-        qty: item.quantity || 1,
+  const handleReorder = async (order) => {
+    if (reordering) return;
+    setReordering(true);
+    try {
+      const ok = await reorderIntoCart(order, {
+        cartLines: lines,
+        clearCart,
+        addLine,
+        showToast: (msg, type) => {
+          if (type === 'error') setError(msg);
+          else setSuccess(msg);
+        },
       });
-    });
-    navigate('/order');
-  };
-
-  const handleShareReferral = () => {
-    if (!referralCode) return;
-    const msg = `Order from Hungry Times and get 15% off! Use my referral code: ${referralCode.code}. Order now at hungrytimes.in/offers?utm_source=whatsapp&utm_medium=referral&utm_campaign=refer_a_friend`;
-    const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
-    window.open(waUrl, '_blank');
+      if (ok) navigate('/order');
+    } finally {
+      setReordering(false);
+    }
   };
 
   // ============================================
@@ -757,6 +741,7 @@ export default function Profile() {
                       });
                     }}
                     defaultValue={addressForm.fullAddress}
+                    defaultCoords={editingAddress ? { latitude: addressForm.latitude, longitude: addressForm.longitude } : null}
                   />
                 </div>
               </div>
@@ -810,7 +795,7 @@ export default function Profile() {
                         )}
                       </div>
                       <p className="text-neutral-300 text-sm">{addr.fullAddress}</p>
-                      {addr.distanceKm !== undefined && (
+                      {addr.latitude != null && addr.longitude != null && addr.distanceKm != null ? (
                         <p className="text-xs text-neutral-500 mt-1">
                           📍 {addr.distanceKm} km away
                           {addr.withinServiceArea ? (
@@ -818,6 +803,10 @@ export default function Profile() {
                           ) : (
                             <span className="text-red-500 ml-2">⚠ Out of range</span>
                           )}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-yellow-500/80 mt-1">
+                          📍 No delivery pin yet — edit this address to set one
                         </p>
                       )}
                     </div>
@@ -923,9 +912,10 @@ export default function Profile() {
                       {(order.status === 'delivered' || order.status === 'cancelled') && (
                         <button
                           onClick={() => handleReorder(order)}
-                          className="flex items-center gap-1.5 px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-medium rounded-lg transition-colors whitespace-nowrap"
+                          disabled={reordering}
+                          className="flex items-center gap-1.5 px-3 py-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors whitespace-nowrap"
                         >
-                          <RefreshCw className="w-3.5 h-3.5" />
+                          <RefreshCw className={`w-3.5 h-3.5 ${reordering ? 'animate-spin' : ''}`} />
                           Reorder
                         </button>
                       )}
@@ -1091,36 +1081,6 @@ export default function Profile() {
             <p className="text-gray-400">••••••••</p>
           )}
         </div>
-
-        {/* Referral Code Section */}
-        {referralCode && (
-          <div className="bg-neutral-800 rounded-lg p-6 mb-6">
-            <h2 className="text-xl font-semibold text-white flex items-center gap-2 mb-4">
-              <Gift className="w-5 h-5 text-orange-500" />
-              Your Referral Code
-            </h2>
-            <div className="bg-neutral-900 rounded-lg p-4 mb-4 text-center">
-              <p className="text-3xl font-mono font-bold text-orange-500 tracking-widest mb-1">
-                {referralCode.code}
-              </p>
-              <p className="text-xs text-neutral-400">
-                Status: <span className={referralCode.status === 'active' ? 'text-green-400' : 'text-yellow-400'}>
-                  {referralCode.status.toUpperCase()}
-                </span>
-              </p>
-            </div>
-            <p className="text-sm text-neutral-400 mb-4">
-              Share this code with friends. They get 15% off their first order, and you get 15% off your next!
-            </p>
-            <button
-              onClick={handleShareReferral}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium"
-            >
-              <Share2 className="w-5 h-5" />
-              Share via WhatsApp
-            </button>
-          </div>
-        )}
 
         {/* Quick Links */}
         <div className="bg-neutral-800 rounded-lg p-6 mb-6">

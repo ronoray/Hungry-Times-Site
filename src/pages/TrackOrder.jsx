@@ -73,7 +73,13 @@ export default function TrackOrder() {
     <div className="max-w-lg mx-auto px-4 py-6">
       <h1 className="text-xl font-bold text-white mb-1">Track Order #{order.id}</h1>
       <p className="text-neutral-500 text-sm mb-6">
-        {new Date(order.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
+        {(() => {
+          // SQLite naive timestamps break Date() on Safari — normalize like Orders.jsx
+          const ds = order.created_at || '';
+          const iso = ds.includes('Z') || ds.includes('+') ? ds : ds.replace(' ', 'T') + '+05:30';
+          const d = new Date(iso);
+          return isNaN(d) ? ds : d.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+        })()}
       </p>
 
       {isCancelled ? (

@@ -27,7 +27,8 @@ export default function OrderSuccess() {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate('/login');
+      // No /login route exists — Profile shows the login prompt
+      navigate('/profile');
       return;
     }
 
