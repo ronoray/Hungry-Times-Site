@@ -1024,7 +1024,16 @@ export default function Order() {
 
       // ✅ STEP 2: Open Razorpay modal
       console.log('🔄 Step 2: Opening Razorpay...');
-      
+
+      // When the site runs as an installed PWA (standalone WebView), the Razorpay
+      // popup + UPI-intent deeplink is blocked by the WebView — checkout hangs on
+      // "Processing" and times out (payment_timed_out, no VPA). Use Razorpay
+      // redirect mode there: a full-page nav to the hosted page escapes the
+      // WebView so the UPI app opens. The server callback confirms + redirects.
+      const isStandalone =
+        (typeof window !== 'undefined' && window.matchMedia?.('(display-mode: standalone)').matches) ||
+        window.navigator.standalone === true;
+
       const options = {
         key: razorpayKey,
         amount: amount * 100,
@@ -1137,6 +1146,15 @@ export default function Order() {
           },
         },
       };
+
+      // In a standalone PWA, switch to redirect mode. The JS handler/ondismiss
+      // below will NOT fire (page navigates away); the server callback confirms
+      // the order and 302s to /order-success. Non-standalone keeps the popup.
+      if (isStandalone) {
+        options.redirect = true;
+        options.callback_url = 'https://hungrytimes.in/api/customer/payments/razorpay/callback';
+        console.log('🔄 Standalone PWA detected — using Razorpay redirect mode');
+      }
 
       const rzp = new window.Razorpay(options);
       rzp.open();
