@@ -94,6 +94,7 @@ function FAQItem({ q, a }) {
 
 export default function Offers() {
   const [offers, setOffers] = useState([]);
+  const [pointsPromo, setPointsPromo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [customerPhone, setCustomerPhone] = useState('');
   const [verifyCode, setVerifyCode] = useState('');
@@ -114,6 +115,8 @@ export default function Offers() {
         const data = await res.json();
         // Only show offers that have a promo code (not auto-apply hidden ones)
         setOffers((data.offers || []).filter(o => o.promo_code));
+        // 2× points banner — server only sends this while the promo window is live
+        setPointsPromo(data.points_promo || null);
       }
     } catch { /* silent */ }
     setLoading(false);
@@ -186,6 +189,29 @@ export default function Offers() {
         <h1>Offers & Rewards</h1>
         <p className="subtitle">Exclusive deals for our guests</p>
       </div>
+
+      {/* 2× online points promo — shown only while the server says the window is live */}
+      {!loading && pointsPromo && (
+        <div className="section">
+          <div className="offer-card">
+            <div className="offer-card-badge">{pointsPromo.multiplier}× POINTS</div>
+            <h3 className="offer-card-title">{pointsPromo.title}</h3>
+            <p className="offer-card-desc">{pointsPromo.description}</p>
+            <div className="offer-card-meta">
+              <span className="offer-card-chip">No code needed</span>
+              {pointsPromo.valid_till && (
+                <span className="offer-card-chip offer-card-chip--timer">
+                  <Clock className="w-3 h-3" />
+                  Till {pointsPromo.valid_till}
+                </span>
+              )}
+            </div>
+            <button onClick={() => navigate('/menu')} className="offer-card-cta">
+              Order Now
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Active Promo Codes */}
       {!loading && offers.length > 0 && (
