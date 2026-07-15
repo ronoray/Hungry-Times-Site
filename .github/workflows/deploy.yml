@@ -18,9 +18,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  build-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    needs: build-check
 
     steps:
       - name: Checkout
