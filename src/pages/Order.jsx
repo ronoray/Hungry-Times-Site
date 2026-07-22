@@ -42,16 +42,27 @@ function calculateDeliveryCharge(distanceKm) {
   return -1; // outside service area
 }
 
-// Resolve coordinates for a free-text address (Google Geocoder → OpenStreetMap).
-// Returns { lat, lng } or null. Used so a typed address still gets a pin without forcing
-// the customer to pick from Google's autocomplete dropdown.
-async function geocodeFreeAddress(fullAddress) {
-  if (!fullAddress) return null;
+// Strip unit-level noise (flat/floor/apartment/room/block, newlines) so the
+// geocoder gets a resolvable street+locality. Messy multiline addresses like
+// "56, Dhakuria Station Road,\n2nd Floor,\nKolkata 700 031" fail both providers
+// verbatim → null coords → wrong delivery fee (≤2km free address floored to
+// ₹70, order #234). Mirrors server/whatsapp/geocoder.js simplifyAddress.
+function simplifyAddress(address) {
+  return String(address || '')
+    .split(/[\n,]+/)
+    .map((s) => s.trim())
+    .filter((s) => s && !/\b(flat|floor|fl|apt|apartment|room|unit|block|no\.?\s*\d|\d+(st|nd|rd|th)\s*floor)\b/i.test(s))
+    .join(', ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+async function geocodeOnce(query) {
   try {
     if (window.google?.maps?.Geocoder) {
       const geocoder = new window.google.maps.Geocoder();
       const result = await geocoder.geocode({
-        address: fullAddress,
+        address: query,
         componentRestrictions: { country: 'IN' },
       });
       if (result.results?.length > 0) {
@@ -61,7 +72,7 @@ async function geocodeFreeAddress(fullAddress) {
     }
   } catch { /* fall through to OSM */ }
   try {
-    const encoded = encodeURIComponent(fullAddress + ', Kolkata, India');
+    const encoded = encodeURIComponent(query + ', Kolkata, India');
     const resp = await fetch(
       `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1&countrycodes=in`,
       { headers: { 'User-Agent': 'HungryTimes/1.0 (ronoray@gmail.com)' } }
@@ -71,6 +82,23 @@ async function geocodeFreeAddress(fullAddress) {
       return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
     }
   } catch { /* ignore */ }
+  return null;
+}
+
+// Resolve coordinates for a free-text address (Google Geocoder → OpenStreetMap).
+// Returns { lat, lng } or null. Used so a typed address still gets a pin without
+// forcing the customer to pick from Google's autocomplete dropdown. Tries the
+// address as typed, then a simplified form (flat/floor lines dropped).
+async function geocodeFreeAddress(fullAddress) {
+  if (!fullAddress) return null;
+  const asTyped = String(fullAddress).replace(/\s+/g, ' ').trim();
+  const full = await geocodeOnce(asTyped);
+  if (full) return full;
+  const simple = simplifyAddress(fullAddress);
+  if (simple && simple.length >= 5 && simple !== asTyped) {
+    const retry = await geocodeOnce(simple);
+    if (retry) return retry;
+  }
   return null;
 }
 
@@ -486,37 +514,14 @@ export default function Order() {
     if (!fullAddress) return;
     setGeocodedCoords(prev => ({ ...prev, [addrId]: 'pending' }));
     try {
-      // Prefer Google Maps Geocoder — far more accurate for Indian addresses
-      if (window.google?.maps?.Geocoder) {
-        const geocoder = new window.google.maps.Geocoder();
-        const result = await geocoder.geocode({
-          address: fullAddress,
-          componentRestrictions: { country: 'IN' },
-        });
-        if (result.results?.length > 0) {
-          const loc = result.results[0].geometry.location;
-          setGeocodedCoords(prev => ({
-            ...prev,
-            [addrId]: { lat: loc.lat(), lng: loc.lng() },
-          }));
-          return;
-        }
-      }
-      // Fallback: Nominatim
-      const encoded = encodeURIComponent(fullAddress + ', Kolkata, India');
-      const resp = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1&countrycodes=in`,
-        { headers: { 'User-Agent': 'HungryTimes/1.0 (ronoray@gmail.com)' } }
-      );
-      const data = await resp.json();
-      if (data.length > 0 && data[0].lat && data[0].lon) {
-        setGeocodedCoords(prev => ({
-          ...prev,
-          [addrId]: { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) },
-        }));
-      } else {
-        setGeocodedCoords(prev => ({ ...prev, [addrId]: 'failed' }));
-      }
+      // geocodeFreeAddress tries the address as typed, then a simplified form
+      // (flat/floor/newlines stripped) so messy multiline addresses still
+      // resolve — otherwise a ≤2km free address gets floored to ₹70 (order #234).
+      const coords = await geocodeFreeAddress(fullAddress);
+      setGeocodedCoords(prev => ({
+        ...prev,
+        [addrId]: coords ? { lat: coords.lat, lng: coords.lng } : 'failed',
+      }));
     } catch {
       setGeocodedCoords(prev => ({ ...prev, [addrId]: 'failed' }));
     }
