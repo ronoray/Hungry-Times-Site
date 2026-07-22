@@ -300,10 +300,15 @@ export default function OrderSuccess() {
               <span className="text-neutral-400">Tax (GST)</span>
               <span className="text-white">₹{order.tax}</span>
             </div>
-            {Number(order.delivery_charge) > 0 && (
+            {Number(order.delivery_charge) > 0 ? (
               <div className="flex justify-between items-center mb-2">
                 <span className="text-neutral-400">Delivery</span>
                 <span className="text-white">₹{order.delivery_charge}</span>
+              </div>
+            ) : (
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-neutral-400">Delivery</span>
+                <span className="text-green-400 font-medium">FREE</span>
               </div>
             )}
             <div className="flex justify-between items-center pt-2 border-t border-neutral-700">
