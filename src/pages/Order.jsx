@@ -2318,7 +2318,9 @@ export default function Order() {
         lines={lines}
         cartTotal={cartTotal}
         discountAmount={discountAmount}
+        pointsDiscount={pointsDiscount}
         gstAmount={gstAmount}
+        deliveryCharge={deliveryCharge}
         finalTotal={finalTotal}
         deliveryAddress={selectedAddress?.fullAddress || ''}
         setDeliveryAddress={() => {}}

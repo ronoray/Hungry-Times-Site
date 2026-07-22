@@ -14,7 +14,10 @@ export default function CartDrawer({
   onClose,
   lines,
   cartTotal,
+  discountAmount = 0,
+  pointsDiscount = 0,
   gstAmount,
+  deliveryCharge = 0,
   finalTotal,
   deliveryAddress,
   setDeliveryAddress,
@@ -157,16 +160,37 @@ export default function CartDrawer({
         {lines.length > 0 && (
           <div className="border-t border-neutral-800 bg-neutral-900 p-4 space-y-3 flex-shrink-0">
             
-            {/* Order Summary */}
+            {/* Order Summary — every line that moves the total must be shown, else
+                the total reads as broken maths (delivery was silently omitted). */}
             <div className="space-y-2 text-sm">
               <div className="flex justify-between text-neutral-400">
                 <span>Subtotal</span>
                 <span>₹{cartTotal}</span>
               </div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between text-green-500">
+                  <span>Discount</span>
+                  <span>-₹{discountAmount}</span>
+                </div>
+              )}
+              {pointsDiscount > 0 && (
+                <div className="flex justify-between text-purple-400">
+                  <span>Points Discount</span>
+                  <span>-₹{pointsDiscount}</span>
+                </div>
+              )}
               <div className="flex justify-between text-neutral-400">
                 <span>GST (5%)</span>
                 <span>₹{gstAmount}</span>
               </div>
+              {orderType !== 'pickup' && orderType !== 'dine_in' && (
+                <div className="flex justify-between text-neutral-400">
+                  <span>Delivery</span>
+                  {deliveryCharge > 0
+                    ? <span>₹{deliveryCharge}</span>
+                    : <span className="text-green-400 font-medium">FREE</span>}
+                </div>
+              )}
               <div className="flex justify-between font-bold text-white text-base border-t border-neutral-700 pt-2">
                 <span>Total</span>
                 <span className="text-orange-500">₹{finalTotal}</span>
