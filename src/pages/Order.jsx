@@ -797,9 +797,16 @@ export default function Order() {
     });
     if (isDineIn) total -= pkgTotal;
 
+  // Offers & loyalty points require an order subtotal ≥ this floor — mirror of the
+  // server `min_order_for_offer` setting (default ₹500). Item-restricted combos are
+  // exempt (deliberate sub-floor bundles). Manual/staff discounts don't exist here.
+  const OFFER_MIN_ORDER = 500;
+  const isComboOffer = !!(appliedOffer && appliedOffer.applicable_item_ids);
+  const offersAllowed = total >= OFFER_MIN_ORDER;
+
   // Apply offer discount
   let discount = 0;
-  if (appliedOffer && total >= (appliedOffer.min_order_value || 0)) {
+  if (appliedOffer && total >= (appliedOffer.min_order_value || 0) && (offersAllowed || isComboOffer)) {
     // Item-restricted offers (e.g. COMBO50): the discount applies to the
     // qualifying items' value only, not the whole cart.
     // applicable_item_ids may arrive as an array (validate-code) or CSV string (offer list).
@@ -835,8 +842,9 @@ export default function Order() {
   }
 
     const subtotalAfterDiscount = Math.max(0, total - discount);
-    // Points redemption: max 20% of subtotalAfterDiscount, min 50 points
-    const maxPts = Math.min(loyaltyPoints, Math.floor(subtotalAfterDiscount * 0.2));
+    // Points redemption: max 20% of subtotalAfterDiscount, min 50 points.
+    // Blocked entirely below the offer floor (matches the server).
+    const maxPts = offersAllowed ? Math.min(loyaltyPoints, Math.floor(subtotalAfterDiscount * 0.2)) : 0;
     const pointsDiscount = pointsToRedeem > 0 ? Math.min(pointsToRedeem, maxPts) : 0;
     const afterPoints = Math.max(0, subtotalAfterDiscount - pointsDiscount);
     const gst = Math.round(afterPoints * 0.05);

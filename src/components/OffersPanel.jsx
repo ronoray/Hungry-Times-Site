@@ -47,7 +47,14 @@ export default function OffersPanel({ cartTotal, customerPhone, cartItemIds = []
       })
       .map(o => {
         let savings = 0;
-        const meetsMin = cartTotal >= (o.min_order_value || 0);
+        // Minimum-order floor (mirror of server min_order_for_offer, default ₹500):
+        // whole-cart offers need cartTotal ≥ floor; item-restricted combos are exempt.
+        const OFFER_MIN_ORDER = 500;
+        const isCombo = !!o.applicable_item_ids;
+        const effectiveMin = isCombo
+          ? (o.min_order_value || 0)
+          : Math.max(OFFER_MIN_ORDER, o.min_order_value || 0);
+        const meetsMin = cartTotal >= effectiveMin;
         if (meetsMin) {
           if (o.discount_type === 'percent') {
             savings = cartTotal * o.discount_value / 100;
@@ -57,7 +64,7 @@ export default function OffersPanel({ cartTotal, customerPhone, cartItemIds = []
           }
           savings = Math.round(savings);
         }
-        const shortfall = meetsMin ? 0 : Math.ceil((o.min_order_value || 0) - cartTotal);
+        const shortfall = meetsMin ? 0 : Math.ceil(effectiveMin - cartTotal);
         return { ...o, savings, meetsMin, shortfall };
       })
       .filter(o => o.meetsMin ? o.savings > 0 : o.shortfall > 0)
