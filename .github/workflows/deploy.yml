@@ -34,6 +34,15 @@ jobs:
       - name: Install deps
         run: npm ci
 
+      # `vite build` bundles without resolving identifier scope, so a variable
+      # referenced outside the scope it was declared in builds fine and then
+      # throws at render. That shipped a broken checkout page on 2026-07-25
+      # ("offersAllowed is not defined") and customers could not order for hours.
+      # This gate reports zero problems on a healthy tree — any hit is a real
+      # regression. It runs BEFORE the build so a scope error never deploys.
+      - name: Check for undefined identifiers
+        run: npm run lint:undef
+
       - name: Build
         run: npm run build
 
