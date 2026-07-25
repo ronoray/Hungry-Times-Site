@@ -23,6 +23,13 @@ import { trackBeginCheckout, trackPurchase } from "../utils/analytics";
 import './Order.css';
 import API_BASE from '../config/api.js';
 
+// Offers & loyalty points require an order subtotal ≥ this floor — mirror of the
+// server `min_order_for_offer` setting (default ₹500). Item-restricted combos are
+// exempt (deliberate sub-floor bundles). Module scope so both the totals memo and
+// the JSX can read it: it used to be declared inside the memo, and JSX referencing
+// it crashed the whole checkout page with "offersAllowed is not defined".
+const OFFER_MIN_ORDER = 500;
+
 // Restaurant location for delivery radius calculation
 const RESTAURANT_LOCATION = {
   latitude: 22.506243716455923,
@@ -797,10 +804,9 @@ export default function Order() {
     });
     if (isDineIn) total -= pkgTotal;
 
-  // Offers & loyalty points require an order subtotal ≥ this floor — mirror of the
-  // server `min_order_for_offer` setting (default ₹500). Item-restricted combos are
-  // exempt (deliberate sub-floor bundles). Manual/staff discounts don't exist here.
-  const OFFER_MIN_ORDER = 500;
+  // Item-restricted combos are exempt from the floor (deliberate sub-floor
+  // bundles). Manual/staff discounts don't exist here. OFFER_MIN_ORDER is module
+  // scope — see the note at the top of the file.
   const isComboOffer = !!(appliedOffer && appliedOffer.applicable_item_ids);
   const offersAllowed = total >= OFFER_MIN_ORDER;
 
@@ -859,6 +865,11 @@ export default function Order() {
       packagingDeduction: Math.round(pkgTotal),
     };
   }, [lines, appliedOffer, deliveryCharge, pointsToRedeem, loyaltyPoints, orderType]);
+
+  // Component-scope twin of the memo's internal `offersAllowed`, for the JSX.
+  // The memo's copy is local to its callback — reaching for it from the render
+  // tree is what took checkout down on 2026-07-25.
+  const offersAllowed = cartTotal >= OFFER_MIN_ORDER;
 
   const cartCount = lines.reduce((sum, line) => sum + (line.qty || 1), 0);
 
@@ -2053,9 +2064,9 @@ export default function Order() {
                   {/* Offer floor, stated before the customer tries a code. The server
                       refuses sub-floor codes anyway; this is so the rule is visible
                       rather than discovered as an error. */}
-                  {!appliedCode && !offersAllowed && total > 0 && (
+                  {!appliedCode && !offersAllowed && cartTotal > 0 && (
                     <p className="text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/25 rounded px-3 py-2 leading-relaxed">
-                      No discount on orders below ₹{OFFER_MIN_ORDER}. Add ₹{Math.ceil(OFFER_MIN_ORDER - total)} more
+                      No discount on orders below ₹{OFFER_MIN_ORDER}. Add ₹{Math.ceil(OFFER_MIN_ORDER - cartTotal)} more
                       to use a promo code or your loyalty points.
                     </p>
                   )}
