@@ -1,12 +1,15 @@
 // components/FirstVisitPopup.jsx
-// Shows FIRST30 offer to new visitors — once per device, never to logged-in users with orders
+// Shows the welcome offer to new visitors — once per device, never to logged-in
+// users with orders. Was FIRST30 (30%) until 2026-07-25; WELCOME15 is now the
+// only live code, and every offer needs a ₹500+ order (server min_order_for_offer).
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Copy, Check, Clock } from 'lucide-react';
 
 const STORAGE_KEY = 'ht_first_visit_seen';
-const CODE = 'FIRST30';
-const DISCOUNT = '30%';
+const CODE = 'WELCOME15';
+const DISCOUNT = '15%';
+const OFFER_MIN_ORDER = 500;
 const TIMER_MINUTES = 30;
 
 export default function FirstVisitPopup({ onDone }) {
@@ -140,7 +143,7 @@ export default function FirstVisitPopup({ onDone }) {
               First-time customers only
             </span>
             <p className="text-gray-400 text-sm mb-5">
-              Your first online order, on us.
+              On your first online order of ₹{OFFER_MIN_ORDER} or more.
             </p>
 
             {/* Code box */}
@@ -190,7 +193,7 @@ export default function FirstVisitPopup({ onDone }) {
             </button>
 
             <p className="text-xs text-gray-500 mt-3">
-              Max discount ₹200. Valid on online orders only.
+              Max discount ₹200. No discount on orders below ₹{OFFER_MIN_ORDER}. Online orders only.
             </p>
           </div>
         </div>

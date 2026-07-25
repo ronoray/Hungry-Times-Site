@@ -253,7 +253,7 @@ export default function Offers() {
             <input
               type="text"
               id="verifyCode"
-              placeholder="e.g. FIRST30, TRYONLINE, WEEKEND15"
+              placeholder="e.g. WELCOME15"
               value={verifyCode}
               onChange={(e) => setVerifyCode(e.target.value.toUpperCase())}
               required
@@ -281,16 +281,20 @@ export default function Offers() {
             a="Add items to your cart, go to checkout, and enter the code in the 'Have a code?' section. The discount will be applied to your order total."
           />
           <FAQItem
+            q="Is there a minimum order for discounts?"
+            a="Yes. Promo codes and loyalty points apply only on orders of ₹500 and above. There is no discount on orders below ₹500."
+          />
+          <FAQItem
             q="Can I use multiple codes on one order?"
-            a="Only one promo code can be applied per order. However, you can combine a promo code with loyalty points redemption."
+            a="Only one discount per order — a promo code or loyalty points, whichever saves you more. They cannot be combined."
           />
           <FAQItem
             q="Do codes work for dine-in orders?"
-            a="Promo codes like FIRST30 and TRYONLINE are for online orders only. Loyalty points can be redeemed online."
+            a="Promo codes are for online orders only. Loyalty points can be redeemed online."
           />
           <FAQItem
             q="Why is my code not working?"
-            a="Some codes have eligibility rules — FIRST30 works only on your first order, TRYONLINE works 20+ days after your last order, WEEKEND15 only on Saturdays and Sundays, and LUNCH15 only between 12 PM and 3 PM."
+            a="The two common reasons: the order is under ₹500 (no discount applies below that), or the code has an eligibility rule — WELCOME15, for example, works only on your very first order."
           />
         </div>
       </div>

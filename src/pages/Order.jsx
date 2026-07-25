@@ -2038,14 +2038,26 @@ export default function Order() {
                     />
                   )}
 
-                  {/* FIRST30 hint for new customers */}
-                  {isAuthenticated && loyaltyPoints === 0 && !appliedCode && (
+                  {/* Welcome-code hint for new customers (WELCOME15 replaced FIRST30
+                      on 2026-07-25). Hidden below the offer floor — pre-filling a code
+                      the server will refuse just wastes a tap. */}
+                  {isAuthenticated && loyaltyPoints === 0 && !appliedCode && offersAllowed && (
                     <button
-                      onClick={() => { setCodeInput('FIRST30'); setCodeExpanded(true); }}
+                      onClick={() => { setCodeInput('WELCOME15'); setCodeExpanded(true); }}
                       className="w-full py-2 text-sm text-green-400 bg-green-500/10 rounded text-center font-medium"
                     >
-                      New customer? Use <span className="font-bold">FIRST30</span> for 30% off your first order
+                      New customer? Use <span className="font-bold">WELCOME15</span> for 15% off your first order
                     </button>
+                  )}
+
+                  {/* Offer floor, stated before the customer tries a code. The server
+                      refuses sub-floor codes anyway; this is so the rule is visible
+                      rather than discovered as an error. */}
+                  {!appliedCode && !offersAllowed && total > 0 && (
+                    <p className="text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/25 rounded px-3 py-2 leading-relaxed">
+                      No discount on orders below ₹{OFFER_MIN_ORDER}. Add ₹{Math.ceil(OFFER_MIN_ORDER - total)} more
+                      to use a promo code or your loyalty points.
+                    </p>
                   )}
 
                   {/* APPLY CODE SECTION */}
