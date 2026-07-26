@@ -1,10 +1,10 @@
 // site/public/sw.js - Customer Site Service Worker
 // ============================================================================
 // CORRECTED VERSION - Fixed icon paths to match actual files
-// Version: v6
+// Version: v7
 // ============================================================================
 
-const CACHE_NAME = 'hungry-times-v6';
+const CACHE_NAME = 'hungry-times-v7';
 
 // ✅ FIXED: Match actual icon filenames in /public folder
 const STATIC_ASSETS = [
