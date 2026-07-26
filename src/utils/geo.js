@@ -21,6 +21,57 @@ export function simplifyAddress(address) {
     .trim();
 }
 
+// Normalise the locality tail so the city appears exactly once, unadorned.
+// Blindly appending ', Kolkata, India' to an address that already ended in a
+// locality+pincode produced "33, South End Park, Kolkata - 29, Kolkata, India",
+// which Nominatim answers NULL for — while "33, South End Park, Kolkata, India"
+// resolves fine. Mirrors normalizeLocalityTail in server/whatsapp/geocoder.js —
+// keep the two in sync.
+export function normalizeLocalityTail(address) {
+  return String(address || '')
+    .replace(/\bkolkata\b\s*[-–—]?\s*\d{2,3}(\s*\d{3})?\b/gi, 'Kolkata')
+    .replace(/\b7\d{2}\s?\d{3}\b/g, '')
+    .replace(/\s*,\s*(?=,)/g, '')
+    .replace(/\s*,\s*$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function dropHouseNumber(address) {
+  return String(address || '').replace(/^[^,]*\d[^,]*,\s*/, '').trim();
+}
+
+function withCityContext(query) {
+  return /\bkolkata\b/i.test(query) ? `${query}, India` : `${query}, Kolkata, India`;
+}
+
+// Ordered, de-duplicated query forms, broadest fidelity first. Mirrors
+// buildGeocodeCandidates in server/whatsapp/geocoder.js — keep the two in sync.
+export function buildGeocodeCandidates(address) {
+  const clean = String(address || '').replace(/\s+/g, ' ').trim();
+  const simple = simplifyAddress(address);
+
+  const raw = [
+    clean,
+    normalizeLocalityTail(clean),
+    simple,
+    normalizeLocalityTail(simple),
+    dropHouseNumber(normalizeLocalityTail(simple)),
+  ];
+
+  const seen = new Set();
+  const out = [];
+  for (const c of raw) {
+    const v = String(c || '').replace(/\s+/g, ' ').trim();
+    if (v.length < 5) continue;
+    const q = withCityContext(v);
+    if (seen.has(q.toLowerCase())) continue;
+    seen.add(q.toLowerCase());
+    out.push(q);
+  }
+  return out;
+}
+
 async function geocodeOnce(query) {
   try {
     if (window.google?.maps?.Geocoder) {
@@ -36,9 +87,8 @@ async function geocodeOnce(query) {
     }
   } catch { /* fall through to OSM */ }
   try {
-    const encoded = encodeURIComponent(query + ', Kolkata, India');
     const resp = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1&countrycodes=in`,
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=in`,
       { headers: { 'User-Agent': 'HungryTimes/1.0 (ronoray@gmail.com)' } }
     );
     const data = await resp.json();
@@ -50,19 +100,14 @@ async function geocodeOnce(query) {
 }
 
 // Resolve coordinates for a free-text address. Returns { lat, lng } or null.
-// Used so a typed address still gets a pin without forcing the customer to
-// pick from Google's autocomplete dropdown. Tries the address as typed, then
-// a simplified form (flat/floor lines dropped) that recovers messy multiline
-// addresses both providers reject verbatim.
+// Last-resort only: checkout asks the server first (POST /addresses/:id/resolve),
+// which has the API key and persists what it finds. This runs when that call
+// itself fails. Walks the same candidate ladder as the server.
 export async function geocodeFreeAddress(fullAddress) {
   if (!fullAddress) return null;
-  const asTyped = String(fullAddress).replace(/\s+/g, ' ').trim();
-  const full = await geocodeOnce(asTyped);
-  if (full) return full;
-  const simple = simplifyAddress(fullAddress);
-  if (simple && simple.length >= 5 && simple !== asTyped) {
-    const retry = await geocodeOnce(simple);
-    if (retry) return retry;
+  for (const query of buildGeocodeCandidates(fullAddress)) {
+    const hit = await geocodeOnce(query);
+    if (hit) return hit;
   }
   return null;
 }
