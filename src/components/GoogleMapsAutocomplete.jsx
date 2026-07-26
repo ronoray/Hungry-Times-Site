@@ -234,7 +234,7 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '', de
         className="mt-1 w-full py-2 flex items-center justify-center gap-2 bg-neutral-800 border border-neutral-700 text-neutral-300 text-sm rounded-xl hover:border-orange-500 transition-colors"
       >
         <MapIcon className="w-4 h-4" />
-        Set delivery pin on map (optional)
+        Set delivery pin on map
       </button>
     );
   };
@@ -346,7 +346,7 @@ export default function GoogleMapsAutocomplete({ onSelect, defaultValue = '', de
         {hasSelected ? (
           <p className={coords ? 'text-green-400 flex items-center gap-1' : 'text-yellow-400 flex items-center gap-1'}>
             <Check className="w-3 h-3" />
-            {coords ? 'Location pinned! Drag the pin below to fine-tune.' : "Address saved — no pin yet, we'll confirm on the call."}
+            {coords ? 'Location pinned! Drag the pin below to fine-tune.' : "Address saved. Add a pin below so your rider finds you first time."}
           </p>
         ) : (
           <p className="text-neutral-500">

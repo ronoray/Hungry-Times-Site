@@ -13,6 +13,7 @@ import { useCart } from "../context/CartContext";
 import AddToCartModal from "../components/AddToCartModal";
 import CartDrawer from "../components/CartDrawer";
 import GoogleMapsAutocomplete from "../components/GoogleMapsAutocomplete";
+import PinConfirmMap from "../components/PinConfirmMap";
 import { loadRazorpay } from "../utils/scriptLoaders";
 import AuthModal from "../components/AuthModal";
 import { ShoppingCart, MapPin, MessageSquare, Loader, Plus, Check, Edit2, Trash2, X, AlertCircle, Minus, Truck, UtensilsCrossed } from "lucide-react";
@@ -219,6 +220,19 @@ export default function Order() {
   // Geocoded coordinates for addresses that have no GPS pin
   // { [addrId]: { lat, lng } | 'pending' | 'failed' }
   const [geocodedCoords, setGeocodedCoords] = useState({});
+
+  // Last-resort pin prompt. Only opens when BOTH the stored pin and the server
+  // geocode came up empty — for the overwhelming majority of customers this
+  // never appears. `pinSkipped` is the deliberate second-tap escape: we still
+  // refuse to strand anyone who genuinely cannot drop a pin.
+  const [pinPromptOpen, setPinPromptOpen] = useState(false);
+  const [pinPromptCoords, setPinPromptCoords] = useState(null);
+  const [pinPromptSaving, setPinPromptSaving] = useState(false);
+  // Refs, not state: the prompt resumes the order handler immediately after the
+  // customer acts, and a setState wouldn't have landed by the time the handler
+  // re-runs validateDeliveryArea.
+  const pinSkippedRef = useRef(false);
+  const pinResumeRef = useRef(null);
 
   // Borzo live delivery quote: { charge: number|null, loading: bool }
   // Cache keyed by addressId so we don't re-fetch on every render
@@ -517,13 +531,52 @@ export default function Order() {
   // ============================================================================
   // GEOCODE UNPINNED ADDRESSES (Nominatim fallback for old customers)
   // ============================================================================
+  // Ask the SERVER to resolve a pinless address, not the browser.
+  //
+  // The old browser-side path (Google JS Geocoder → Nominatim) was a dice roll:
+  // browsers strip the custom User-Agent Nominatim wants and it throttles
+  // anonymous callers, so the same address resolved on one attempt and failed on
+  // the next — order #241 got coords, #242/#243 six minutes later did not. And a
+  // success only lived in this state object, so it was re-rolled next visit.
+  //
+  // The server has the Google key, no CORS, no stripped headers, and it PERSISTS
+  // the result onto the address. Browser geocoding stays only as a last resort
+  // for when the API call itself fails.
   const geocodeAddress = async (addrId, fullAddress) => {
     if (!fullAddress) return;
     setGeocodedCoords(prev => ({ ...prev, [addrId]: 'pending' }));
+
     try {
-      // geocodeFreeAddress tries the address as typed, then a simplified form
-      // (flat/floor/newlines stripped) so messy multiline addresses still
-      // resolve — otherwise a ≤2km free address gets floored to ₹70 (order #234).
+      const token = localStorage.getItem('customerToken');
+      const res = await fetch(`${API_BASE}/customer/addresses/${addrId}/resolve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const data = await res.json();
+
+      if (data?.resolved && data.latitude != null && data.longitude != null) {
+        setGeocodedCoords(prev => ({
+          ...prev,
+          [addrId]: { lat: data.latitude, lng: data.longitude },
+        }));
+        // The server persisted it — mirror that locally so the pin shows on the
+        // address card immediately, without a refetch.
+        setAddresses(prev => prev.map(a =>
+          a.id === addrId ? { ...a, latitude: data.latitude, longitude: data.longitude } : a
+        ));
+        return;
+      }
+    } catch {
+      /* server unreachable — fall through to the browser attempt */
+    }
+
+    // Last resort: try in the browser. Tries the address as typed, then a
+    // simplified form (flat/floor/newlines stripped) for messy multiline
+    // addresses — otherwise a ≤2km free address gets floored to ₹70 (order #234).
+    try {
       const coords = await geocodeFreeAddress(fullAddress);
       setGeocodedCoords(prev => ({
         ...prev,
@@ -536,12 +589,73 @@ export default function Order() {
 
   // Trigger geocoding when a pinless address is selected
   useEffect(() => {
+    // "I'll confirm on the call" was accepted for ONE address — switching to a
+    // different one must ask again rather than silently inheriting the skip.
+    pinSkippedRef.current = false;
     if (!selectedAddressId) return;
     const addr = addresses.find(a => a.id === selectedAddressId);
     if (!addr || addr.latitude || addr.longitude) return; // has coords — no need
     if (geocodedCoords[selectedAddressId]) return; // already done or in progress
     geocodeAddress(selectedAddressId, addr.fullAddress);
   }, [selectedAddressId, addresses]);
+
+  // ============================================================================
+  // LAST-RESORT PIN PROMPT
+  // ============================================================================
+  // Reached only when the stored pin, the save-time geocode AND the checkout
+  // geocode all came up empty. One drag (or one "use my location" tap) fixes the
+  // address permanently — the coords are saved onto it, so this never asks twice.
+  const handlePinPromptConfirm = async () => {
+    if (!pinPromptCoords || !selectedAddressId) return;
+    setPinPromptSaving(true);
+    try {
+      const token = localStorage.getItem('customerToken');
+      const res = await fetch(`${API_BASE}/customer/addresses/${selectedAddressId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          latitude: pinPromptCoords.lat,
+          longitude: pinPromptCoords.lng,
+        }),
+      });
+      if (!res.ok) throw new Error('Could not save your pin');
+
+      // Reflect it locally so the fee recomputes without a refetch.
+      setAddresses(prev => prev.map(a =>
+        a.id === selectedAddressId
+          ? { ...a, latitude: pinPromptCoords.lat, longitude: pinPromptCoords.lng }
+          : a
+      ));
+      setGeocodedCoords(prev => ({
+        ...prev,
+        [selectedAddressId]: { lat: pinPromptCoords.lat, lng: pinPromptCoords.lng },
+      }));
+
+      setPinPromptOpen(false);
+      showToast('Location saved — thanks!', 'success');
+      // Carry straight on with the order the customer was already placing.
+      const resume = pinResumeRef.current;
+      pinResumeRef.current = null;
+      if (resume) setTimeout(() => resume(), 0);
+    } catch (err) {
+      showToast(err.message || 'Could not save your pin', 'error');
+    } finally {
+      setPinPromptSaving(false);
+    }
+  };
+
+  // The deliberate second tap. We never hard-block an order on a pin — but the
+  // order goes through flagged, and ops sees "no map pin" before dispatch.
+  const handlePinPromptSkip = () => {
+    pinSkippedRef.current = true;
+    setPinPromptOpen(false);
+    const resume = pinResumeRef.current;
+    pinResumeRef.current = null;
+    if (resume) setTimeout(() => resume(), 0);
+  };
 
   // ============================================================================
   // ADD NEW ADDRESS
@@ -735,10 +849,10 @@ export default function Order() {
         return { canDeliver: null, distance: null, message: "Checking delivery area..." };
       }
       if (geocoded === 'failed') {
-        // Couldn't auto-locate — accept anyway (hyperlocal; staff confirms on the
-        // call), but NEVER waive delivery: charge the default floor. The server
-        // re-geocodes and may set the exact tiered fee; this is the "from" estimate.
-        return { canDeliver: true, distance: null, deliveryCharge: 70, message: "Delivery: ₹70 (exact distance confirmed on the call)" };
+        // Couldn't auto-locate. Never waive delivery: quote the default floor —
+        // the pin prompt at checkout replaces this with the real tiered fee as
+        // soon as the customer drops a pin (near addresses are usually free).
+        return { canDeliver: true, distance: null, deliveryCharge: 70, message: "Delivery: ₹70 — add a map pin for the exact fee" };
       }
       lat = geocoded.lat;
       lng = geocoded.lng;
@@ -897,9 +1011,17 @@ export default function Order() {
         return { valid: false, message: "Checking your delivery area, please wait..." };
       }
       if (!geocoded || geocoded === 'failed') {
-        // Couldn't auto-locate — don't strand the customer. Accept the order; we're
-        // hyperlocal and staff confirms the area on the delivery call.
-        return { valid: true, unverified: true };
+        // Neither a stored pin nor the server geocode could place this address.
+        // Ask for a pin — without one the fee is a guess AND the rider has no map
+        // link to find the door. Not a hard block: `pinSkipped` is set by the
+        // customer's own second tap on "I'll confirm on the call", which lets the
+        // order through flagged as unverified for staff to chase.
+        if (pinSkippedRef.current) return { valid: true, unverified: true };
+        return {
+          valid: false,
+          needsPin: true,
+          message: "We couldn't locate this address on the map. Drop a pin so your rider finds you.",
+        };
       }
       lat = geocoded.lat;
       lng = geocoded.lng;
@@ -935,6 +1057,14 @@ export default function Order() {
     if (orderType === 'delivery') {
       const validation = validateDeliveryArea();
       if (!validation.valid) {
+        // Address we simply couldn't place → open the map instead of dead-ending
+        // on an error message the customer can do nothing about.
+        if (validation.needsPin) {
+          pinResumeRef.current = handleRazorpayPayment;
+          setPinPromptCoords(null);
+          setPinPromptOpen(true);
+          return;
+        }
         setPaymentError(validation.message);
         return;
       }
@@ -1002,6 +1132,9 @@ export default function Order() {
           delivery_address: isDineIn ? 'Dine-in' : orderType === 'pickup' ? 'Pickup' : selectedAddr?.fullAddress,
           delivery_latitude: orderType === 'pickup' ? null : (selectedAddr?.latitude || geocodedCoords[selectedAddressId]?.lat || null),
           delivery_longitude: orderType === 'pickup' ? null : (selectedAddr?.longitude || geocodedCoords[selectedAddressId]?.lng || null),
+          // Lets the server pin THIS exact saved address when it resolves coords,
+          // instead of guessing which row the address text belongs to.
+          delivery_address_id: orderType === 'pickup' ? null : (selectedAddressId || null),
           delivery_instructions: deliveryInstructions,
           discount: discountAmount,
           delivery_charge: deliveryCharge,
@@ -1209,6 +1342,14 @@ export default function Order() {
     if (orderType === 'delivery') {
       const validation = validateDeliveryArea();
       if (!validation.valid) {
+        // Address we simply couldn't place → open the map instead of dead-ending
+        // on an error message the customer can do nothing about.
+        if (validation.needsPin) {
+          pinResumeRef.current = handleCODPayment;
+          setPinPromptCoords(null);
+          setPinPromptOpen(true);
+          return;
+        }
         setPaymentError(validation.message);
         return;
       }
@@ -1266,6 +1407,8 @@ export default function Order() {
         delivery_address: isDineIn ? 'Dine-in' : orderType === 'pickup' ? 'Pickup' : selectedAddr?.fullAddress,
         delivery_latitude: orderType === 'pickup' ? null : (selectedAddr?.latitude || geocodedCoords[selectedAddressId]?.lat || null),
         delivery_longitude: orderType === 'pickup' ? null : (selectedAddr?.longitude || geocodedCoords[selectedAddressId]?.lng || null),
+        // Lets the server pin THIS exact saved address when it resolves coords.
+        delivery_address_id: orderType === 'pickup' ? null : (selectedAddressId || null),
         delivery_instructions: deliveryInstructions,
         paymentMethod: "COD",
         discount: discountAmount,
@@ -2388,6 +2531,67 @@ export default function Order() {
           fetchAddresses();
         }}
       />
+
+      {/* Last-resort delivery pin prompt — only when every automatic attempt failed */}
+      {pinPromptOpen && (
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/70 p-0 sm:p-4">
+          <div className="w-full sm:max-w-md bg-neutral-900 border border-neutral-700 rounded-t-2xl sm:rounded-2xl p-4 max-h-[92vh] overflow-y-auto">
+            <div className="flex items-start justify-between gap-3 mb-1">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-orange-500 shrink-0" />
+                Where should we deliver?
+              </h3>
+              <button
+                type="button"
+                onClick={() => setPinPromptOpen(false)}
+                className="text-neutral-400 hover:text-white shrink-0"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-neutral-400 mb-3">
+              We couldn't find this address on the map. Drop a pin so your rider reaches
+              you directly — you only have to do this once.
+            </p>
+
+            <p className="text-xs text-neutral-500 mb-3 break-words">
+              {selectedAddress?.fullAddress}
+            </p>
+
+            <PinConfirmMap
+              lat={pinPromptCoords?.lat ?? null}
+              lng={pinPromptCoords?.lng ?? null}
+              onChange={(lat, lng) => setPinPromptCoords({ lat, lng })}
+              hint="Tap the map or drag the pin to your gate"
+            />
+
+            <button
+              type="button"
+              onClick={handlePinPromptConfirm}
+              disabled={!pinPromptCoords || pinPromptSaving}
+              className="mt-3 w-full py-3 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {pinPromptSaving
+                ? 'Saving…'
+                : pinPromptCoords
+                  ? 'Confirm location & continue'
+                  : 'Drop a pin to continue'}
+            </button>
+
+            {/* Never strand anyone: an explicit second tap places the order anyway,
+                flagged so staff call before dispatch. */}
+            <button
+              type="button"
+              onClick={handlePinPromptSkip}
+              className="mt-2 w-full py-2 text-xs text-neutral-400 underline underline-offset-2 hover:text-neutral-200"
+            >
+              I can't pin it — confirm my address on the call
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
