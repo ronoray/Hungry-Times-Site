@@ -37,6 +37,22 @@ export function normalizeLocalityTail(address) {
     .trim();
 }
 
+// Local street abbreviations no geocoder knows. "M T Road" is always Maharaja
+// Tagore Road (Dhakuria, 700031, ~200m away), but Google confidently expands it
+// to Matheswartala Road in Tangra 5km out. Mirrors LOCAL_STREET_ALIASES in
+// server/whatsapp/geocoder.js — keep the two in sync.
+export const LOCAL_STREET_ALIASES = [
+  { pattern: /\bM\s*\.?\s*T\s*\.?\s*Road\b/gi, replacement: 'Maharaja Tagore Road' },
+];
+
+export function expandLocalAliases(address) {
+  let out = String(address || '');
+  for (const { pattern, replacement } of LOCAL_STREET_ALIASES) {
+    out = out.replace(pattern, replacement);
+  }
+  return out;
+}
+
 function dropHouseNumber(address) {
   return String(address || '').replace(/^[^,]*\d[^,]*,\s*/, '').trim();
 }
@@ -51,12 +67,19 @@ export function buildGeocodeCandidates(address) {
   const clean = String(address || '').replace(/\s+/g, ' ').trim();
   const simple = simplifyAddress(address);
 
+  const expanded = expandLocalAliases(clean);
+  const expandedSimple = expandLocalAliases(simple);
+
   const raw = [
+    expanded,
     clean,
+    normalizeLocalityTail(expanded),
     normalizeLocalityTail(clean),
+    expandedSimple,
     simple,
+    normalizeLocalityTail(expandedSimple),
     normalizeLocalityTail(simple),
-    dropHouseNumber(normalizeLocalityTail(simple)),
+    dropHouseNumber(normalizeLocalityTail(expandedSimple)),
   ];
 
   const seen = new Set();
