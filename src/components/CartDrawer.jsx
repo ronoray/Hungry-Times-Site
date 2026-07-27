@@ -8,6 +8,7 @@
 import { X, Minus, Plus, Trash2, MapPin, MessageSquare } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import GoogleMapsAutocomplete from "./GoogleMapsAutocomplete";
+import { lineUnitPrice } from "../utils/cartLine";
 
 export default function CartDrawer({
   isOpen,
@@ -17,6 +18,7 @@ export default function CartDrawer({
   discountAmount = 0,
   pointsDiscount = 0,
   gstAmount,
+  gstOnTop = true,
   deliveryCharge = 0,
   finalTotal,
   deliveryAddress,
@@ -30,6 +32,9 @@ export default function CartDrawer({
   orderType,
 }) {
   const { removeLine, updateQty } = useCart();
+  // Use the orderType prop, not the cart context's orderMode: Order.jsx owns the
+  // selection on this screen and passes it down, and the two can drift.
+  const isDineIn = orderType === 'dine_in';
 
   // ✅ Only show on mobile (hidden on desktop with md:hidden)
   if (!isOpen) return null;
@@ -74,10 +79,11 @@ export default function CartDrawer({
             // Cart Items List
             <div className="p-4 space-y-3">
               {lines.map((line, idx) => {
-                const unitPrice =
-                  (line.basePrice || 0) +
-                  (line.variants?.reduce((sum, v) => sum + (v.priceDelta || 0), 0) || 0) +
-                  (line.addons?.reduce((sum, a) => sum + (a.priceDelta || 0), 0) || 0);
+                // Dine-in carries no packaging charge — see utils/cartLine.js.
+                // This drawer used to price every addon regardless of mode, so a
+                // dine-in cart showed a packaging charge the checkout then didn't
+                // apply.
+                const unitPrice = lineUnitPrice(line, isDineIn);
                 const lineTotal = unitPrice * (line.qty || 1);
 
                 return (
@@ -180,8 +186,8 @@ export default function CartDrawer({
                 </div>
               )}
               <div className="flex justify-between text-neutral-400">
-                <span>GST (5%)</span>
-                <span>₹{gstAmount}</span>
+                <span>GST (5%){gstOnTop ? '' : ' — included'}</span>
+                <span>{gstOnTop ? `₹${gstAmount}` : `₹${gstAmount} incl.`}</span>
               </div>
               {orderType !== 'pickup' && orderType !== 'dine_in' && (
                 <div className="flex justify-between text-neutral-400">

@@ -23,6 +23,7 @@ import { trackBeginCheckout, trackPurchase } from "../utils/analytics";
 
 import './Order.css';
 import API_BASE from '../config/api.js';
+import { visibleAddons, lineUnitPrice, isPackagingAddon } from '../utils/cartLine';
 
 // Offers & loyalty points require an order subtotal ≥ this floor — mirror of the
 // server `min_order_for_offer` setting (default ₹500). Item-restricted combos are
@@ -907,7 +908,7 @@ export default function Order() {
     let pkgTotal = 0;
     lines.forEach((line) => {
       const linePkg = (line.addons || [])
-        .filter(a => /packag/i.test(a.name || ''))
+        .filter(isPackagingAddon)
         .reduce((s, a) => s + (Number(a.priceDelta) || 0), 0);
       pkgTotal += linePkg * (line.qty || 1);
       const unitPrice =
@@ -1541,10 +1542,9 @@ export default function Order() {
             </h3>
             <div className="space-y-3">
               {lines.map((line, idx) => {
-                const unitPrice =
-                  (line.basePrice || 0) +
-                  (line.variants?.reduce((sum, v) => sum + (v.priceDelta || 0), 0) || 0) +
-                  (line.addons?.reduce((sum, a) => sum + (a.priceDelta || 0), 0) || 0);
+                // Dine-in carries no packaging charge — see utils/cartLine.js.
+                const shownAddons = visibleAddons(line, isDineIn);
+                const unitPrice = lineUnitPrice(line, isDineIn);
                 const lineTotal = unitPrice * (line.qty || 1);
 
                 return (
@@ -1563,9 +1563,9 @@ export default function Order() {
                             {line.variants.map(v => v.name).join(', ')}
                           </p>
                         )}
-                        {line.addons && line.addons.length > 0 && (
+                        {shownAddons.length > 0 && (
                           <p className="text-xs text-neutral-500">
-                            Add-ons: {line.addons.map(a => a.name).join(', ')}
+                            Add-ons: {shownAddons.map(a => a.name).join(', ')}
                           </p>
                         )}
                       </div>
@@ -2508,6 +2508,7 @@ export default function Order() {
         discountAmount={discountAmount}
         pointsDiscount={pointsDiscount}
         gstAmount={gstAmount}
+        gstOnTop={gstOnTop}
         deliveryCharge={deliveryCharge}
         finalTotal={finalTotal}
         deliveryAddress={selectedAddress?.fullAddress || ''}
