@@ -24,6 +24,7 @@ import { trackBeginCheckout, trackPurchase } from "../utils/analytics";
 import './Order.css';
 import API_BASE from '../config/api.js';
 import { visibleAddons, lineUnitPrice, isPackagingAddon } from '../utils/cartLine';
+import { useNoStackItems, cartHasNoStack } from '../hooks/useNoStackItems';
 
 // Offers & loyalty points require an order subtotal ≥ this floor — mirror of the
 // server `min_order_for_offer` setting (default ₹500). Item-restricted combos are
@@ -903,6 +904,15 @@ export default function Order() {
         ? borzoQuote.charge
         : (deliveryStatus?.deliveryCharge > 0 ? deliveryStatus.deliveryCharge : 0));
 
+  // Fixed-price bundles in the cart. Component scope, not memo-internal — the
+  // JSX below reads it, and reaching into a memo's internals is what took
+  // checkout down on 2026-07-25.
+  const noStackIds = useNoStackItems();
+  const hasNoStackItem = useMemo(
+    () => cartHasNoStack(lines, noStackIds),
+    [lines, noStackIds]
+  );
+
   const { cartTotal, discountAmount, pointsDiscount, maxRedeemablePoints, gstAmount, gstOnTop, finalTotal, packagingDeduction } = useMemo(() => {
     let total = 0;
     let pkgTotal = 0;
@@ -923,11 +933,18 @@ export default function Order() {
   // bundles). Manual/staff discounts don't exist here. OFFER_MIN_ORDER is module
   // scope — see the note at the top of the file.
   const isComboOffer = !!(appliedOffer && appliedOffer.applicable_item_ids);
-  const offersAllowed = total >= OFFER_MIN_ORDER;
+  // A fixed-price bundle in the cart forbids EVERY code and all loyalty
+  // redemption — the bundle price already carries the saving. Mirrors the
+  // server's cartHasNoStackItem guard, which was previously invisible here: the
+  // page offered the loyalty slider and showed a discount that the server then
+  // silently discarded, charging the customer more than the total they approved.
+  // Blocks the isComboOffer floor-exemption too, or an item-restricted code
+  // would still slip past.
+  const offersAllowed = total >= OFFER_MIN_ORDER && !hasNoStackItem;
 
   // Apply offer discount
   let discount = 0;
-  if (appliedOffer && total >= (appliedOffer.min_order_value || 0) && (offersAllowed || isComboOffer)) {
+  if (!hasNoStackItem && appliedOffer && total >= (appliedOffer.min_order_value || 0) && (offersAllowed || isComboOffer)) {
     // Item-restricted offers (e.g. COMBO50): the discount applies to the
     // qualifying items' value only, not the whole cart.
     // applicable_item_ids may arrive as an array (validate-code) or CSV string (offer list).
@@ -990,12 +1007,28 @@ export default function Order() {
       finalTotal: Math.round(afterPoints + (hasDiscount ? gst : 0) + deliveryCharge),
       packagingDeduction: Math.round(pkgTotal),
     };
-  }, [lines, appliedOffer, deliveryCharge, pointsToRedeem, loyaltyPoints, orderType]);
+  }, [lines, appliedOffer, deliveryCharge, pointsToRedeem, loyaltyPoints, orderType, hasNoStackItem]);
 
   // Component-scope twin of the memo's internal `offersAllowed`, for the JSX.
   // The memo's copy is local to its callback — reaching for it from the render
   // tree is what took checkout down on 2026-07-25.
-  const offersAllowed = cartTotal >= OFFER_MIN_ORDER;
+  // Must stay in step with the memo's version, including the no-stack term, or
+  // the "add ₹X more" hint appears on a cart whose problem isn't the floor.
+  const offersAllowed = cartTotal >= OFFER_MIN_ORDER && !hasNoStackItem;
+
+  // Adding a combo to a cart that already had points or a code selected must
+  // clear both. The totals memo ignores them either way, but the payload sends
+  // the raw pointsToRedeem state, and leaving a code applied would keep an
+  // "Offer Discount" row on screen that the server never honours.
+  useEffect(() => {
+    if (!hasNoStackItem) return;
+    setPointsToRedeem(0);
+    setAppliedCode(null);
+    setAppliedOffer(null);
+    setCodeInput('');
+    setCodeError('');
+    setCodeExpanded(false);
+  }, [hasNoStackItem]);
 
   const cartCount = lines.reduce((sum, line) => sum + (line.qty || 1), 0);
 
@@ -2187,8 +2220,20 @@ export default function Order() {
                     <span className="text-white font-medium">₹{cartTotal}</span>
                   </div>
                   
+                  {/* Fixed-price bundle in the cart: no code and no loyalty can
+                      apply. Stated up front rather than discovered — the server
+                      zeroes both silently, so without this the customer picks
+                      points, watches a discount appear, and is then charged the
+                      full amount. */}
+                  {hasNoStackItem && cartTotal > 0 && (
+                    <p className="text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/25 rounded px-3 py-2 leading-relaxed">
+                      Promo codes and loyalty points can't be used with a combo — its
+                      price already includes the saving. Your points stay in your balance.
+                    </p>
+                  )}
+
                   {/* YOUR OFFERS PANEL */}
-                  {isAuthenticated && customer?.phone && (
+                  {!hasNoStackItem && isAuthenticated && customer?.phone && (
                     <OffersPanel
                       cartTotal={cartTotal}
                       customerPhone={customer.phone}
@@ -2221,8 +2266,9 @@ export default function Order() {
                     </p>
                   )}
 
-                  {/* APPLY CODE SECTION */}
-                  {!appliedCode ? (
+                  {/* APPLY CODE SECTION — hidden entirely when a fixed-price
+                      bundle is in the cart; every code would be refused. */}
+                  {hasNoStackItem ? null : !appliedCode ? (
                     <div className="py-1">
                       {!codeExpanded ? (
                         <button
