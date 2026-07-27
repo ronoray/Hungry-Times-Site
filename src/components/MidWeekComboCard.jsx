@@ -8,12 +8,16 @@
 // repricing either component dish turned the savings into a false claim.
 //
 // No live bundle → renders nothing, so the promotion retires itself.
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { trackCtaClick } from '../utils/analytics';
+import { addToCart as fbAddToCart } from '../lib/fbpixel';
+import { useCart } from '../context/CartContext';
 import { useFeaturedCombo } from '../hooks/useFeaturedCombo';
 
 export default function MidWeekComboCard({ className = '' }) {
   const { combo, loading } = useFeaturedCombo();
+  const { addLine } = useCart();
+  const navigate = useNavigate();
   if (loading || !combo) return null;
 
   // "Mid-Week Combo: A + B" → "A + B" for the headline; plain names pass through.
@@ -21,11 +25,37 @@ export default function MidWeekComboCard({ className = '' }) {
     ? combo.name.split(':').slice(1).join(':').trim()
     : combo.name;
 
+  // One tap = in the cart, same as the COMBO50 /combo page's grab button. This
+  // used to deep-link to /menu?search=<name>, which only pre-filled a search box
+  // and left the customer to find the item, open the modal and add it — four-plus
+  // taps for a card whose whole job is to remove friction. Worse, searching the
+  // FULL name ("Mid-Week Combo: Chilli Chicken + Prawn Mixed Fried Rice") through
+  // Fuse also matches the standalone Chilli Chicken / Prawn Fried Rice items, so
+  // the combo wasn't reliably first in its own result list.
+  //
+  // Packaging is deliberately not attached here: the server owns that decision
+  // (normalizePackaging adds it for delivery/pickup and strips it for dine-in),
+  // so the cart can't disagree with the bill whichever mode they pick later.
+  const handleOrder = () => {
+    trackCtaClick('midweek_combo', 'home');
+    addLine({
+      itemId: combo.id,
+      itemName: combo.name,
+      name: combo.name,
+      basePrice: Number(combo.price) || 0,
+      variants: [],
+      addons: [],
+      qty: 1,
+    });
+    try { fbAddToCart({ name: combo.name, id: combo.id, price: combo.price }); } catch { /* pixel blocked */ }
+    navigate('/order');
+  };
+
   return (
-    <Link
-      to={`/menu?search=${encodeURIComponent(combo.name)}`}
-      onClick={() => trackCtaClick('midweek_combo', 'home')}
-      className={`block group relative overflow-hidden rounded-2xl border border-[#dc5f1e]/40 bg-[#161616] shadow-lg ${className}`}
+    <button
+      type="button"
+      onClick={handleOrder}
+      className={`block w-full text-left group relative overflow-hidden rounded-2xl border border-[#dc5f1e]/40 bg-[#161616] shadow-lg ${className}`}
     >
       <div className="flex items-center gap-3 p-3 sm:p-4">
         {combo.imageUrl && (
@@ -57,9 +87,9 @@ export default function MidWeekComboCard({ className = '' }) {
           </div>
         </div>
         <span className="self-center shrink-0 bg-[#dc5f1e] group-hover:bg-[#c5531a] text-white text-sm font-bold px-3 py-2 rounded-xl transition-colors">
-          Order →
+          Add →
         </span>
       </div>
-    </Link>
+    </button>
   );
 }
