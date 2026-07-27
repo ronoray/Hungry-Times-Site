@@ -1116,9 +1116,7 @@ export default function Order() {
         base_price: line.basePrice || 0,
         basePrice: line.basePrice || 0,  // ✅ Include both formats
         variants: line.variants || [],
-        addons: isDineIn
-          ? (line.addons || []).filter(a => !/packag/i.test(a.name || ''))
-          : (line.addons || []),
+        addons: visibleAddons(line, isDineIn),
       }));
 
       // Ad attribution — UTM campaign + promo fallback from the combo landing page
@@ -1399,9 +1397,7 @@ export default function Order() {
         quantity: line.qty || 1,
         base_price: line.basePrice || 0,
         variants: line.variants || [],
-        addons: isDineIn
-          ? (line.addons || []).filter(a => !/packag/i.test(a.name || ''))
-          : (line.addons || []),
+        addons: visibleAddons(line, isDineIn),
       }));
 
       // Ad attribution — UTM campaign + promo fallback from the combo landing page
