@@ -902,7 +902,7 @@ export default function Order() {
         ? borzoQuote.charge
         : (deliveryStatus?.deliveryCharge > 0 ? deliveryStatus.deliveryCharge : 0));
 
-  const { cartTotal, discountAmount, pointsDiscount, maxRedeemablePoints, gstAmount, finalTotal, packagingDeduction } = useMemo(() => {
+  const { cartTotal, discountAmount, pointsDiscount, maxRedeemablePoints, gstAmount, gstOnTop, finalTotal, packagingDeduction } = useMemo(() => {
     let total = 0;
     let pkgTotal = 0;
     lines.forEach((line) => {
@@ -967,7 +967,17 @@ export default function Order() {
     const maxPts = offersAllowed ? Math.min(loyaltyPoints, Math.floor(subtotalAfterDiscount * 0.2)) : 0;
     const pointsDiscount = pointsToRedeem > 0 ? Math.min(pointsToRedeem, maxPts) : 0;
     const afterPoints = Math.max(0, subtotalAfterDiscount - pointsDiscount);
-    const gst = Math.round(afterPoints * 0.05);
+
+    // GST: added ON TOP only when a discount applied; otherwise it is already
+    // inside the menu price and is merely extracted for accounting, leaving the
+    // total unchanged. This branch existed on POS and WhatsApp but never here,
+    // so every non-discounted website order showed (and charged) 5% too much.
+    // The Mid-Week Combo made it constant: at ₹449 it sits below the ₹500 offer
+    // floor, so it can never take a discount and always lands on this path.
+    const hasDiscount = (discount + pointsDiscount) > 0;
+    const gst = hasDiscount
+      ? Math.round(afterPoints * 0.05)
+      : Math.round(afterPoints - afterPoints / 1.05);
 
     return {
       cartTotal: Math.round(total),
@@ -975,7 +985,8 @@ export default function Order() {
       pointsDiscount,
       maxRedeemablePoints: maxPts,
       gstAmount: gst,
-      finalTotal: Math.round(afterPoints + gst + deliveryCharge),
+      gstOnTop: hasDiscount,
+      finalTotal: Math.round(afterPoints + (hasDiscount ? gst : 0) + deliveryCharge),
       packagingDeduction: Math.round(pkgTotal),
     };
   }, [lines, appliedOffer, deliveryCharge, pointsToRedeem, loyaltyPoints, orderType]);
@@ -2342,9 +2353,12 @@ export default function Order() {
                     </div>
                   )}
 
+                  {/* When no discount applied, GST is already inside the menu
+                      price — show it as included so the line doesn't read as an
+                      extra charge the total then fails to include. */}
                   <div className="flex justify-between text-neutral-400">
-                    <span>GST (5%)</span>
-                    <span className="text-white">₹{gstAmount}</span>
+                    <span>GST (5%){gstOnTop ? '' : ' — included'}</span>
+                    <span className="text-white">{gstOnTop ? `₹${gstAmount}` : `₹${gstAmount} incl.`}</span>
                   </div>
 
                   {/* Borzo delivery partner toggle — only shown when quote is available */}

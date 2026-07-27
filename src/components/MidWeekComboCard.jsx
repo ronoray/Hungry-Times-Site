@@ -33,18 +33,26 @@ export default function MidWeekComboCard({ className = '' }) {
   // Fuse also matches the standalone Chilli Chicken / Prawn Fried Rice items, so
   // the combo wasn't reliably first in its own result list.
   //
-  // Packaging is deliberately not attached here: the server owns that decision
-  // (normalizePackaging adds it for delivery/pickup and strips it for dine-in),
-  // so the cart can't disagree with the bill whichever mode they pick later.
+  // Packaging MUST be attached here. Leaving it to the server was wrong: the
+  // server's normalizePackaging injects it at order time regardless, so a cart
+  // line without it showed ₹449 and a GST/total computed off ₹449, while the
+  // order actually created was ₹469 + GST — the customer was charged more than
+  // the total they approved. AddToCartModal auto-locks this same addon for every
+  // other item; this card just has to do what the modal does.
+  //
+  // It's attached unconditionally, matching Order.jsx, which subtracts packaging
+  // again when the order mode is dine-in. Order mode is chosen at checkout, after
+  // this button is pressed, so deciding here would guess wrong half the time.
   const handleOrder = () => {
     trackCtaClick('midweek_combo', 'home');
+    const pkg = combo.packagingAddon;
     addLine({
       itemId: combo.id,
       itemName: combo.name,
       name: combo.name,
       basePrice: Number(combo.price) || 0,
       variants: [],
-      addons: [],
+      addons: pkg ? [{ id: pkg.id, name: pkg.name, priceDelta: Number(pkg.priceDelta) || 0 }] : [],
       qty: 1,
     });
     try { fbAddToCart({ name: combo.name, id: combo.id, price: combo.price }); } catch { /* pixel blocked */ }
