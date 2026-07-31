@@ -1105,8 +1105,11 @@ export default function Menu() {
           <ComboPromoCard />
         </div>
 
-        {/* Live promo codes → /offers; renders nothing when none are live */}
-        <div className="max-w-5xl mx-auto w-full px-4 mt-3">
+        {/* Live promo codes → /offers; renders nothing when none are live.
+            `!` on the spacing utilities: Menu.css resets margin/padding on every
+            descendant of .menu-page at equal specificity and wins on source
+            order, so plain px-4/mt-3 are dropped and the strip goes full-bleed. */}
+        <div className="max-w-5xl !mx-auto w-full !px-4 !mt-3">
           <OffersStrip compact />
         </div>
 

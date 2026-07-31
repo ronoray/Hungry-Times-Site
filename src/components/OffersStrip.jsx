@@ -44,9 +44,14 @@ export default function OffersStrip({ compact = false }) {
 
   if (compact) {
     return (
+      // Padding utilities carry the `!` modifier because the only consumer of
+      // compact mode is the Menu page, whose Menu.css has a blanket
+      // `.menu-page * { margin: 0; padding: 0 }` reset. It matches Tailwind's
+      // specificity and loads later, so without `!` this collapses to a 22px
+      // sliver with the text jammed against the border.
       <Link
         to="/offers"
-        className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm transition-colors hover:bg-amber-500/15"
+        className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 !px-3 !py-2.5 text-sm transition-colors hover:bg-amber-500/15"
       >
         <Tag className="h-4 w-4 flex-shrink-0 text-amber-400" />
         <span className="min-w-0 flex-1 truncate text-neutral-200">

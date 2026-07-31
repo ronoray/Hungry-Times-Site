@@ -161,8 +161,11 @@ export default function Home() {
         <ComboPromoCard />
       </section>
 
-      {/* ─── Live promo codes → /offers (renders nothing when none are live) ─── */}
-      <section className="px-4 pt-5 -mb-3 max-w-5xl mx-auto w-full">
+      {/* ─── Live promo codes → /offers (renders nothing when none are live) ───
+           No -mb-3 here, unlike the combo sections above: those are followed by
+           another section with pt-5 that absorbs the pull, but LiveOrderCount
+           has no top padding and rode up over this card's bottom border. */}
+      <section className="px-4 pt-5 pb-5 max-w-5xl mx-auto w-full">
         <OffersStrip />
       </section>
 
