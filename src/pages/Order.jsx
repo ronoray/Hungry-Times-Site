@@ -25,6 +25,15 @@ import './Order.css';
 import API_BASE from '../config/api.js';
 import { visibleAddons, lineUnitPrice, isPackagingAddon } from '../utils/cartLine';
 import { useNoStackItems, cartHasNoStack } from '../hooks/useNoStackItems';
+import {
+  pickPreferredAddress,
+  legacyAddressFrom,
+  createAddress,
+  updateAddress,
+  deleteAddress,
+  setDefaultAddress,
+} from '../utils/addressBook';
+import AddressLabelPicker from '../components/AddressLabelPicker';
 
 // Offers & loyalty points require an order subtotal ≥ this floor — mirror of the
 // server `min_order_for_offer` setting (default ₹500). Item-restricted combos are
@@ -500,30 +509,24 @@ export default function Order() {
       // ✅ LEGACY FALLBACK: If customer_addresses is empty but customer has legacy address
       if (fetchedAddresses.length === 0 && customer?.address && customer?.latitude && customer?.longitude) {
         console.log('[Order] No addresses in customer_addresses table, using legacy address from customer profile');
-        
-        // Create a pseudo-address from legacy customer fields
-        fetchedAddresses = [{
-          id: 'legacy',
-          name: 'My Address',
-          fullAddress: customer.address,
-          latitude: customer.latitude,
-          longitude: customer.longitude,
-          isDefault: true,
-          isLegacy: true
-        }];
+
+        // Shared builder — Profile used to label this same row "Primary Address"
+        // while checkout called it "My Address", so the customer saw their
+        // address renamed depending on which page they opened.
+        const legacy = legacyAddressFrom(customer);
+        if (legacy) fetchedAddresses = [legacy];
       }
       
       setAddresses(fetchedAddresses);
 
-      // Auto-select if only one address
-      if (fetchedAddresses.length === 1) {
-        setSelectedAddressId(fetchedAddresses[0].id);
-      } else if (fetchedAddresses.length > 1) {
-        // Auto-select default address
-        const defaultAddr = fetchedAddresses.find(a => a.isDefault);
-        if (defaultAddr) {
-          setSelectedAddressId(defaultAddr.id);
-        }
+      // Pre-select an address. This used to give up when a customer had 2+
+      // addresses and none was flagged default — nothing was selected, and the
+      // customer hit "Please select a delivery address" on a populated address
+      // book with no indication of what was wrong. Fall through the shared
+      // precedence rule instead: default, else most recently ordered to, else
+      // newest. There is always an answer when the book is not empty.
+      if (fetchedAddresses.length > 0) {
+        setSelectedAddressId(pickPreferredAddress(fetchedAddresses).id);
       }
     } catch (error) {
       console.error("[Order] Error fetching addresses:", error);
@@ -679,23 +682,11 @@ export default function Order() {
     }
 
     try {
-      const token = localStorage.getItem("customerToken");
-      const response = await fetch(`${API_BASE}/customer/addresses`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      const data = await createAddress(payload);
 
-      if (!response.ok) throw new Error("Failed to add address");
-
-      const data = await response.json();
-      
       // Refresh addresses list
       await fetchAddresses();
-      
+
       // Auto-select the newly added address
       setSelectedAddressId(data.address.id);
       
@@ -718,18 +709,7 @@ export default function Order() {
     }
 
     try {
-      const token = localStorage.getItem('customerToken');
-      const response = await fetch(`${API_BASE}/customer/addresses/${addressId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to delete address');
-      }
+      await deleteAddress(addressId);
 
       // Refresh addresses list
       await fetchAddresses();
@@ -783,24 +763,11 @@ export default function Order() {
     }
 
     try {
-      const token = localStorage.getItem('customerToken');
-      const response = await fetch(`${API_BASE}/customer/addresses/${addressId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update address');
-      }
+      await updateAddress(addressId, payload);
 
       // Refresh addresses list
       await fetchAddresses();
-      
+
       // Clear edit state
       setEditingAddressId(null);
       setEditAddressData({ name: '', fullAddress: '', latitude: null, longitude: null });
@@ -816,18 +783,11 @@ export default function Order() {
   // ============================================================================
   const handleSetDefault = async (addressId) => {
     try {
-      const token = localStorage.getItem('customerToken');
-      const response = await fetch(`${API_BASE}/customer/addresses/${addressId}/default`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to set default address');
-      }
+      // This used to send PUT to /:id/default. The server only registers PATCH
+      // on that path (routes/customerAddressRoutes.js), so setting a default
+      // from checkout never worked — it fell through to a 404 and surfaced as
+      // "Failed to set default address". The shared helper sends PATCH.
+      await setDefaultAddress(addressId);
 
       // Refresh addresses list
       await fetchAddresses();
@@ -1898,12 +1858,10 @@ export default function Order() {
                                       <label className="block text-neutral-300 text-sm mb-1">
                                         Label (Optional)
                                       </label>
-                                      <input
-                                        type="text"
+                                      <AddressLabelPicker
                                         value={editAddressData.name}
-                                        onChange={(e) => setEditAddressData({ ...editAddressData, name: e.target.value })}
-                                        placeholder="e.g., Home, Office"
-                                        className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-white text-sm"
+                                        onChange={(name) => setEditAddressData({ ...editAddressData, name })}
+                                        inputClassName="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-white text-sm"
                                       />
                                     </div>
                                     <div>
@@ -2061,12 +2019,10 @@ export default function Order() {
                           <label className="block text-neutral-300 text-sm mb-2">
                             Label (Optional)
                           </label>
-                          <input
-                            type="text"
+                          <AddressLabelPicker
                             value={newAddressData.name}
-                            onChange={(e) => setNewAddressData({ ...newAddressData, name: e.target.value })}
-                            placeholder="e.g., Home, Office"
-                            className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white"
+                            onChange={(name) => setNewAddressData({ ...newAddressData, name })}
+                            inputClassName="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white"
                           />
                         </div>
 

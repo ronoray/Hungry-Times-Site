@@ -16,7 +16,15 @@ import {
 } from 'lucide-react';
 import GoogleMapsAutocomplete from '../components/GoogleMapsAutocomplete';
 import AuthModal from '../components/AuthModal';
+import AddressLabelPicker from '../components/AddressLabelPicker';
 import { reorderIntoCart } from '../utils/reorder';
+import {
+  legacyAddressFrom,
+  createAddress,
+  updateAddress,
+  deleteAddress,
+  setDefaultAddress,
+} from '../utils/addressBook';
 
 import API_BASE from '../config/api.js';
 
@@ -118,31 +126,17 @@ export default function Profile() {
         const data = await res.json();
         setAddresses(data.addresses || []);
       } else {
-        // Fallback to legacy single address
-        if (customer?.address) {
-          setAddresses([{
-            id: 'legacy',
-            fullAddress: customer.address,
-            latitude: customer.latitude,
-            longitude: customer.longitude,
-            isDefault: true,
-            name: 'Primary Address'
-          }]);
-        }
+        // Fallback to legacy single address. Built by the shared helper so this
+        // page and checkout stop showing the same row under two different names
+        // ("Primary Address" here, "My Address" there).
+        const legacy = legacyAddressFrom(customer);
+        if (legacy) setAddresses([legacy]);
       }
     } catch (err) {
       console.error('Load addresses error:', err);
       // Fallback to legacy
-      if (customer?.address) {
-        setAddresses([{
-          id: 'legacy',
-          fullAddress: customer.address,
-          latitude: customer.latitude,
-          longitude: customer.longitude,
-          isDefault: true,
-          name: 'Primary Address'
-        }]);
-      }
+      const legacy = legacyAddressFrom(customer);
+      if (legacy) setAddresses([legacy]);
     }
   };
 
@@ -255,19 +249,7 @@ export default function Profile() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/customer/addresses`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(addressForm)
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to add address');
-      }
+      await createAddress(addressForm, token);
 
       setSuccess('Address added successfully!');
       setAddingAddress(false);
@@ -291,19 +273,7 @@ export default function Profile() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/customer/addresses/${editingAddress.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(addressForm)
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to update address');
-      }
+      await updateAddress(editingAddress.id, addressForm, token);
 
       setSuccess('Address updated successfully!');
       setEditingAddress(null);
@@ -324,17 +294,7 @@ export default function Profile() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/customer/addresses/${addressId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to delete address');
-      }
+      await deleteAddress(addressId, token);
 
       setSuccess('Address deleted successfully!');
       await loadAddresses();
@@ -347,15 +307,7 @@ export default function Profile() {
 
   const handleSetDefault = async (addressId) => {
     try {
-      const res = await fetch(`${API_BASE}/customer/addresses/${addressId}/default`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!res.ok) throw new Error('Failed to set default');
-
+      await setDefaultAddress(addressId, token);
       await loadAddresses();
     } catch (err) {
       setError(err.message);
@@ -720,12 +672,9 @@ export default function Profile() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm text-gray-400 mb-2">Label (Optional)</label>
-                  <input
-                    type="text"
+                  <AddressLabelPicker
                     value={addressForm.name}
-                    onChange={(e) => setAddressForm({...addressForm, name: e.target.value})}
-                    placeholder="e.g., Home, Office"
-                    className="w-full bg-neutral-600 border border-neutral-500 rounded-lg px-4 py-2 text-white"
+                    onChange={(name) => setAddressForm({...addressForm, name})}
                   />
                 </div>
 
@@ -787,9 +736,11 @@ export default function Profile() {
                         {addr.name && (
                           <span className="text-white font-medium">{addr.name}</span>
                         )}
+                        {/* Same tag as checkout renders. This was a solid orange
+                            pill with a tick here and a muted tint there, for the
+                            same flag on the same address. */}
                         {addr.isDefault && (
-                          <span className="px-2 py-0.5 bg-orange-500 text-white text-xs rounded-full flex items-center gap-1">
-                            <Check className="w-3 h-3" />
+                          <span className="px-2 py-0.5 bg-orange-500/20 text-orange-400 text-xs rounded">
                             Default
                           </span>
                         )}
