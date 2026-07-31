@@ -34,6 +34,7 @@ export default function Footer() {
           <h4 className="font-semibold mb-2">Quick Links</h4>
           <ul className="space-y-1 text-neutral-300">
             <li><Link to="/menu" className="hover:text-white">Menu</Link></li>
+            <li><Link to="/offers" className="hover:text-white">Offers &amp; Rewards</Link></li>
             <li><Link to="/reservation" className="hover:text-white">Reservation</Link></li>
             <li><Link to="/contact" className="hover:text-white">Contact</Link></li>
             <li><Link to="/feedback" className="hover:text-white">Feedback</Link></li>

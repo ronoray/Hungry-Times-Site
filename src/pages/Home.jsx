@@ -11,6 +11,7 @@ import LiveOrderCount from '../components/LiveOrderCount'
 import VegDot from '../components/VegDot'
 import ComboPromoCard from '../components/ComboPromoCard'
 import MidWeekComboCard from '../components/MidWeekComboCard'
+import OffersStrip from '../components/OffersStrip'
 import API_BASE from '../config/api'
 import heroImg from '../assets/hero-1200.jpg'
 
@@ -158,6 +159,11 @@ export default function Home() {
       {/* ─── Combo offer (auto-hides when COMBO50 is off) ─── */}
       <section className="px-4 pt-5 -mb-3 max-w-5xl mx-auto w-full">
         <ComboPromoCard />
+      </section>
+
+      {/* ─── Live promo codes → /offers (renders nothing when none are live) ─── */}
+      <section className="px-4 pt-5 -mb-3 max-w-5xl mx-auto w-full">
+        <OffersStrip />
       </section>
 
       {/* ─── Live Order Count (social proof) ─── */}

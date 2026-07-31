@@ -558,3 +558,352 @@
     margin-bottom: 10px;
   }
 }
+
+/* ==========================================================================
+   Discount explainer — hero rules, calculator, rule cards, tier ladder
+   ========================================================================== */
+
+.hero-rules {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.hero-rule {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #d4af37;
+  background: rgba(212, 175, 55, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  border-radius: 999px;
+  padding: 6px 12px;
+  line-height: 1.3;
+  text-align: left;
+}
+
+.offer-card-chip--who {
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.offer-card-note {
+  font-size: 0.8rem;
+  color: #f59e0b;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.section-note {
+  font-size: 0.85rem;
+  color: #8b8b8b;
+  line-height: 1.6;
+  margin: 14px 0 0;
+}
+
+/* ── Savings calculator ── */
+
+.calc-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.calc-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.calc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.calc-row--win {
+  border-color: rgba(34, 197, 94, 0.45);
+  background: rgba(34, 197, 94, 0.07);
+}
+
+.calc-row-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.calc-row-label {
+  font-weight: 600;
+  color: #fff;
+  font-size: 0.95rem;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.5px;
+  overflow-wrap: anywhere;
+}
+
+.calc-row-sub {
+  font-size: 0.78rem;
+  color: #8b8b8b;
+  overflow-wrap: anywhere;
+}
+
+.calc-row-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.calc-row-save {
+  font-weight: 700;
+  color: #22c55e;
+  font-size: 1.05rem;
+  white-space: nowrap;
+}
+
+.calc-row-blocked {
+  font-size: 0.78rem;
+  color: #6b7280;
+  text-align: right;
+}
+
+.calc-row-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #0f0f12;
+  background: #22c55e;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.calc-summary {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 10px;
+  background: rgba(212, 175, 55, 0.07);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.calc-summary-line {
+  color: #fff;
+  line-height: 1.65;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.calc-summary-line strong {
+  color: #d4af37;
+}
+
+.calc-summary-note {
+  font-size: 0.82rem;
+  color: #9ca3af;
+  line-height: 1.6;
+  margin: 8px 0 0;
+}
+
+.calc-summary-note strong {
+  color: #d4af37;
+}
+
+.calc-disclaimer {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin: 12px 0 0;
+  text-align: center;
+}
+
+/* ── Loyalty rule cards ── */
+
+.rule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.rule-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(212, 175, 55, 0.16);
+}
+
+.rule-card-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #d4af37;
+  line-height: 1.2;
+}
+
+.rule-card-label {
+  font-size: 0.82rem;
+  color: #9ca3af;
+  line-height: 1.5;
+}
+
+/* ── How discounts work ── */
+
+.rule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.rule-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.rule-item-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: #d4af37;
+}
+
+.rule-item h3 {
+  font-size: 1rem;
+  color: #fff;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.rule-item p {
+  font-size: 0.9rem;
+  color: #a0a0a0;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.rule-item .section-note {
+  margin-top: 10px;
+}
+
+.tier-table {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0 0;
+}
+
+.tier-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tier-band {
+  font-size: 0.88rem;
+  color: #fff;
+  font-weight: 500;
+}
+
+.tier-cap {
+  font-size: 0.85rem;
+  color: #d4af37;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* ── Verify result + FAQ + CTA ── */
+
+.result-headline {
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+
+.result-box .offer-card-cta {
+  margin-top: 14px;
+  width: 100%;
+}
+
+.faq-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.offers-cta-section {
+  text-align: center;
+  border: none;
+  background: transparent;
+  padding: 10px 0 40px;
+}
+
+.offers-cta-section .btn {
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+/* ── Narrow phones (≤390px must not overflow) ── */
+
+@media (max-width: 480px) {
+  .offers-container {
+    padding: 16px 12px;
+  }
+
+  .calc-inputs {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .calc-row {
+    padding: 10px 12px;
+  }
+
+  .calc-row-label {
+    font-size: 0.88rem;
+  }
+
+  .calc-row-save {
+    font-size: 0.98rem;
+  }
+
+  .tier-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .tier-cap {
+    text-align: left;
+  }
+
+  .hero-rule {
+    font-size: 0.75rem;
+    padding: 5px 10px;
+  }
+
+  .rule-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .rule-card {
+    padding: 12px;
+  }
+
+  .rule-card-value {
+    font-size: 1rem;
+  }
+}

@@ -7,7 +7,7 @@
 // ✅ Persistent banner showing active offers
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import AddToCartModal from "../components/AddToCartModal";
@@ -2227,12 +2227,20 @@ export default function Order() {
                   {hasNoStackItem ? null : !appliedCode ? (
                     <div className="py-1">
                       {!codeExpanded ? (
-                        <button
-                          onClick={() => setCodeExpanded(true)}
-                          className="text-orange-400 hover:text-orange-300 text-sm font-medium transition-colors"
-                        >
-                          {isAuthenticated && customer?.phone ? 'Have a different code?' : 'Have a code?'}
-                        </button>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <button
+                            onClick={() => setCodeExpanded(true)}
+                            className="text-orange-400 hover:text-orange-300 text-sm font-medium transition-colors"
+                          >
+                            {isAuthenticated && customer?.phone ? 'Have a different code?' : 'Have a code?'}
+                          </button>
+                          <Link
+                            to="/offers"
+                            className="text-xs text-neutral-400 hover:text-neutral-200 underline underline-offset-2 transition-colors"
+                          >
+                            See all offers &amp; how discounts work
+                          </Link>
+                        </div>
                       ) : (
                         <div className="space-y-2">
                           <div className="flex gap-2">

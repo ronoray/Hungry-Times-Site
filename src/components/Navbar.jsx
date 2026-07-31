@@ -26,6 +26,7 @@ import {
 const desktopLinks = [
   { to: '/home', label: 'Home' },
   { to: '/menu', label: 'Menu' },
+  { to: '/offers', label: 'Offers' },
   { to: '/gallery', label: 'Gallery' },
   { to: '/testimonials', label: 'Testimonials' },
   { to: '/contact', label: 'Contact' },
