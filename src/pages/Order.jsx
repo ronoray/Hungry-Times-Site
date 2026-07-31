@@ -34,6 +34,7 @@ import {
   setDefaultAddress,
 } from '../utils/addressBook';
 import AddressLabelPicker from '../components/AddressLabelPicker';
+import { round2, money, toPaise } from '../lib/money';
 
 // Offers & loyalty points require an order subtotal ≥ this floor — mirror of the
 // server `min_order_for_offer` setting (default ₹500). Item-restricted combos are
@@ -956,21 +957,25 @@ export default function Order() {
     // alongside the food — added on top when discounted, already inside the
     // amount charged when not. Mirror of server/utils/gst.js in the ops repo;
     // if these drift the customer approves a total the server won't charge.
+    // Rounded to the paise, not the rupee: the server settles on toFixed(2), so
+    // Math.round here showed the customer a total that differed from the one
+    // charged (₹959 approved vs ₹959.71 billed on a discounted delivery order).
     const hasDiscount = (discount + pointsDiscount) > 0;
     const gstBase = afterPoints + deliveryCharge;
     const gst = hasDiscount
-      ? Math.round(gstBase * 0.05)
-      : Math.round(gstBase - gstBase / 1.05);
+      ? round2(gstBase * 0.05)
+      : round2(gstBase - gstBase / 1.05);
 
     return {
-      cartTotal: Math.round(total),
-      discountAmount: Math.round(discount),
+      cartTotal: round2(total),
+      discountAmount: round2(discount),
       pointsDiscount,
       maxRedeemablePoints: maxPts,
       gstAmount: gst,
       gstOnTop: hasDiscount,
-      finalTotal: Math.round(afterPoints + deliveryCharge + (hasDiscount ? gst : 0)),
-      packagingDeduction: Math.round(pkgTotal),
+      // Non-discounted: GST is already inside the price, so it is not added.
+      finalTotal: round2(afterPoints + deliveryCharge + (hasDiscount ? gst : 0)),
+      packagingDeduction: round2(pkgTotal),
     };
   }, [lines, appliedOffer, deliveryCharge, pointsToRedeem, loyaltyPoints, orderType, hasNoStackItem]);
 
@@ -1201,7 +1206,7 @@ export default function Order() {
 
       const options = {
         key: razorpayKey,
-        amount: amount * 100,
+        amount: toPaise(amount),
         currency: "INR",
         name: "Hungry Times",
         description: "Order Payment",
@@ -1280,7 +1285,7 @@ export default function Order() {
               navigate(`/order-success/${dbOrderId}?type=online&pending=1&pid=${paymentResponse.razorpay_payment_id}`);
             } else {
               setPaymentError(
-                `Your payment of ₹${finalTotal} was received. Your order is being confirmed. ` +
+                `Your payment of ₹${money(finalTotal)} was received. Your order is being confirmed. ` +
                 `Check your orders page in a minute. Payment ID: ${paymentResponse.razorpay_payment_id}`
               );
               setTimeout(() => navigate('/orders'), 5000);
@@ -1690,7 +1695,7 @@ export default function Order() {
                     <p className="text-neutral-300 text-sm">32/12A, Gariahat Road South, Kolkata 700 031</p>
                     {packagingDeduction > 0 && (
                       <p className="text-green-400 text-sm mt-2 font-medium">
-                        ✓ No packaging charge — saves ₹{packagingDeduction}
+                        ✓ No packaging charge — saves ₹{money(packagingDeduction)}
                       </p>
                     )}
                   </div>
@@ -2178,7 +2183,7 @@ export default function Order() {
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between text-neutral-400">
                     <span>Subtotal</span>
-                    <span className="text-white font-medium">₹{cartTotal}</span>
+                    <span className="text-white font-medium">₹{money(cartTotal)}</span>
                   </div>
                   
                   {/* Fixed-price bundle in the cart: no code and no loyalty can
@@ -2298,7 +2303,7 @@ export default function Order() {
                       <span className="text-green-400 font-medium text-sm">
                         Offer Discount ({appliedOffer?.discount_value}{appliedOffer?.discount_type === 'percent' ? '%' : '₹'})
                       </span>
-                      <span className="text-green-400 font-bold">- ₹{discountAmount}</span>
+                      <span className="text-green-400 font-bold">- ₹{money(discountAmount)}</span>
                     </div>
                   )}
 
@@ -2306,7 +2311,7 @@ export default function Order() {
                   {isDineIn && packagingDeduction > 0 && (
                     <div className="flex justify-between items-center bg-green-500/10 -mx-6 px-6 py-2 rounded">
                       <span className="text-green-400 font-medium text-sm">No packaging (Dine-in)</span>
-                      <span className="text-green-400 font-bold">- ₹{packagingDeduction}</span>
+                      <span className="text-green-400 font-bold">- ₹{money(packagingDeduction)}</span>
                     </div>
                   )}
 
@@ -2360,7 +2365,7 @@ export default function Order() {
                       <span className="text-purple-400 font-medium text-sm">
                         Points Discount
                       </span>
-                      <span className="text-purple-400 font-bold">- ₹{pointsDiscount}</span>
+                      <span className="text-purple-400 font-bold">- ₹{money(pointsDiscount)}</span>
                     </div>
                   )}
 
@@ -2369,7 +2374,7 @@ export default function Order() {
                       extra charge the total then fails to include. */}
                   <div className="flex justify-between text-neutral-400">
                     <span>GST (5%){gstOnTop ? '' : ' — included'}</span>
-                    <span className="text-white">{gstOnTop ? `₹${gstAmount}` : `₹${gstAmount} incl.`}</span>
+                    <span className="text-white">{gstOnTop ? `₹${money(gstAmount)}` : `₹${money(gstAmount)} incl.`}</span>
                   </div>
 
                   {/* Borzo delivery partner toggle — only shown when quote is available */}
@@ -2406,7 +2411,7 @@ export default function Order() {
                     ) : borzoQuote.loading ? (
                       <span className="flex items-center gap-1 text-neutral-400 text-sm"><Loader className="w-3.5 h-3.5 animate-spin" /> Calculating...</span>
                     ) : deliveryCharge > 0 ? (
-                      <span className="text-white">₹{deliveryCharge}</span>
+                      <span className="text-white">₹{money(deliveryCharge)}</span>
                     ) : (
                       <span className="text-green-400 font-medium">FREE</span>
                     )}
@@ -2414,7 +2419,7 @@ export default function Order() {
 
                   <div className="border-t border-neutral-700 pt-2 mt-2 flex justify-between">
                     <span className="text-lg font-bold text-white">Total</span>
-                    <span className="text-xl font-bold text-orange-500">₹{finalTotal}</span>
+                    <span className="text-xl font-bold text-orange-500">₹{money(finalTotal)}</span>
                   </div>
                   
                   {/* 🎊 SAVINGS MESSAGE */}

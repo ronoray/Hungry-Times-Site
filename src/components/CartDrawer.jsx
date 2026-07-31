@@ -9,6 +9,7 @@ import { X, Minus, Plus, Trash2, MapPin, MessageSquare } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import GoogleMapsAutocomplete from "./GoogleMapsAutocomplete";
 import { lineUnitPrice } from "../utils/cartLine";
+import { money } from "../lib/money";
 
 export default function CartDrawer({
   isOpen,
@@ -171,35 +172,35 @@ export default function CartDrawer({
             <div className="space-y-2 text-sm">
               <div className="flex justify-between text-neutral-400">
                 <span>Subtotal</span>
-                <span>₹{cartTotal}</span>
+                <span>₹{money(cartTotal)}</span>
               </div>
               {discountAmount > 0 && (
                 <div className="flex justify-between text-green-500">
                   <span>Discount</span>
-                  <span>-₹{discountAmount}</span>
+                  <span>-₹{money(discountAmount)}</span>
                 </div>
               )}
               {pointsDiscount > 0 && (
                 <div className="flex justify-between text-purple-400">
                   <span>Points Discount</span>
-                  <span>-₹{pointsDiscount}</span>
+                  <span>-₹{money(pointsDiscount)}</span>
                 </div>
               )}
               <div className="flex justify-between text-neutral-400">
                 <span>GST (5%){gstOnTop ? '' : ' — included'}</span>
-                <span>{gstOnTop ? `₹${gstAmount}` : `₹${gstAmount} incl.`}</span>
+                <span>{gstOnTop ? `₹${money(gstAmount)}` : `₹${money(gstAmount)} incl.`}</span>
               </div>
               {orderType !== 'pickup' && orderType !== 'dine_in' && (
                 <div className="flex justify-between text-neutral-400">
                   <span>Delivery</span>
                   {deliveryCharge > 0
-                    ? <span>₹{deliveryCharge}</span>
+                    ? <span>₹{money(deliveryCharge)}</span>
                     : <span className="text-green-400 font-medium">FREE</span>}
                 </div>
               )}
               <div className="flex justify-between font-bold text-white text-base border-t border-neutral-700 pt-2">
                 <span>Total</span>
-                <span className="text-orange-500">₹{finalTotal}</span>
+                <span className="text-orange-500">₹{money(finalTotal)}</span>
               </div>
             </div>
 
