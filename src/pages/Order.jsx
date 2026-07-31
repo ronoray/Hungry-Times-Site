@@ -952,10 +952,15 @@ export default function Order() {
     // so every non-discounted website order showed (and charged) 5% too much.
     // The Mid-Week Combo made it constant: at ₹449 it sits below the ₹500 offer
     // floor, so it can never take a discount and always lands on this path.
+    // The delivery charge is part of the taxable supply and sits in the GST base
+    // alongside the food — added on top when discounted, already inside the
+    // amount charged when not. Mirror of server/utils/gst.js in the ops repo;
+    // if these drift the customer approves a total the server won't charge.
     const hasDiscount = (discount + pointsDiscount) > 0;
+    const gstBase = afterPoints + deliveryCharge;
     const gst = hasDiscount
-      ? Math.round(afterPoints * 0.05)
-      : Math.round(afterPoints - afterPoints / 1.05);
+      ? Math.round(gstBase * 0.05)
+      : Math.round(gstBase - gstBase / 1.05);
 
     return {
       cartTotal: Math.round(total),
@@ -964,7 +969,7 @@ export default function Order() {
       maxRedeemablePoints: maxPts,
       gstAmount: gst,
       gstOnTop: hasDiscount,
-      finalTotal: Math.round(afterPoints + (hasDiscount ? gst : 0) + deliveryCharge),
+      finalTotal: Math.round(afterPoints + deliveryCharge + (hasDiscount ? gst : 0)),
       packagingDeduction: Math.round(pkgTotal),
     };
   }, [lines, appliedOffer, deliveryCharge, pointsToRedeem, loyaltyPoints, orderType, hasNoStackItem]);
