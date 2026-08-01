@@ -10,7 +10,7 @@ import TodaysSpecial from '../components/TodaysSpecial'
 import LiveOrderCount from '../components/LiveOrderCount'
 import VegDot from '../components/VegDot'
 import ComboPromoCard from '../components/ComboPromoCard'
-import MidWeekComboCard from '../components/MidWeekComboCard'
+import FeaturedComboCard from '../components/FeaturedComboCard'
 import OffersStrip from '../components/OffersStrip'
 import API_BASE from '../config/api'
 import heroImg from '../assets/hero-1200.jpg'
@@ -151,9 +151,12 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── Mid-Week Combo (shows Mon–Thu IST, hidden Fri–Sun) ─── */}
+      {/* ─── Live fixed-price bundle: Mid-Week Combo Mon–Thu, Weekend Special
+           Fri–Sun. The server picks whichever is in-schedule and returns exactly
+           one, so this slot swaps by itself and never stacks the two. Renders
+           nothing when neither is live. ─── */}
       <section className="px-4 pt-5 -mb-3 max-w-5xl mx-auto w-full">
-        <MidWeekComboCard />
+        <FeaturedComboCard surface="home" />
       </section>
 
       {/* ─── Combo offer (auto-hides when COMBO50 is off) ─── */}
