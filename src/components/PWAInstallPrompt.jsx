@@ -9,7 +9,6 @@ import { Download, X } from 'lucide-react';
 export default function PWAInstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
     const dismissed = sessionStorage.getItem('pwa-prompt-dismissed');
@@ -17,17 +16,13 @@ export default function PWAInstallPrompt() {
 
     if (isStandalone || dismissed) return;
 
-    // Detect iOS (beforeinstallprompt NEVER fires on iOS)
+    // iOS has no beforeinstallprompt and no programmatic install — the banner could
+    // only ever show a "tap Share > Add to Home Screen" alert, which reads as spam.
+    // Never prompt on iOS; Safari's own Share menu is the only real install path.
     const ua = navigator.userAgent;
     const iosDevice = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-    if (iosDevice) {
-      setIsIOS(true);
-      const timer = setTimeout(() => {
-        if (!sessionStorage.getItem('pwa-prompt-dismissed')) setShowPrompt(true);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
+    if (iosDevice) return;
 
     const showAfterDelay = (prompt) => {
       setDeferredPrompt(prompt);
@@ -54,17 +49,6 @@ export default function PWAInstallPrompt() {
   }, [showPrompt]);
 
   const handleInstall = async () => {
-    if (isIOS) {
-      alert(
-        'To install Hungry Times on iPhone/iPad:\n\n' +
-        '1. Tap the Share button (square with arrow) at the bottom of Safari\n' +
-        '2. Scroll down and tap "Add to Home Screen"\n' +
-        '3. Tap "Add" to confirm'
-      );
-      setShowPrompt(false);
-      return;
-    }
-
     // Use global trigger (set up in main.jsx) or local deferred prompt
     const prompt = deferredPrompt || window.__pwaDeferred;
     if (!prompt) {
