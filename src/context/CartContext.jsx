@@ -189,18 +189,41 @@ export function CartProvider({ children }) {
   // ============================================================================
 
   const reconcileWithMenu = useCallback((allItems) => {
-    // Build lookup: itemId → { basePrice, priceById (covers both variants and addon options) }
+    // Build lookup: itemId → { basePrice, variantPrices, addonPrices }
+    //
+    // TWO maps, and the key is id + name. Never one flat map keyed on the bare
+    // id — that is exactly the bug this function shipped with.
+    //
+    // Options come from three independent AUTOINCREMENT tables whose ids
+    // overlap: variant 9 is "Large" (₹130 on Bacon & Ham Diff Fried Rice) while
+    // addon 9 is "Ham" (₹50). A single Map<id, price> filled variants → families
+    // → addons let Ham overwrite Large, and this function then quietly rewrote
+    // the cart line from 130 down to 50. Order #253 on 3 Aug 2026 was charged
+    // ₹330 for a ₹410 dish, and 192 option pairs across ~100 items can do it.
+    //
+    // Splitting by cart array is necessary but NOT sufficient: an addon-type
+    // family member lands in line.addons alongside real add-ons, so item 432
+    // carries both family member 17 "Three Parathas" (₹120) and addon 17
+    // "Packaging" (₹10). Hence id + name.
+    //
+    // The split below must mirror how AddToCartModal builds a line — families
+    // with type 'addon' go to addons, everything else to variants. Change one
+    // and you must change the other.
+    const keyOf = (id, name) => `${id}|${String(name || "").trim().toLowerCase()}`;
+
     const lookup = new Map();
     for (const item of allItems) {
-      const priceById = new Map();
-      for (const v of (item.variants || [])) priceById.set(v.id, v.priceDelta);
+      const variantPrices = new Map();
+      const addonPrices = new Map();
+      for (const v of (item.variants || [])) variantPrices.set(keyOf(v.id, v.name), v.priceDelta);
       for (const fam of (item.families || [])) {
-        for (const opt of (fam.options || [])) priceById.set(opt.id, opt.priceDelta);
+        const target = String(fam.type).toLowerCase() === "addon" ? addonPrices : variantPrices;
+        for (const opt of (fam.options || [])) target.set(keyOf(opt.id, opt.name), opt.priceDelta);
       }
       for (const g of (item.addonGroups || [])) {
-        for (const opt of (g.options || [])) priceById.set(opt.id, opt.priceDelta);
+        for (const opt of (g.options || [])) addonPrices.set(keyOf(opt.id, opt.name), opt.priceDelta);
       }
-      lookup.set(item.id, { basePrice: item.basePrice, priceById });
+      lookup.set(item.id, { basePrice: item.basePrice, variantPrices, addonPrices });
     }
 
     setLines(prev => {
@@ -213,21 +236,24 @@ export function CartProvider({ children }) {
         const newBase = info.basePrice !== undefined ? info.basePrice : line.basePrice;
         if (newBase !== line.basePrice) lineChanged = true;
 
-        const newVariants = Array.isArray(line.variants)
-          ? line.variants.map(v => {
-              const fresh = info.priceById.get(v.id);
-              if (fresh !== undefined && fresh !== v.priceDelta) { lineChanged = true; return { ...v, priceDelta: fresh }; }
-              return v;
-            })
-          : line.variants;
+        // A miss leaves the stored price untouched. Never fall back to the other
+        // map, and never default to 0 — an option we fail to recognise must not
+        // become free. The server reprices from the database on checkout, so a
+        // stale value here cannot reach a bill.
+        const reprice = (list, priceMap) =>
+          Array.isArray(list)
+            ? list.map(o => {
+                const fresh = priceMap.get(keyOf(o.id, o.name));
+                if (fresh !== undefined && fresh !== o.priceDelta) {
+                  lineChanged = true;
+                  return { ...o, priceDelta: fresh };
+                }
+                return o;
+              })
+            : list;
 
-        const newAddons = Array.isArray(line.addons)
-          ? line.addons.map(a => {
-              const fresh = info.priceById.get(a.id);
-              if (fresh !== undefined && fresh !== a.priceDelta) { lineChanged = true; return { ...a, priceDelta: fresh }; }
-              return a;
-            })
-          : line.addons;
+        const newVariants = reprice(line.variants, info.variantPrices);
+        const newAddons = reprice(line.addons, info.addonPrices);
 
         if (lineChanged) {
           anyChanged = true;

@@ -31,11 +31,34 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
   const variantFamilies = families.filter((f) => f.type === "variant");
   const addonFamilies = families.filter((f) => f.type === "addon");
 
+  // The variants table holds TWO different things and the API serves them as one
+  // flat list:
+  //   SIZE  — "Large", priced per item (₹40–180 depending on the dish)
+  //   STYLE — Szechwan, Green Chilli, Chili Garlic, Hong Kong, Singapore,
+  //           Burnt Garlic; one global price each, noodle/rice dishes only
+  //
+  // They combine: a Large Egg Chowmein can be a Large Szechwan Egg Chowmein.
+  // Two styles never combine — Szechwan plus Chili Garlic is not a dish.
+  //
+  // This modal used to hold a single `selectedVariant`, so choosing Large
+  // deselected Szechwan and a Large Szechwan Egg Chowmein could not be ordered
+  // online at all, while the POS (which keeps an array) sold them happily.
+  //
+  // "Large" is matched by name because that is what distinguishes the two —
+  // a size carries a per-item price override, a style does not. The ops admin
+  // (AddonVariantManager.jsx, isLargeVariant) and the server
+  // (server/utils/menuOptions.js, SIZE_VARIANT_NAMES) hardcode the same string.
+  // A second size means updating all three.
+  const isSizeVariant = (v) => String(v?.name || "").trim().toLowerCase() === "large";
+  const sizeVariants = variants.filter(isSizeVariant);
+  const styleVariants = variants.filter((v) => !isSizeVariant(v));
+
   // ============================================================================
   // STATE MANAGEMENT
   // ============================================================================
 
-  const [selectedVariant, setSelectedVariant] = useState(null);
+  const [selectedSize, setSelectedSize] = useState(null);
+  const [selectedStyle, setSelectedStyle] = useState(null);
   const [selectedFamilyVariants, setSelectedFamilyVariants] = useState({});
   const [selectedAddons, setSelectedAddons] = useState({});
   const [selectedFamilyAddons, setSelectedFamilyAddons] = useState({});
@@ -88,9 +111,15 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
   // HANDLERS
   // ============================================================================
 
-  // SELECT VARIANT (from variants table)
-  const selectVariant = (variant) => {
-    setSelectedVariant(variant);
+  // SELECT SIZE / STYLE (from the variants table). Independent of each other,
+  // one pick each, and clicking the current pick clears it — both groups are
+  // optional, and with no selection the item is added at base price.
+  const selectSize = (variant) => {
+    setSelectedSize((prev) => (prev?.id === variant.id ? null : variant));
+  };
+
+  const selectStyle = (variant) => {
+    setSelectedStyle((prev) => (prev?.id === variant.id ? null : variant));
   };
 
   // SELECT FAMILY VARIANT (radio - can deselect by clicking again)
@@ -124,15 +153,32 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
     });
   };
 
-  // TOGGLE FAMILY ADDON (checkboxes)
+  // TOGGLE FAMILY ADDON
+  //
+  // maxSelect caps how many members of one family may be held at once. It is a
+  // real column that POS already enforces (Sales.jsx getUnmetVariantFamilies),
+  // and every family is currently maxSelect=1 — so this must replace rather
+  // than accumulate, or a customer could hold "Two Parathas" and "Three
+  // Parathas" together and be charged for both.
   const toggleFamilyAddon = (familyId, option) => {
     if (/packag/i.test(option.name) && option.locked) {
       return;
     }
 
+    const family = addonFamilies.find((f) => f.id === familyId);
+    const maxSelect = Number(family?.maxSelect);
+    const singleChoice = Number.isFinite(maxSelect) && maxSelect === 1;
+
     setSelectedFamilyAddons((prev) => {
       const fam = prev[familyId] || {};
       const exists = fam[option.id];
+
+      if (singleChoice) {
+        // Tapping the held option clears it; anything else replaces it. Locked
+        // packaging members are returned above and never reach here, so they
+        // cannot be displaced.
+        return { ...prev, [familyId]: exists ? {} : { [option.id]: option } };
+      }
 
       const updatedFamily = { ...fam };
       if (exists) delete updatedFamily[option.id];
@@ -151,8 +197,12 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
   const unitPrice = useMemo(() => {
     let total = basePrice;
 
-    if (selectedVariant) {
-      total += Number(selectedVariant.priceDelta || 0);
+    if (selectedSize) {
+      total += Number(selectedSize.priceDelta || 0);
+    }
+
+    if (selectedStyle) {
+      total += Number(selectedStyle.priceDelta || 0);
     }
 
     for (const familyId in selectedFamilyVariants) {
@@ -175,7 +225,7 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
     }
 
     return total;
-  }, [basePrice, selectedVariant, selectedFamilyVariants, selectedAddons, selectedFamilyAddons]);
+  }, [basePrice, selectedSize, selectedStyle, selectedFamilyVariants, selectedAddons, selectedFamilyAddons]);
 
   const finalTotal = unitPrice * quantity;
 
@@ -183,24 +233,41 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
   // VALIDATION
   // ============================================================================
 
+  // Whether a family MUST be answered is stored per family in the database
+  // (option_families.required / minSelect), and the counter already obeys it —
+  // salesController reads those columns and Sales.jsx enforces them. This modal
+  // used to ignore what the API sent and treat every variant-type family as
+  // mandatory, so the website demanded a choice that POS let staff skip.
+  //
+  // Fall back to "variant families are required" only when the API sends
+  // nothing, which keeps older payloads behaving as before.
+  const familyIsRequired = (family) => {
+    if (typeof family?.required === "boolean") return family.required;
+    if (family?.required != null) return Number(family.required) === 1;
+    if (family?.minSelect != null) return Number(family.minSelect) > 0;
+    return String(family?.type).toLowerCase() === "variant";
+  };
+
   const validateFamilies = () => {
     const missingFamilies = [];
 
     // Check variant families
     variantFamilies.forEach((family) => {
-      if (!selectedFamilyVariants[family.id]) {
+      if (familyIsRequired(family) && !selectedFamilyVariants[family.id]) {
         missingFamilies.push(family);
       }
     });
 
     // Check addon families (excluding packaging which is auto-locked)
     addonFamilies.forEach((family) => {
+      if (!familyIsRequired(family)) return;
+
       // Check if this family has any selected options
-      const hasSelection = selectedFamilyAddons[family.id] && 
+      const hasSelection = selectedFamilyAddons[family.id] &&
                           Object.keys(selectedFamilyAddons[family.id]).length > 0;
-      
+
       // Check if all options in this family are packaging (auto-locked)
-      const allOptionsArePackaging = family.options.every(opt => 
+      const allOptionsArePackaging = family.options.every(opt =>
         /packag/i.test(opt.name) && opt.locked
       );
 
@@ -239,8 +306,12 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
     }
 
     // Validation passed, proceed with adding to cart
+    // Size and style are both plain variants on the cart line — the split is a
+    // selection rule, not a data model. Keep them in one array so the server,
+    // the bill and the KOT need no special case.
     const variantList = [];
-    if (selectedVariant) variantList.push(selectedVariant);
+    if (selectedSize) variantList.push(selectedSize);
+    if (selectedStyle) variantList.push(selectedStyle);
     variantList.push(...Object.values(selectedFamilyVariants));
 
     const addonList = [
@@ -428,18 +499,20 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
               </p>
             </div>
 
-          {/* VARIANTS FROM VARIANTS TABLE (Optional) */}
-          {variants.length > 0 && (
+          {/* SIZE and STYLE — two independent optional groups.
+              One pick each, and they combine (Large + Szechwan). Rendering them
+              as one radio pool is what made "Large Szechwan Egg Chowmein"
+              impossible to order online. */}
+          {sizeVariants.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-base md:text-lg font-semibold text-white mb-3">
-                Variants
+                Size
               </h3>
               <div className="space-y-2">
-                {/* Plain / no variant — pre-selected by default */}
                 <label
-                  onClick={() => setSelectedVariant(null)}
+                  onClick={() => setSelectedSize(null)}
                   className={`flex items-center justify-between p-3 md:p-4 rounded-lg border-2 cursor-pointer transition ${
-                    selectedVariant === null
+                    selectedSize === null
                       ? "border-orange-500 bg-orange-500/10"
                       : "border-neutral-700 hover:border-neutral-600"
                   }`}
@@ -447,22 +520,22 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
                   <div className="flex items-center gap-3">
                     <input
                       type="radio"
-                      name="variant"
-                      checked={selectedVariant === null}
+                      name="variant-size"
+                      checked={selectedSize === null}
                       onChange={() => {}}
                       className="w-5 h-5 text-orange-500 cursor-pointer"
                     />
-                    <span className="text-white text-sm md:text-base">Plain</span>
+                    <span className="text-white text-sm md:text-base">Regular</span>
                   </div>
                   <span className="text-neutral-400 text-sm">base price</span>
                 </label>
 
-                {variants.map((variant) => (
+                {sizeVariants.map((variant) => (
                   <label
                     key={variant.id}
-                    onClick={() => selectVariant(variant)}
+                    onClick={() => selectSize(variant)}
                     className={`flex items-center justify-between p-3 md:p-4 rounded-lg border-2 cursor-pointer transition ${
-                      selectedVariant?.id === variant.id
+                      selectedSize?.id === variant.id
                         ? "border-orange-500 bg-orange-500/10"
                         : "border-neutral-700 hover:border-neutral-600"
                     }`}
@@ -470,8 +543,69 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
                     <div className="flex items-center gap-3">
                       <input
                         type="radio"
-                        name="variant"
-                        checked={selectedVariant?.id === variant.id}
+                        name="variant-size"
+                        checked={selectedSize?.id === variant.id}
+                        onChange={() => {}}
+                        className="w-5 h-5 text-orange-500 cursor-pointer"
+                      />
+                      <span className="text-white text-sm md:text-base">
+                        {variant.name}
+                      </span>
+                    </div>
+                    {variant.priceDelta > 0 && (
+                      <span className="text-orange-400 font-semibold text-sm md:text-base">
+                        +₹{variant.priceDelta}
+                      </span>
+                    )}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {styleVariants.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-base md:text-lg font-semibold text-white mb-3">
+                Style
+                <span className="text-neutral-500 text-xs font-normal ml-2">optional</span>
+              </h3>
+              <div className="space-y-2">
+                <label
+                  onClick={() => setSelectedStyle(null)}
+                  className={`flex items-center justify-between p-3 md:p-4 rounded-lg border-2 cursor-pointer transition ${
+                    selectedStyle === null
+                      ? "border-orange-500 bg-orange-500/10"
+                      : "border-neutral-700 hover:border-neutral-600"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="variant-style"
+                      checked={selectedStyle === null}
+                      onChange={() => {}}
+                      className="w-5 h-5 text-orange-500 cursor-pointer"
+                    />
+                    <span className="text-white text-sm md:text-base">No style</span>
+                  </div>
+                  <span className="text-neutral-400 text-sm">as listed</span>
+                </label>
+
+                {styleVariants.map((variant) => (
+                  <label
+                    key={variant.id}
+                    onClick={() => selectStyle(variant)}
+                    className={`flex items-center justify-between p-3 md:p-4 rounded-lg border-2 cursor-pointer transition ${
+                      selectedStyle?.id === variant.id
+                        ? "border-orange-500 bg-orange-500/10"
+                        : "border-neutral-700 hover:border-neutral-600"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        name="variant-style"
+                        checked={selectedStyle?.id === variant.id}
                         onChange={() => {}}
                         className="w-5 h-5 text-orange-500 cursor-pointer"
                       />
@@ -496,7 +630,12 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
               {variantFamilies.map((family) => (
                 <div key={family.id}>
                   <h3 className="text-base md:text-lg font-semibold text-white mb-3">
-                    {family.name} <span className="text-red-400">*</span>
+                    {family.name}{" "}
+                    {familyIsRequired(family) ? (
+                      <span className="text-red-400">*</span>
+                    ) : (
+                      <span className="text-neutral-500 text-xs font-normal">optional</span>
+                    )}
                   </h3>
 
                   <div className="space-y-2">
@@ -609,13 +748,23 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
                   <div key={family.id}>
                     <h3 className="text-base md:text-lg font-semibold text-white mb-3">
                       {family.name}
-                      {!allPackaging && <span className="text-red-400"> *</span>}
+                      {!allPackaging && familyIsRequired(family) && (
+                        <span className="text-red-400"> *</span>
+                      )}
+                      {!allPackaging && !familyIsRequired(family) && (
+                        <span className="text-neutral-500 text-xs font-normal"> optional</span>
+                      )}
                     </h3>
 
                     <div className="space-y-2">
                       {family.options.map((opt) => {
                         const selected = selectedFamilyAddons[family.id]?.[opt.id] !== undefined;
                         const locked = isLocked(opt);
+                        // A maxSelect of 1 is a pick-one group, so it must look
+                        // like one. Showing checkboxes for a group that only
+                        // ever holds a single answer invites the customer to
+                        // tick "Two Parathas" and "Three Parathas" together.
+                        const singleChoice = Number(family?.maxSelect) === 1;
 
                         return (
                           <label
@@ -634,7 +783,8 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
                           >
                             <div className="flex items-center gap-3">
                               <input
-                                type="checkbox"
+                                type={singleChoice && !locked ? "radio" : "checkbox"}
+                                name={singleChoice ? `family-addon-${family.id}` : undefined}
                                 checked={selected}
                                 onChange={() => toggleFamilyAddon(family.id, opt)}
                                 disabled={locked}
@@ -701,10 +851,17 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
               <span>₹{basePrice.toFixed(0)}</span>
             </div>
 
-            {selectedVariant && (
+            {selectedSize && (
               <div className="flex justify-between text-neutral-400">
-                <span>{selectedVariant.name}</span>
-                <span>+₹{selectedVariant.priceDelta}</span>
+                <span>{selectedSize.name}</span>
+                <span>+₹{selectedSize.priceDelta}</span>
+              </div>
+            )}
+
+            {selectedStyle && (
+              <div className="flex justify-between text-neutral-400">
+                <span>{selectedStyle.name}</span>
+                <span>+₹{selectedStyle.priceDelta}</span>
               </div>
             )}
 
