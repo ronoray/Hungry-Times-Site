@@ -1,6 +1,7 @@
 // File: site/src/pages/Menu.jsx
 
 import { useEffect, useMemo, useState, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Fuse from "fuse.js";
 import "./Menu.css";
 import { useCart } from "../context/CartContext";
@@ -224,6 +225,8 @@ export default function Menu() {
   const [showMealModal, setShowMealModal] = useState(false);
   const { customer } = useAuth();
 
+  const location = useLocation();
+  const navigate = useNavigate();
   const [activeTop, setActiveTop] = useState(null);
   const [activeSub, setActiveSub] = useState(null);
   const { sidebarOpen, setSidebarOpen } = useMenuCategory();
@@ -364,10 +367,9 @@ export default function Menu() {
         setAcceptingOnlineOrders(json.acceptingOnlineOrders !== false);
         setOrderingDisabledMessage(json.onlineOrdersDisabledMessage || "");
 
-        const t0 = json?.topCategories?.[0]?.id ?? null;
-        const s0 = json?.topCategories?.[0]?.subcategories?.[0]?.id ?? null;
-        setActiveTop(t0);
-        setActiveSub(s0);
+        // activeTop/activeSub are not set here: the ?cat= sync effect below owns
+        // them, and it fires as soon as this setData lands. Setting them here too
+        // would briefly override a /menu?cat=<id> deep link.
         // Track initial category impression
         const firstCat = json?.topCategories?.[0];
         if (firstCat) {
@@ -447,6 +449,25 @@ export default function Menu() {
   }, [data]);
 
   const tops = data?.topCategories || [];
+
+  // The selected top category lives in the URL as /menu?cat=<id>, and this
+  // effect is the only thing that turns it into state.
+  //
+  // Picking a category swaps out the entire right pane, so it reads as a page
+  // to the customer — but it used to be pure component state with nothing in
+  // the history stack. On a cold PWA launch (start_url "/", which redirects to
+  // /menu with `replace`) /menu is the ONLY entry, so back out of a category
+  // dropped straight out of the app instead of returning to the menu.
+  //
+  // Deps are `data`, not `tops`: `data?.topCategories || []` mints a fresh array
+  // on every render while data is still null, which would loop this effect.
+  useEffect(() => {
+    if (!tops.length) return;
+    const raw = new URLSearchParams(location.search).get('cat');
+    const target = (raw && tops.find(t => String(t.id) === raw)) || tops[0];
+    setActiveTop(target.id);
+    setActiveSub(target.subcategories?.[0]?.id ?? null);
+  }, [location.search, data]);
 
   // Fetch active offers
   useEffect(() => {
@@ -654,13 +675,31 @@ export default function Menu() {
   };
 
   const handleCategoryClick = (tcId, firstSubId) => {
+    // Clear the search first. While searchQuery is non-empty, filteredSubs and
+    // filteredItemsBySub are built entirely from globalSearchResults and ignore
+    // activeTop — so picking a category during a search silently did nothing,
+    // the results just stayed on screen.
+    setSearchQuery('');
+    const sameCategory = tcId === activeTop;
     setActiveTop(tcId);
     setActiveSub(firstSubId);
-    // Close through the backable closer, not setSidebarOpen(false): picking a
-    // category is a forward action, but the sidebar still pushed a history
-    // entry when it opened and that entry has to be consumed either way — or
-    // the next back press is swallowed doing nothing visible.
-    closeSidebar();
+
+    if (sameCategory) {
+      // Already on this category — a new entry would render identically and
+      // cost the customer a back press that appears to do nothing. Just close
+      // the sidebar through the closer, which consumes the entry it pushed.
+      if (sidebarOpen) closeSidebar();
+    } else {
+      const fromSidebar = sidebarOpen;
+      setSidebarOpen(false);
+      // Make the category a real history entry so back walks out of it.
+      // `replace` when the pick came from the sidebar: the sidebar already
+      // pushed an entry when it opened, and replacing consumes it.
+      // closeSidebar() must NOT be used here — history.back() is async and
+      // would land after this navigate, undoing it.
+      navigate(`/menu?cat=${tcId}`, { replace: fromSidebar });
+    }
+
     const tc = tops.find(t => t.id === tcId);
     if (tc) {
       const items = tc.subcategories?.flatMap(sc => sc.items || []) || [];
@@ -1454,7 +1493,7 @@ export default function Menu() {
                       {tops.slice(0, 5).map(t => (
                         <button
                           key={t.id}
-                          onClick={() => { setSearchQuery(''); setActiveTop(t.id); }}
+                          onClick={() => handleCategoryClick(t.id, t.subcategories?.[0]?.id)}
                           className="px-3 py-1.5 text-sm bg-neutral-800 hover:bg-neutral-700 rounded-full text-neutral-300 border border-neutral-700"
                         >
                           {t.name}
