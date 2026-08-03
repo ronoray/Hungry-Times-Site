@@ -5,6 +5,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Copy, Check, Clock } from 'lucide-react';
+import { useBackableOverlay } from '../hooks/useBackableOverlay';
 
 const STORAGE_KEY = 'ht_first_visit_seen';
 const CODE = 'WELCOME15';
@@ -80,6 +81,13 @@ export default function FirstVisitPopup({ onDone }) {
     onDone?.();
   };
 
+  // Back button dismisses the welcome popup instead of leaving the site. This is
+  // the highest-traffic overlay on the site — nearly every first-time visitor
+  // sees it, and many of them arrive on a single history entry from WhatsApp.
+  // Declared after `dismiss` so the hook can capture it without hitting the TDZ,
+  // and before the early return so the hook count stays stable.
+  const closePopup = useBackableOverlay(show, dismiss);
+
   const copyCode = async () => {
     try {
       await navigator.clipboard.writeText(CODE);
@@ -100,7 +108,11 @@ export default function FirstVisitPopup({ onDone }) {
 
   const orderNow = () => {
     dismiss();
-    navigate('/menu');
+    // `replace`, not push: the popup's own history entry is on top right now, so
+    // replacing it both takes the user to /menu and consumes that entry. Calling
+    // closePopup() here instead would race — history.back() lands after the
+    // push and would undo the navigation.
+    navigate('/menu', { replace: true });
   };
 
   if (!show) return null;
@@ -114,7 +126,7 @@ export default function FirstVisitPopup({ onDone }) {
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/70 z-[9998] backdrop-blur-sm"
-        onClick={dismiss}
+        onClick={closePopup}
       />
 
       {/* Popup */}
@@ -125,7 +137,7 @@ export default function FirstVisitPopup({ onDone }) {
 
           {/* Close button */}
           <button
-            onClick={dismiss}
+            onClick={closePopup}
             className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-white/10 transition-colors z-10"
           >
             <X className="w-5 h-5 text-gray-400" />

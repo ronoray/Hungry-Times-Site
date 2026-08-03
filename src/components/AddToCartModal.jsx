@@ -10,10 +10,15 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { trackAddToCart } from "../utils/analytics";
 import { X, Plus, Minus, ShoppingCart, AlertCircle } from "lucide-react";
+import { useBackableOverlay } from "../hooks/useBackableOverlay";
 
 const CDN_BASE = import.meta.env.VITE_CDN_BASE || "http://localhost:5000";
 
 export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn = false }) {
+  // Back button closes the sheet instead of popping the menu route underneath.
+  // Called above the early return so hook order stays stable.
+  const closeModal = useBackableOverlay(isOpen && !!item, onClose);
+
   if (!isOpen || !item) return null;
 
   // ============================================================================
@@ -354,7 +359,9 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
     }).catch(() => {}); // never block the cart action
 
     onAdd(lineItem);
-    onClose();
+    // Route the success close through the backable closer too, so the history
+    // entry this modal pushed is consumed instead of left orphaned.
+    closeModal();
   };
 
   // ============================================================================
@@ -421,12 +428,12 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
     if (dragDelta.current > 120) {
       // Dismiss
       setSheetTranslateY(window.innerHeight);
-      setTimeout(onClose, 200);
+      setTimeout(closeModal, 200);
     } else {
       setSheetTranslateY(0);
     }
     dragDelta.current = 0;
-  }, [onClose]);
+  }, [closeModal]);
 
   // ============================================================================
   // RENDER: MAIN MODAL
@@ -435,7 +442,7 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
   return (
     <div
       className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center z-[60] p-0 md:p-4 pb-16 md:pb-0"
-      onClick={onClose}
+      onClick={closeModal}
     >
       <div
         ref={sheetRef}
@@ -456,7 +463,7 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
 
         {/* CLOSE BUTTON - ALWAYS VISIBLE */}
         <button
-          onClick={onClose}
+          onClick={closeModal}
           className="absolute top-4 right-4 bg-black/60 hover:bg-black/80 p-2 md:p-3 rounded-full text-white transition-colors z-10"
           aria-label="Close modal"
         >

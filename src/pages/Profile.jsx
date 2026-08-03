@@ -6,13 +6,13 @@
 // ✅ Multiple addresses (customer_addresses table) - ADDED
 
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import {
   User, MapPin, Phone, Mail, Edit2, Plus, Trash2,
   Save, X, Check, AlertCircle, LogOut, Key,
-  Gift, Heart, HelpCircle, Package, RefreshCw, Loader
+  Gift, Heart, Package, RefreshCw, Loader, ChevronRight
 } from 'lucide-react';
 import GoogleMapsAutocomplete from '../components/GoogleMapsAutocomplete';
 import AuthModal from '../components/AuthModal';
@@ -1051,10 +1051,31 @@ export default function Profile() {
               <Gift className="w-5 h-5 text-green-500" />
               <span className="text-white">Offers & Referrals</span>
             </button>
-            <button onClick={() => navigate('/feedback')} className="w-full flex items-center gap-3 px-4 py-3 bg-neutral-700/50 hover:bg-neutral-700 rounded-lg transition-colors text-left">
-              <HelpCircle className="w-5 h-5 text-blue-500" />
-              <span className="text-white">Feedback & Support</span>
-            </button>
+          </div>
+        </div>
+
+        {/* Help & Support — Contact, Feedback, Reservation and Careers have real
+            routes and desktop nav links but no mobile entry point anywhere else,
+            so this is the only way a phone user reaches them without typing a
+            URL. Low-frequency pages: plain rows, no cards or icons. */}
+        <div className="bg-neutral-800 rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold text-white mb-4">Help &amp; Support</h2>
+          <div className="divide-y divide-neutral-700/70">
+            {[
+              { to: '/contact', label: 'Contact Us' },
+              { to: '/feedback', label: 'Feedback' },
+              { to: '/reservation', label: 'Book a Table' },
+              { to: '/careers', label: 'Careers' },
+            ].map(link => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className="flex items-center justify-between py-3 text-neutral-200 hover:text-white transition-colors"
+              >
+                <span>{link.label}</span>
+                <ChevronRight className="w-4 h-4 text-neutral-500" />
+              </Link>
+            ))}
           </div>
         </div>
 

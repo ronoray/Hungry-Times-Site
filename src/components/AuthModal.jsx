@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import GoogleMapsAutocomplete from './GoogleMapsAutocomplete';
 import { geocodeFreeAddress } from '../utils/geo';
 import { trackCompleteRegistration } from '../utils/analytics';
+import { useBackableOverlay } from '../hooks/useBackableOverlay';
 
 const STEPS = {
   // Returning user
@@ -208,6 +209,11 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
     setOtpCooldown(cooldownSeconds);
   };
 
+  // Back button closes the auth sheet instead of popping the route underneath.
+  // `closeOverlay` runs the raw onClose; handleClose/handleSuccess below add the
+  // form reset on top of it.
+  const closeOverlay = useBackableOverlay(isOpen, onClose);
+
   // Early return AFTER all hooks
   if (!isOpen) return null;
 
@@ -231,13 +237,16 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
 
   const handleClose = () => {
     resetForm();
-    onClose();
+    closeOverlay();
   };
 
   const handleSuccess = () => {
     resetForm();
     if (onSuccess) onSuccess();
-    onClose();
+    // Success also closes the modal, so it must consume the history entry the
+    // hook pushed — otherwise the next back press is swallowed doing nothing.
+    // Callers' onSuccess already flips isOpen; this only pops the dummy entry.
+    closeOverlay();
   };
 
   // ============================================

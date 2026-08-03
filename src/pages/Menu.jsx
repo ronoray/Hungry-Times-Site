@@ -18,6 +18,7 @@ import KitchenStatus from '../components/KitchenStatus';
 import MakeYourMealModal from '../components/MakeYourMealModal';
 import '../components/MakeYourMealModal.css';
 import { useAuth } from '../context/AuthContext';
+import { useBackableOverlay } from '../hooks/useBackableOverlay';
 
 import API_BASE from "../config/api";
 import { trackAddToCart, trackSearch, trackPhoneClick, trackWhatsAppClick, trackCtaClick, trackViewItem, trackFavoriteToggle, trackViewItemList } from "../utils/analytics";
@@ -30,6 +31,10 @@ const DESC_MAX_REGULAR = 100;     // regular items
 // Description Modal
 // ========================
 function DescriptionModal({ open, title, description, onClose }) {
+  // Hook first: this component is mounted unconditionally, so calling it after
+  // the early return would change the hook count between open and closed.
+  const closeModal = useBackableOverlay(open, onClose);
+
   if (!open) return null;
 
   const backdrop = {
@@ -85,7 +90,7 @@ function DescriptionModal({ open, title, description, onClose }) {
   };
 
   return (
-    <div style={backdrop} onClick={onClose}>
+    <div style={backdrop} onClick={closeModal}>
       <div style={body} onClick={(e) => e.stopPropagation()}>
         <div style={head}>
           <div
@@ -97,7 +102,7 @@ function DescriptionModal({ open, title, description, onClose }) {
           >
             {title}
           </div>
-          <button style={closeBtn} onClick={onClose}>
+          <button style={closeBtn} onClick={closeModal}>
             ✕ Close
           </button>
         </div>
@@ -222,6 +227,8 @@ export default function Menu() {
   const [activeTop, setActiveTop] = useState(null);
   const [activeSub, setActiveSub] = useState(null);
   const { sidebarOpen, setSidebarOpen } = useMenuCategory();
+  // Back button closes the category sidebar instead of leaving /menu.
+  const closeSidebar = useBackableOverlay(sidebarOpen, () => setSidebarOpen(false));
   const { toggleFavorite, isFavorite } = useFavorites();
 
   // Search state — seed from ?search= so deep-links (home Quick Categories,
@@ -649,7 +656,11 @@ export default function Menu() {
   const handleCategoryClick = (tcId, firstSubId) => {
     setActiveTop(tcId);
     setActiveSub(firstSubId);
-    setSidebarOpen(false); // Close sidebar on mobile after selection
+    // Close through the backable closer, not setSidebarOpen(false): picking a
+    // category is a forward action, but the sidebar still pushed a history
+    // entry when it opened and that entry has to be consumed either way — or
+    // the next back press is swallowed doing nothing visible.
+    closeSidebar();
     const tc = tops.find(t => t.id === tcId);
     if (tc) {
       const items = tc.subcategories?.flatMap(sc => sc.items || []) || [];
@@ -1228,7 +1239,7 @@ export default function Menu() {
 
         {/* Overlay */}
         {sidebarOpen && (
-          <div className="mobile-overlay" onClick={() => setSidebarOpen(false)} />
+          <div className="mobile-overlay" onClick={closeSidebar} />
         )}
 
         {/* Main layout */}

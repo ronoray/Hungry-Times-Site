@@ -1,9 +1,9 @@
 // components/JamaiBanner.jsx
 // Temporary Jamai Sasthi headline — auto-expires after 20 Jun 2026 (IST).
-// Owns the --banner-h layout var via the same mechanism as OfferBanner, so the
-// navbar/content below are never overlapped. Rendered in place of OfferBanner
-// while active (see App.jsx). Self-kills on 21 Jun; the component can be
-// deleted afterwards, but it is harmless if left in.
+// Owns the --banner-h layout var so the navbar/content below are never
+// overlapped. Rendered only while active (see App.jsx) — the regular promo
+// strip now lives in normal flow inside <main> as PromoBar. Self-killed on
+// 21 Jun 2026; the component can be deleted, but it is harmless if left in.
 import { useEffect, useRef } from 'react';
 
 // Active through end of 20 June 2026 IST; false from the 21st onward.

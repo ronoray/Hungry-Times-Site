@@ -11,9 +11,8 @@ import { LocationProvider } from "./context/LocationContext";
 import { MenuCategoryProvider } from './context/MenuCategoryContext';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { ToastProvider } from "./components/Toast";
-import OfferBanner from "./components/OfferBanner";
 import JamaiBanner, { isJamaiBannerActive } from "./components/JamaiBanner";
-import WhatsAppOrderBar from "./components/WhatsAppOrderBar";
+import PromoBar from "./components/PromoBar";
 import API_BASE from "./config/api.js";
 import "./styles/index.css";
 
@@ -356,18 +355,20 @@ export default function App() {
             <ToastProvider>
             <div className="min-h-screen flex flex-col bg-[#0B0B0B] text-white">
 
-              {/* Top banner — Jamai Sasthi headline takes over until 20 Jun 2026
-                  (IST), then auto-reverts to the regular offer banner */}
-              {isJamaiBannerActive() ? <JamaiBanner /> : <OfferBanner />}
+              {/* Top banner — Jamai Sasthi headline, self-expired after
+                  20 Jun 2026 (IST). Renders nothing from the 21st onward. */}
+              {isJamaiBannerActive() && <JamaiBanner />}
 
               {/* Navigation */}
               <Navbar />
 
-              {/* WhatsApp ordering cross-promo bar (pinned below navbar) */}
-              <WhatsAppOrderBar />
-
-              {/* Main Content — padding-top accounts for fixed banner + navbar + optional WA bar */}
-              <main className="flex-1" style={{ paddingTop: 'calc(var(--banner-h, 0px) + 64px + var(--wa-bar-h, 0px))' }}>
+              {/* Main Content — padding-top accounts for the fixed banner +
+                  navbar only. The promo strip is the first thing INSIDE main,
+                  in normal flow, so it scrolls away instead of permanently
+                  eating viewport height on every screen. */}
+              <main className="flex-1" style={{ paddingTop: 'calc(var(--banner-h, 0px) + 64px)' }}>
+                {/* One promo strip: live discount, else WhatsApp cross-promo */}
+                <PromoBar />
                 <ErrorBoundary>
                   <Outlet />
                 </ErrorBoundary>

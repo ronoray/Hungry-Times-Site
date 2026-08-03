@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { X, ChevronLeft, ChevronRight, Plus, Minus, Sparkles, Users, UtensilsCrossed, Check } from "lucide-react";
 import { useCart } from "../context/CartContext";
+import { useBackableOverlay } from "../hooks/useBackableOverlay";
 import API_BASE from "../config/api";
 
 const CDN = "https://cdn.hungrytimes.in";
@@ -270,6 +271,9 @@ export default function MakeYourMealModal({ isOpen, onClose, recommendedItems, c
   const [loading, setLoading] = useState(false);
   const [addedAll, setAddedAll] = useState(false);
 
+  // Back button closes the builder instead of popping the menu route underneath.
+  const closeModal = useBackableOverlay(isOpen, onClose);
+
   // Reset on close
   useEffect(() => {
     if (!isOpen) {
@@ -313,13 +317,15 @@ export default function MakeYourMealModal({ isOpen, onClose, recommendedItems, c
   function handleAddToCart(lines) {
     lines.forEach(line => addLine(line));
     setAddedAll(true);
-    setTimeout(() => { onClose(); }, 900);
+    // Backable closer, not onClose — otherwise the pushed history entry is left
+    // orphaned and the next back press does nothing visible.
+    setTimeout(() => { closeModal(); }, 900);
   }
 
   if (!isOpen) return null;
 
   return (
-    <div className="myom-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="myom-backdrop" onClick={(e) => e.target === e.currentTarget && closeModal()}>
       <div className="myom-modal">
         {/* Modal header */}
         <div className="myom-header">
@@ -327,7 +333,7 @@ export default function MakeYourMealModal({ isOpen, onClose, recommendedItems, c
             <Sparkles size={18} className="myom-header-icon" />
             <span className="myom-header-title">Make Your Meal</span>
           </div>
-          <button className="myom-close-btn" onClick={onClose} aria-label="Close">
+          <button className="myom-close-btn" onClick={closeModal} aria-label="Close">
             <X size={20} />
           </button>
         </div>

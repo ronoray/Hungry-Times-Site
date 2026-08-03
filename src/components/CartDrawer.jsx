@@ -7,6 +7,7 @@
 
 import { X, Minus, Plus, Trash2, MapPin, MessageSquare } from "lucide-react";
 import { useCart } from "../context/CartContext";
+import { useBackableOverlay } from "../hooks/useBackableOverlay";
 import GoogleMapsAutocomplete from "./GoogleMapsAutocomplete";
 import { lineUnitPrice } from "../utils/cartLine";
 import { money } from "../lib/money";
@@ -33,6 +34,8 @@ export default function CartDrawer({
   orderType,
 }) {
   const { removeLine, updateQty } = useCart();
+  // Back button closes the drawer instead of popping the checkout route.
+  const closeDrawer = useBackableOverlay(isOpen, onClose);
   // Use the orderType prop, not the cart context's orderMode: Order.jsx owns the
   // selection on this screen and passes it down, and the two can drift.
   const isDineIn = orderType === 'dine_in';
@@ -47,7 +50,7 @@ export default function CartDrawer({
       {/* ====================================================================== */}
       <div
         className="fixed inset-0 bg-black/60 z-40 md:hidden"
-        onClick={onClose}
+        onClick={closeDrawer}
         aria-label="Close cart"
       />
 
@@ -61,7 +64,7 @@ export default function CartDrawer({
         <div className="flex items-center justify-between p-4 border-b border-neutral-800 flex-shrink-0">
           <h2 className="text-xl font-bold text-white">Your Cart</h2>
           <button
-            onClick={onClose}
+            onClick={closeDrawer}
             className="p-2 hover:bg-neutral-800 rounded-lg transition-colors text-white"
             aria-label="Close cart"
           >

@@ -33,7 +33,12 @@ const desktopLinks = [
   { to: '/feedback', label: 'Feedback' }
 ];
 
-const MOBILE_NAV_BASE = [
+// Fixed 4 tabs, fixed order — never swapped by cart state. The first slot used
+// to flip between Home and Cart depending on whether the cart had items, which
+// moved every other tab under the user's thumb the moment they added a dish.
+// Cart lives in the top bar (icon + badge) and the floating cart bar instead.
+const MOBILE_NAV_TABS = [
+  { to: '/home', label: 'Home', icon: Home },
   { to: '/menu', label: 'Menu', icon: UtensilsCrossed },
   { to: '/orders', label: 'Orders', icon: Package },
   { to: '/profile', label: 'Account', icon: User },
@@ -61,10 +66,6 @@ export default function Navbar() {
 
   const { sidebarOpen, setSidebarOpen } = useMenuCategory();
   const isActive = (path) => location.pathname === path;
-
-  const mobileNavTabs = hasItems
-    ? [{ to: '/order', label: 'Cart', icon: ShoppingCart, showCartCount: true }, ...MOBILE_NAV_BASE]
-    : [{ to: '/home', label: 'Home', icon: Home }, ...MOBILE_NAV_BASE];
 
   return (
     <>
@@ -114,14 +115,17 @@ export default function Navbar() {
                 {BRAND.phone1}
               </a>
 
-              {/* Desktop Cart Badge */}
+              {/* Cart Badge — the only cart entry point on mobile outside /menu's
+                  FloatingCartBar, now that the bottom nav no longer swaps in a
+                  Cart tab. 44px tap target. */}
               {cartCount > 0 && (
                 <Link
                   to="/order"
-                  className="hidden md:flex relative p-2 text-neutral-300 hover:text-orange-400 transition-colors"
+                  className="flex relative items-center justify-center w-11 h-11 md:w-auto md:h-auto md:p-2 text-neutral-300 hover:text-orange-400 transition-colors"
+                  aria-label={`Cart, ${cartCount} item${cartCount === 1 ? '' : 's'}`}
                 >
-                  <ShoppingCart className="w-5 h-5" />
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  <ShoppingCart className="w-6 h-6 md:w-5 md:h-5" />
+                  <span className="absolute top-0 right-0 md:-top-1 md:-right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                     {Math.min(cartCount, 9)}
                   </span>
                 </Link>
@@ -196,10 +200,9 @@ export default function Navbar() {
       {/* MOBILE BOTTOM NAVIGATION — 4 tabs */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-neutral-950 border-t border-neutral-800 pb-safe">
         <div className="flex">
-          {mobileNavTabs.map(item => {
+          {MOBILE_NAV_TABS.map(item => {
             const Icon = item.icon;
             const active = isActive(item.to);
-            const showBadge = item.showCartCount && cartCount > 0;
 
             // Account tab: open AuthModal if not logged in
             if (item.to === '/profile' && !isAuthenticated) {
@@ -225,11 +228,6 @@ export default function Navbar() {
               >
                 <div className="relative">
                   <Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 2} />
-                  {showBadge && (
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                      {Math.min(cartCount, 9)}
-                    </span>
-                  )}
                 </div>
                 <span className={`text-[11px] leading-tight text-center ${active ? 'font-semibold' : 'font-normal'}`}>
                   {item.label}

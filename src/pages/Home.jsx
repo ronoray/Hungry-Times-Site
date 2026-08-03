@@ -72,6 +72,7 @@ export default function Home() {
   const { updateOrderMode } = useCart();
   const [popularItems, setPopularItems] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
+  const [galleryImages, setGalleryImages] = useState([]);
 
   useEffect(() => {
     // Fetch popular items
@@ -87,6 +88,13 @@ export default function Home() {
         const list = Array.isArray(data) ? data : data?.testimonials || [];
         setTestimonials(list.slice(0, 3));
       })
+      .catch(() => {});
+
+    // Gallery highlight — /gallery has no mobile entry point of its own (it is
+    // desktop-nav only), so this strip is how phone users reach it at all.
+    fetch(`${API_BASE}/gallery/public`)
+      .then(r => r.ok ? r.json() : { images: [] })
+      .then(data => setGalleryImages((data?.images || []).slice(0, 6)))
       .catch(() => {});
   }, []);
 
@@ -300,6 +308,36 @@ export default function Home() {
               <Link to="/testimonials" className="text-sm text-orange-500 hover:text-orange-400">
                 Read more reviews &rarr;
               </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ─── Gallery Highlight ─── */}
+      {galleryImages.length > 0 && (
+        <section className="py-10 px-4 bg-neutral-950">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">From Our Kitchen</h2>
+              <Link to="/gallery" className="text-sm text-orange-500 hover:text-orange-400">
+                See all &rarr;
+              </Link>
+            </div>
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-2 md:gap-3">
+              {galleryImages.map(img => (
+                <Link
+                  key={img.id}
+                  to="/gallery"
+                  className="aspect-square overflow-hidden rounded-lg bg-neutral-800 border border-neutral-800 hover:border-neutral-600 transition-colors"
+                >
+                  <img
+                    src={img.image_url}
+                    alt={img.dish_name || 'Hungry Times'}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </Link>
+              ))}
             </div>
           </div>
         </section>

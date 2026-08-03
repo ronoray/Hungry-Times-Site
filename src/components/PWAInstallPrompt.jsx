@@ -1,7 +1,6 @@
-// src/components/PWAInstallPrompt.jsx - DEBUGGING VERSION
-// ============================================================================
-// EXTENSIVE LOGGING to diagnose why banner doesn't appear
-// ============================================================================
+// src/components/PWAInstallPrompt.jsx
+// Install banner (mobile) / card (desktop). Never shown on iOS — Safari has no
+// beforeinstallprompt, so the banner could only nag people to use the Share menu.
 
 import { useState, useEffect } from 'react';
 import { Download, X } from 'lucide-react';
@@ -43,11 +42,6 @@ export default function PWAInstallPrompt() {
     return () => window.removeEventListener('pwa-install-available', handler);
   }, []);
 
-  // Monitor showPrompt state changes
-  useEffect(() => {
-    console.log('[PWA Install Debug] 🔄 showPrompt state changed to:', showPrompt);
-  }, [showPrompt]);
-
   const handleInstall = async () => {
     // Use global trigger (set up in main.jsx) or local deferred prompt
     const prompt = deferredPrompt || window.__pwaDeferred;
@@ -70,25 +64,14 @@ export default function PWAInstallPrompt() {
   };
 
   const handleDismiss = () => {
-    console.log('[PWA Install Debug] ✖️ User dismissed banner');
     setShowPrompt(false);
-    const timestamp = Date.now().toString();
-    sessionStorage.setItem('pwa-prompt-dismissed', timestamp);
-    console.log('[PWA Install Debug] 📦 Saved dismissal timestamp:', timestamp);
+    sessionStorage.setItem('pwa-prompt-dismissed', Date.now().toString());
   };
 
   // Check if dismissed in session
-  if (sessionStorage.getItem('pwa-prompt-dismissed')) {
-    console.log('[PWA Install Debug] 🚫 RENDER BLOCKED: Session storage has dismissal');
-    return null;
-  }
+  if (sessionStorage.getItem('pwa-prompt-dismissed')) return null;
 
-  if (!showPrompt) {
-    console.log('[PWA Install Debug] 🚫 RENDER BLOCKED: showPrompt =', showPrompt);
-    return null;
-  }
-
-  console.log('[PWA Install Debug] 🎨 RENDERING BANNER NOW!');
+  if (!showPrompt) return null;
 
   return (
     <>
@@ -203,11 +186,6 @@ export default function PWAInstallPrompt() {
               Not now
             </button>
           </div>
-          
-          {/* Debug info */}
-          <p className="text-neutral-500 text-xs mt-3 text-center">
-            ✅ Ready to install
-          </p>
         </div>
       </div>
 

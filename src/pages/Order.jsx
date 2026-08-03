@@ -1274,7 +1274,9 @@ export default function Order() {
             console.log('✅ Payment verified! Order confirmed:', confirmedOrderId);
             trackPurchase(confirmedOrderId, finalTotal, 'razorpay', lines);
             clearCart();
-            navigate(`/order-success/${confirmedOrderId}?type=online`);
+            // replace, not push: the cart is cleared, so back must not return the
+            // customer into a checkout form with nothing in it.
+            navigate(`/order-success/${confirmedOrderId}?type=online`, { replace: true });
           } else {
             // All retries exhausted. Money was taken. Order IS in DB (DB-first).
             // Razorpay webhook will confirm it. Do NOT say "payment failed."
@@ -1282,7 +1284,7 @@ export default function Order() {
             clearCart();
             // Navigate to orders page — the order will appear once webhook fires
             if (dbOrderId) {
-              navigate(`/order-success/${dbOrderId}?type=online&pending=1&pid=${paymentResponse.razorpay_payment_id}`);
+              navigate(`/order-success/${dbOrderId}?type=online&pending=1&pid=${paymentResponse.razorpay_payment_id}`, { replace: true });
             } else {
               setPaymentError(
                 `Your payment of ₹${money(finalTotal)} was received. Your order is being confirmed. ` +
@@ -1478,7 +1480,7 @@ export default function Order() {
         showToast('Order updated successfully!', 'success');
         navigate(`/orders/${resultOrderId}`);
       } else {
-        navigate(`/order-success/${resultOrderId}?type=cod`);
+        navigate(`/order-success/${resultOrderId}?type=cod`, { replace: true });
       }
     } catch (error) {
       setPaymentError(error.message);
