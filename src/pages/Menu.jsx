@@ -28,6 +28,22 @@ import { trackAddToCart, trackSearch, trackPhoneClick, trackWhatsAppClick, track
 const DESC_MAX_RECOMMENDED = 40;  // compact cards - carousel
 const DESC_MAX_REGULAR = 100;     // regular items
 
+// Does this dish have anything worth choosing?
+//
+// Deliberately ignores the packaging addon. It is attached to every item on the
+// menu and is locked, so for ~130 dishes it is the ONLY thing in the modal —
+// auto-opening a sheet whose single row is a charge you cannot decline is pure
+// friction. Mirrors the server's needsOptions on /public/popular-items.
+const PACKAGING_RE = /packag/i;
+const notPackaging = (o) => !PACKAGING_RE.test(o?.name || '');
+
+function hasRealOptions(it) {
+  if (!it) return false;
+  return (it.families || []).some(f => (f.options || []).some(notPackaging))
+    || (it.variants || []).length > 0
+    || (it.addonGroups || []).some(g => (g.options || []).some(notPackaging));
+}
+
 // ========================
 // Description Modal
 // ========================
@@ -463,11 +479,74 @@ export default function Menu() {
   // on every render while data is still null, which would loop this effect.
   useEffect(() => {
     if (!tops.length) return;
-    const raw = new URLSearchParams(location.search).get('cat');
+    const params = new URLSearchParams(location.search);
+
+    // A highlighted dish picks the category for us — it cannot be scrolled to
+    // or opened until its category is the one on screen.
+    const highlightId = Number(params.get('highlight')) || null;
+    if (highlightId) {
+      for (const tc of tops) {
+        for (const sc of tc.subcategories || []) {
+          if ((sc.items || []).some(it => it.id === highlightId)) {
+            setActiveTop(tc.id);
+            setActiveSub(sc.id);
+            return;
+          }
+        }
+      }
+    }
+
+    const raw = params.get('cat');
     const target = (raw && tops.find(t => String(t.id) === raw)) || tops[0];
     setActiveTop(target.id);
     setActiveSub(target.subcategories?.[0]?.id ?? null);
   }, [location.search, data]);
+
+  // ?highlight=<id> — scroll to the dish, and open its options when it has any.
+  //
+  // The param has been passed by Home, TodaysSpecial and Profile's favourites
+  // since long before this, and Menu never read it: every one of those links
+  // just dropped the customer on the menu with no idea where their dish went.
+  // Home's "Choose options" button made the broken promise explicit.
+  const handledHighlightRef = useRef(null);
+  useEffect(() => {
+    if (!tops.length) return undefined;
+
+    const highlightId = Number(new URLSearchParams(location.search).get('highlight')) || null;
+    if (!highlightId) {
+      handledHighlightRef.current = null;
+      return undefined;
+    }
+    // Once per arrival. Without this, closing the modal (which leaves the URL
+    // untouched) would reopen it on the next render.
+    if (handledHighlightRef.current === highlightId) return undefined;
+
+    let found = null;
+    for (const tc of tops) {
+      for (const sc of tc.subcategories || []) {
+        for (const it of sc.items || []) {
+          if (it.id === highlightId) found = it;
+        }
+      }
+    }
+    if (!found) return undefined;
+
+    handledHighlightRef.current = highlightId;
+
+    // Let the category switch above commit and paint before looking for the card.
+    const t = setTimeout(() => {
+      const el = rightPaneRef.current?.querySelector(`[data-item="${highlightId}"]`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 250);
+
+    const orderable = acceptingOnlineOrders && !found.effectiveDisabled;
+    if (orderable && hasRealOptions(found)) {
+      setSelectedItem(found);
+      setShowAddToCartModal(true);
+    }
+
+    return () => clearTimeout(t);
+  }, [tops, location.search, data, acceptingOnlineOrders]);
 
   // Fetch active offers
   useEffect(() => {
@@ -748,6 +827,11 @@ export default function Menu() {
     return (
       <article
         key={it.id}
+        // Scroll anchor for ?highlight=<id>. Only on the main list: the
+        // favourites strip and the recommended carousel render the same dish
+        // again, and querySelector would find one of those pinned near the top
+        // instead of the card in the category the customer was sent to.
+        data-item={isRecommendedCard ? undefined : it.id}
         className={`${isRecommendedCard ? "recommended-item-card" : "menu-item-card"} ${isDisabled ? "item-disabled" : ""}`}
         style={{
           opacity: isDisabled ? 0.6 : 1,
