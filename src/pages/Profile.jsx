@@ -5,19 +5,21 @@
 // ✅ Single address (customer.address) - PRESERVED
 // ✅ Multiple addresses (customer_addresses table) - ADDED
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import {
   User, MapPin, Phone, Mail, Edit2, Plus, Trash2,
   Save, X, Check, AlertCircle, LogOut, Key,
-  Gift, Heart, Package, RefreshCw, Loader, ChevronRight
+  Gift, Heart, Package, RefreshCw, Loader, ChevronRight, Bell
 } from 'lucide-react';
 import GoogleMapsAutocomplete from '../components/GoogleMapsAutocomplete';
 import AuthModal from '../components/AuthModal';
 import AddressLabelPicker from '../components/AddressLabelPicker';
 import { reorderIntoCart } from '../utils/reorder';
+import { fetchMenuItemsById, itemNeedsOptions } from '../utils/menuItems';
+import { useFavorites } from '../context/FavoritesContext';
 import {
   legacyAddressFrom,
   createAddress,
@@ -30,9 +32,20 @@ import API_BASE from '../config/api.js';
 
 export default function Profile() {
   const { customer, isAuthenticated, logout, token, login } = useAuth();
-  const { lines, addLine, clearCart } = useCart();
+  const { lines, addLine, clearCart, incrementSimpleItem, getSimpleItemQty } = useCart();
+  const { favorites, toggleFavorite } = useFavorites();
   const navigate = useNavigate();
   const [showAuthModal, setShowAuthModal] = useState(false);
+
+  // Favourites are bare ids in localStorage, so the cards need the menu.
+  // Fetched only when there is at least one favourite — no reason to pull the
+  // whole menu onto the account page otherwise.
+  const [favoriteItems, setFavoriteItems] = useState([]);
+
+  // Notification preference. Seeded from the auth payload so the switch renders
+  // in the right position on first paint instead of flipping a moment later.
+  const [marketingOptOut, setMarketingOptOut] = useState(!!customer?.marketingOptOut);
+  const [savingPrefs, setSavingPrefs] = useState(false);
 
   // Profile edit state
   const [editingProfile, setEditingProfile] = useState(false);
@@ -108,8 +121,62 @@ export default function Profile() {
       loadRecentOrders();
       // Load loyalty data
       loadLoyaltyData();
+      setMarketingOptOut(!!customer.marketingOptOut);
     }
   }, [customer, isAuthenticated, navigate]);
+
+  // Hydrate favourite ids against the menu. Gated on having favourites so the
+  // account page never pulls the full menu for nothing, and cached in a ref so
+  // un-hearting an item re-filters the list instead of refetching the menu —
+  // toggleFavorite mints a new Set every time, which re-runs this effect.
+  const menuByIdRef = useRef(null);
+  useEffect(() => {
+    const ids = [...favorites];
+    if (ids.length === 0) {
+      setFavoriteItems([]);
+      return undefined;
+    }
+
+    let cancelled = false;
+    const build = (byId) => {
+      if (cancelled) return;
+      setFavoriteItems(ids.map(id => byId.get(id)).filter(Boolean));
+    };
+
+    if (menuByIdRef.current) {
+      build(menuByIdRef.current);
+    } else {
+      fetchMenuItemsById().then(byId => {
+        menuByIdRef.current = byId;
+        build(byId);
+      });
+    }
+
+    return () => { cancelled = true; };
+  }, [favorites]);
+
+  const handleToggleMarketing = async (nextOptOut) => {
+    const previous = marketingOptOut;
+    setMarketingOptOut(nextOptOut); // optimistic
+    setSavingPrefs(true);
+    try {
+      const res = await fetch(`${API_BASE}/customer/auth/preferences`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ marketingOptOut: nextOptOut }),
+      });
+      if (!res.ok) throw new Error('Failed to save preference');
+      setSuccess(nextOptOut ? 'You will no longer receive offer messages.' : 'You will receive offer messages again.');
+    } catch (err) {
+      setMarketingOptOut(previous); // roll back — never leave the switch lying
+      setError(err.message || 'Could not update preference');
+    } finally {
+      setSavingPrefs(false);
+    }
+  };
 
   // ============================================
   // LOAD ADDRESSES FROM customer_addresses TABLE
@@ -1052,6 +1119,95 @@ export default function Profile() {
               <span className="text-white">Offers & Referrals</span>
             </button>
           </div>
+        </div>
+
+        {/* My Favorites — renders nothing until something is hearted on the menu */}
+        {favoriteItems.length > 0 && (
+          <div className="bg-neutral-800 rounded-lg p-6 mb-6">
+            <h2 className="text-xl font-semibold text-white flex items-center gap-2 mb-4">
+              <Heart className="w-5 h-5 text-red-500" />
+              My Favorites
+            </h2>
+            <div className="space-y-2">
+              {favoriteItems.map(item => {
+                const needsOptions = itemNeedsOptions(item);
+                const inCart = getSimpleItemQty(item.id);
+                return (
+                  <div key={item.id} className="flex items-center gap-3 bg-neutral-700/50 rounded-lg p-3">
+                    {item.imageUrl ? (
+                      <img
+                        src={item.imageUrl}
+                        alt=""
+                        className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg bg-neutral-700 flex items-center justify-center flex-shrink-0 text-lg">🍽️</div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-medium truncate">{item.name}</p>
+                      <p className="text-orange-500 text-sm">₹{Number(item.basePrice).toFixed(0)}</p>
+                    </div>
+
+                    {/* Anything with options must go through the menu's modal —
+                        that is what attaches and prices the packaging addon and
+                        enforces required choices. Adding it straight from here
+                        would produce a cheaper, incomplete line. */}
+                    {needsOptions || item.effectiveDisabled ? (
+                      <button
+                        onClick={() => navigate(`/menu?highlight=${item.id}`)}
+                        disabled={item.effectiveDisabled}
+                        className="flex-shrink-0 px-3 py-2 text-xs font-medium rounded-lg bg-neutral-700 hover:bg-neutral-600 disabled:opacity-50 text-white transition-colors"
+                      >
+                        {item.effectiveDisabled ? 'Unavailable' : 'Choose'}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => incrementSimpleItem(item)}
+                        className="flex-shrink-0 px-3 py-2 text-xs font-semibold rounded-lg bg-orange-600 hover:bg-orange-700 text-white transition-colors"
+                      >
+                        {inCart > 0 ? `Add (${inCart})` : 'Add'}
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => toggleFavorite(item.id)}
+                      className="flex-shrink-0 p-2 text-red-400 hover:text-red-300 transition-colors"
+                      aria-label={`Remove ${item.name} from favourites`}
+                    >
+                      <Heart className="w-4 h-4 fill-current" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Notifications — one honest toggle. There is no push/SMS/email
+            preference column in the database, so offering those switches here
+            would be a promise the backend cannot keep. */}
+        <div className="bg-neutral-800 rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold text-white flex items-center gap-2 mb-4">
+            <Bell className="w-5 h-5" />
+            Notifications
+          </h2>
+          <label className="flex items-start justify-between gap-4 cursor-pointer">
+            <span className="min-w-0">
+              <span className="block text-white text-sm font-medium">WhatsApp offers and updates</span>
+              <span className="block text-gray-400 text-xs mt-1">
+                Occasional offers and news. Order updates are sent either way.
+                Replying STOP on WhatsApp does the same thing as this switch.
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={!marketingOptOut}
+              disabled={savingPrefs}
+              onChange={(e) => handleToggleMarketing(!e.target.checked)}
+              className="mt-1 w-5 h-5 flex-shrink-0 accent-orange-600 cursor-pointer disabled:opacity-50"
+            />
+          </label>
         </div>
 
         {/* Help & Support — Contact, Feedback, Reservation and Careers have real

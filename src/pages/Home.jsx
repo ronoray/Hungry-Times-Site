@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Truck, Clock, CreditCard, MapPin, UtensilsCrossed, ChefHat, Flame, Utensils, Layers, Coffee, Instagram } from 'lucide-react'
 import { useCart } from '../context/CartContext'
@@ -12,6 +12,10 @@ import VegDot from '../components/VegDot'
 import ComboPromoCard from '../components/ComboPromoCard'
 import FeaturedComboCard from '../components/FeaturedComboCard'
 import OffersStrip from '../components/OffersStrip'
+import StarRating from '../components/StarRating'
+import InstallAppSection from '../components/InstallAppSection'
+import TestimonialCarousel from '../components/TestimonialCarousel'
+import { useRatingSummary } from '../hooks/useRatingSummary'
 import API_BASE from '../config/api'
 import heroImg from '../assets/hero-1200.jpg'
 
@@ -73,6 +77,24 @@ export default function Home() {
   const [popularItems, setPopularItems] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
   const [galleryImages, setGalleryImages] = useState([]);
+  const rating = useRatingSummary();
+
+  // Attach aggregateRating to the restaurant schema only when there are real
+  // published reviews behind it, and only on a page that also renders those
+  // reviews — Google requires the rating to be visible on the page claiming it.
+  const restaurantSchema = useMemo(() => {
+    if (!rating.count || rating.avg == null) return RESTAURANT_SCHEMA;
+    return {
+      ...RESTAURANT_SCHEMA,
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: rating.avg,
+        reviewCount: rating.count,
+        bestRating: 5,
+        worstRating: 1
+      }
+    };
+  }, [rating.avg, rating.count]);
 
   useEffect(() => {
     // Fetch popular items
@@ -81,12 +103,16 @@ export default function Home() {
       .then(data => setPopularItems(data))
       .catch(() => {});
 
-    // Fetch testimonials
+    // Fetch testimonials.
+    // The server returns { data: [...] } — this used to unwrap `data.testimonials`,
+    // which matches nothing, so the whole section silently rendered empty from the
+    // day it was written. Field names below follow the same payload:
+    // testimonial_text / text and customer_name.
     fetch(`${API_BASE}/feedback/testimonials/public`)
-      .then(r => r.ok ? r.json() : [])
+      .then(r => r.ok ? r.json() : null)
       .then(data => {
-        const list = Array.isArray(data) ? data : data?.testimonials || [];
-        setTestimonials(list.slice(0, 3));
+        const list = Array.isArray(data) ? data : (data?.data || []);
+        setTestimonials(list.slice(0, 6));
       })
       .catch(() => {});
 
@@ -105,7 +131,7 @@ export default function Home() {
         description="Order delicious food online from Hungry Times. Fast delivery within 5km. Indian, Chinese, Continental cuisine. Free delivery under 3km!"
         canonicalPath="/"
       />
-      <StructuredData data={RESTAURANT_SCHEMA} />
+      <StructuredData data={restaurantSchema} />
 
       {/* ─── Hero Section ─── */}
       <section className="relative min-h-[60vh] md:min-h-[80vh] flex items-end bg-neutral-950">
@@ -119,9 +145,17 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/70 to-transparent" />
 
         <div className="relative z-10 w-full px-4 pb-8 md:pb-14 max-w-5xl mx-auto">
-          <div className="mb-4 inline-flex">
+          <div className="mb-4 flex flex-wrap items-center gap-2">
             <div className="bg-black/40 backdrop-blur-sm rounded-full px-3 py-1">
               <KitchenStatus />
+            </div>
+            {/* Static copy, matching the delivery strip below and the rest of
+                the site. Deliberately NOT KitchenStatus's estimatedWait — that
+                is a kitchen prep figure only surfaced when activeOrders > 3, so
+                showing it here would read as a delivery promise. */}
+            <div className="bg-black/40 backdrop-blur-sm rounded-full px-3 py-1 flex items-center gap-1.5 text-xs text-neutral-200">
+              <Clock className="w-3.5 h-3.5 text-orange-500" />
+              30–45 min delivery
             </div>
           </div>
           <h1
@@ -280,30 +314,27 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── Testimonials ─── */}
+      {/* ─── Social Proof + Testimonial Carousel ─── */}
       {testimonials.length > 0 && (
         <section className="py-10 px-4 bg-neutral-900/20">
           <div className="max-w-5xl mx-auto">
-            <h2 className="text-xl font-semibold mb-6 text-center">What Our Customers Say</h2>
-            <div className="grid md:grid-cols-3 gap-4">
-              {testimonials.map((t, i) => (
-                <div key={i} className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
-                  <div className="flex items-center gap-1 mb-3">
-                    {Array.from({ length: 5 }).map((_, s) => (
-                      <svg key={s} className={`w-4 h-4 ${s < (t.rating || 5) ? 'text-yellow-500' : 'text-neutral-700'}`} fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    ))}
-                  </div>
-                  <p className="text-sm text-neutral-300 leading-relaxed mb-3 line-clamp-3">
-                    "{t.comment || t.feedback || t.message || t.text}"
-                  </p>
-                  <p className="text-xs text-neutral-500 font-medium">
-                    — {t.customer_name || t.name || 'Happy Customer'}
-                  </p>
-                </div>
-              ))}
-            </div>
+            <h2 className="text-xl font-semibold mb-2 text-center">What Our Customers Say</h2>
+
+            {/* Real aggregate, or nothing. The count comes from the server over
+                every published review — not from the list above, which is
+                display-capped and would understate it. */}
+            {rating.count > 0 && rating.avg != null && (
+              <div className="flex items-center justify-center gap-2 mb-6">
+                <StarRating value={rating.avg} size="w-5 h-5" />
+                <span className="text-sm text-neutral-300">
+                  <span className="font-semibold text-white">{rating.avg}</span>
+                  {' '}from {rating.count} {rating.count === 1 ? 'review' : 'reviews'}
+                </span>
+              </div>
+            )}
+
+            <TestimonialCarousel items={testimonials} />
+
             <div className="text-center mt-6">
               <Link to="/testimonials" className="text-sm text-orange-500 hover:text-orange-400">
                 Read more reviews &rarr;
@@ -342,6 +373,9 @@ export default function Home() {
           </div>
         </section>
       )}
+
+      {/* ─── Install App (renders nothing when there's no real install) ─── */}
+      <InstallAppSection />
 
       {/* ─── About / Story ─── */}
       <section className="py-12 px-4">

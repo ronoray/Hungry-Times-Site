@@ -7,6 +7,12 @@ whatsapp: '918420822919',
 email: 'admin@hungrytimes.in',
 address: 'Hungry Times, Selimpur, Ballygunge, Kolkata 700031',
 googleReviewUrl: 'https://search.google.com/local/writereview?placeid=ChIJvWGYyyhxAjoRjhl2_3xBiuM',
+// Registration numbers for the public footer. The M/s Phoenix pair — the same
+// one on the POS thermal bill and the public feedback page. NOTE: the online-order
+// bill and the HTML email invoice print a DIFFERENT pair (FSSAI 10723035000183,
+// GST 19AADCH9528D1ZV); that discrepancy is unresolved and predates this file.
+fssai: '22823042000741',
+gstin: '19ABCFP2512M1Z4',
 }
 
 

@@ -18,6 +18,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import API_BASE from '../config/api.js';
 import { useAuth } from '../context/AuthContext';
+import { useExpiryLabel } from '../hooks/useExpiryLabel';
 
 const DISMISS_KEY = 'ht_promo_bar_dismissed';
 const WA_NUMBER = '916290471281';
@@ -29,7 +30,8 @@ export default function PromoBar() {
   const navigate = useNavigate();
 
   const [offer, setOffer] = useState(null);
-  const [timeLeft, setTimeLeft] = useState('');
+  // Shared with OffersStrip and the Offers page — see utils/offerCountdown.js.
+  const timeLeft = useExpiryLabel(offer?.valid_till);
   const [dismissed, setDismissed] = useState(() => {
     try { return !!sessionStorage.getItem(DISMISS_KEY); } catch { return false; }
   });
@@ -51,26 +53,6 @@ export default function PromoBar() {
     })();
     return () => { cancelled = true; };
   }, [dismissed, isAuthenticated, customer?.phone]);
-
-  useEffect(() => {
-    if (!offer?.valid_till) return undefined;
-
-    const update = () => {
-      const end = new Date(offer.valid_till + 'T23:59:59');
-      const diff = end - new Date();
-
-      if (diff <= 0) { setTimeLeft('Expired'); return; }
-
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      if (days > 1) setTimeLeft(`${days} days left`);
-      else if (days === 1) setTimeLeft('Ends tomorrow!');
-      else setTimeLeft(`${Math.floor(diff / (1000 * 60 * 60))}h left!`);
-    };
-
-    update();
-    const interval = setInterval(update, 60000);
-    return () => clearInterval(interval);
-  }, [offer]);
 
   const handleDismiss = () => {
     setDismissed(true);

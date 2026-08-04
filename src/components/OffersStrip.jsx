@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { Tag, ArrowRight } from 'lucide-react';
 import API_BASE from '../config/api';
 import { useAuth } from '../context/AuthContext';
+import { expiryLabel } from '../utils/offerCountdown';
 
 export default function OffersStrip({ compact = false }) {
   const { customer, isAuthenticated } = useAuth();
@@ -91,7 +92,18 @@ export default function OffersStrip({ compact = false }) {
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-medium text-neutral-200">{o.title}</span>
-              <span className="block font-mono text-xs text-neutral-500">{o.promo_code}</span>
+              <span className="flex items-center gap-2">
+                <span className="font-mono text-xs text-neutral-500">{o.promo_code}</span>
+                {/* Urgency only on the full (Home) variant — the compact Menu
+                    pill is a single line and has no room. Computed once per
+                    render rather than on a timer: this is a days-scale label on
+                    a page nobody sits on for an hour. */}
+                {expiryLabel(o.valid_till) && (
+                  <span className="flex-shrink-0 rounded bg-black/40 px-1.5 py-0.5 text-[10px] font-medium text-amber-400/90">
+                    {expiryLabel(o.valid_till)}
+                  </span>
+                )}
+              </span>
             </span>
           </Link>
         ))}

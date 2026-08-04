@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import API_BASE from '../config/api';
 import { useAuth } from '../context/AuthContext';
+import { msUntilExpiry } from '../utils/offerCountdown';
 import SEOHead from '../components/SEOHead';
 import {
   ceilingFor, offerSavingFor, loyaltySavingFor, bestOf, pointsEarnedOn, audienceLabel,
@@ -66,12 +67,14 @@ function OfferCard({ offer, floor }) {
     navigate('/menu');
   };
 
-  let daysLeft = null;
-  if (offer.valid_till) {
-    const end = new Date(offer.valid_till + 'T23:59:59');
-    const diff = end - new Date();
-    if (diff > 0) daysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24));
-  }
+  // Shares the expiry parsing (valid_till is a date, good through 23:59:59 —
+  // treating it as midnight expires every offer a day early) but keeps this
+  // page's own ceil rounding, which reads as "1 day left" rather than "0" on
+  // the final day.
+  const msLeft = msUntilExpiry(offer.valid_till);
+  const daysLeft = msLeft != null && msLeft > 0
+    ? Math.ceil(msLeft / (1000 * 60 * 60 * 24))
+    : null;
 
   return (
     <div className="offer-card">

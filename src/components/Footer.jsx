@@ -35,6 +35,8 @@ export default function Footer() {
           <ul className="space-y-1 text-neutral-300">
             <li><Link to="/menu" className="hover:text-white">Menu</Link></li>
             <li><Link to="/offers" className="hover:text-white">Offers &amp; Rewards</Link></li>
+            <li><Link to="/gallery" className="hover:text-white">Gallery</Link></li>
+            <li><Link to="/testimonials" className="hover:text-white">Reviews</Link></li>
             <li><Link to="/reservation" className="hover:text-white">Reservation</Link></li>
             <li><Link to="/contact" className="hover:text-white">Contact</Link></li>
             <li><Link to="/feedback" className="hover:text-white">Feedback</Link></li>
@@ -69,6 +71,8 @@ export default function Footer() {
           <p className="text-neutral-400">Phone: {BRAND.phone1}</p>
           <p className="text-neutral-400">Phone: {BRAND.phone2}</p>
           <p className="text-neutral-400">Email: {BRAND.email}</p>
+          <p className="text-neutral-500 mt-4 text-xs">FSSAI Lic. {BRAND.fssai}</p>
+          <p className="text-neutral-500 text-xs">GSTIN {BRAND.gstin}</p>
         </div>
       </div>
 
