@@ -14,6 +14,8 @@ import FeaturedComboCard from '../components/FeaturedComboCard'
 import OffersStrip from '../components/OffersStrip'
 import StarRating from '../components/StarRating'
 import InstallAppSection from '../components/InstallAppSection'
+import { useToast } from '../components/Toast'
+import { trackAddToCart } from '../utils/analytics'
 import TestimonialCarousel from '../components/TestimonialCarousel'
 import { useRatingSummary } from '../hooks/useRatingSummary'
 import API_BASE from '../config/api'
@@ -73,11 +75,39 @@ const QUICK_CATEGORIES = [
 
 export default function Home() {
   const navigate = useNavigate();
-  const { updateOrderMode } = useCart();
+  const { updateOrderMode, addLine, getSimpleItemQty } = useCart();
+  const showToast = useToast();
   const [popularItems, setPopularItems] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
   const [galleryImages, setGalleryImages] = useState([]);
   const rating = useRatingSummary();
+
+  // Add a popular item straight to the cart.
+  //
+  // The packaging add-on MUST ride along. AddToCartModal attaches it for every
+  // item, and the server adds packaging at order time regardless — so a line
+  // without it shows the customer a total lower than what they get charged.
+  // Same line shape FeaturedComboCard builds for the same reason.
+  //
+  // Dine-in is NOT special-cased here: utils/cartLine.js hides and un-prices
+  // packaging for dine-in, and the server strips it too. One rule, two layers
+  // that already know it.
+  const addPopularItem = (item) => {
+    const pkg = item.packagingAddon;
+    addLine({
+      itemId: item.id,
+      itemName: item.name,
+      name: item.name,
+      basePrice: Number(item.price) || 0,
+      variants: [],
+      addons: pkg
+        ? [{ id: pkg.id, name: pkg.name, priceDelta: Number(pkg.priceDelta) || 0, locked: true }]
+        : [],
+      qty: 1,
+    });
+    trackAddToCart(item, 1);
+    showToast(`${item.name} added to cart`, 'success');
+  };
 
   // Attach aggregateRating to the restaurant schema only when there are real
   // published reviews behind it, and only on a page that also renders those
@@ -250,39 +280,71 @@ export default function Home() {
               </Link>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-              {popularItems.map(item => (
-                <Link
-                  key={item.id}
-                  to={`/menu?highlight=${item.id}`}
-                  className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden hover:border-neutral-600 transition-colors group"
-                >
-                  {item.imageUrl ? (
-                    <div className="aspect-[4/3] overflow-hidden bg-neutral-800">
-                      <img
-                        src={item.imageUrl}
-                        alt={item.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                      />
+              {popularItems.map(item => {
+                // Only items with real choices to make go to the menu. The
+                // packaging add-on doesn't count — it is on every dish and is
+                // auto-locked, so treating it as a choice would send a third of
+                // the menu to a modal with nothing in it. Server decides; an
+                // older payload without the flag falls back to the modal.
+                const needsOptions = item.needsOptions !== false;
+                const qty = getSimpleItemQty(item.id);
+
+                return (
+                  <div
+                    key={item.id}
+                    className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden hover:border-neutral-600 transition-colors group flex flex-col"
+                  >
+                    <Link to={`/menu?highlight=${item.id}`} className="block">
+                      {item.imageUrl ? (
+                        <div className="aspect-[4/3] overflow-hidden bg-neutral-800">
+                          <img
+                            src={item.imageUrl}
+                            alt={item.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                          />
+                        </div>
+                      ) : (
+                        <div className="aspect-[4/3] bg-neutral-800 flex items-center justify-center">
+                          <span className="text-3xl opacity-40">🍽️</span>
+                        </div>
+                      )}
+                    </Link>
+
+                    <div className="p-3 flex flex-col flex-1">
+                      <Link to={`/menu?highlight=${item.id}`} className="block">
+                        <div className="flex items-start gap-1.5">
+                          {item.isVeg != null && <VegDot isVeg={item.isVeg} />}
+                          <h3 className="text-sm font-medium text-neutral-200 leading-tight line-clamp-2">
+                            {item.name}
+                          </h3>
+                        </div>
+                        <p className="text-orange-500 font-semibold text-sm mt-1.5">
+                          ₹{Number(item.price).toFixed(0)}
+                        </p>
+                      </Link>
+
+                      <div className="mt-3">
+                        {needsOptions ? (
+                          <Link
+                            to={`/menu?highlight=${item.id}`}
+                            className="block w-full text-center py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-medium transition-colors"
+                          >
+                            Choose options
+                          </Link>
+                        ) : (
+                          <button
+                            onClick={() => addPopularItem(item)}
+                            className="w-full py-2 rounded-lg bg-orange-600 hover:bg-orange-700 active:bg-orange-800 text-white text-xs font-semibold transition-colors"
+                          >
+                            {qty > 0 ? `Add more (${qty})` : 'Add to cart'}
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  ) : (
-                    <div className="aspect-[4/3] bg-neutral-800 flex items-center justify-center">
-                      <span className="text-3xl opacity-40">🍽️</span>
-                    </div>
-                  )}
-                  <div className="p-3">
-                    <div className="flex items-start gap-1.5">
-                      {item.isVeg != null && <VegDot isVeg={item.isVeg} />}
-                      <h3 className="text-sm font-medium text-neutral-200 leading-tight line-clamp-2">
-                        {item.name}
-                      </h3>
-                    </div>
-                    <p className="text-orange-500 font-semibold text-sm mt-1.5">
-                      ₹{Number(item.price).toFixed(0)}
-                    </p>
                   </div>
-                </Link>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
