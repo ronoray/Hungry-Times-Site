@@ -27,7 +27,14 @@ import { useCallback, useEffect, useRef } from 'react';
 // top of the stack acts; the rest ignore the event.
 const overlayStack = [];
 
-export function useBackableOverlay(isOpen, onClose) {
+// `enabled` lets a caller opt out of owning a history entry. Use it when the
+// overlay did not come from an action on the current page — e.g. the menu's
+// add-to-cart sheet auto-opened by /menu?highlight=<id>, which arrived as part
+// of a single navigation from somewhere else. There, back should undo that whole
+// hop and return the customer where they came from, not spend their back press
+// closing a sheet they never opened. The returned closer still works; it just
+// calls onClose directly instead of going through history.
+export function useBackableOverlay(isOpen, onClose, enabled = true) {
   const pushedRef = useRef(false);
   // onClose is read through a ref so the effect can depend on isOpen alone.
   // Depending on the callback would re-run the effect (and push a second
@@ -36,7 +43,7 @@ export function useBackableOverlay(isOpen, onClose) {
   onCloseRef.current = onClose;
 
   useEffect(() => {
-    if (!isOpen) return undefined;
+    if (!isOpen || !enabled) return undefined;
 
     const token = {};
     overlayStack.push(token);
@@ -64,7 +71,7 @@ export function useBackableOverlay(isOpen, onClose) {
       if (i !== -1) overlayStack.splice(i, 1);
       pushedRef.current = false;
     };
-  }, [isOpen]);
+  }, [isOpen, enabled]);
 
   return useCallback(() => {
     if (pushedRef.current) {

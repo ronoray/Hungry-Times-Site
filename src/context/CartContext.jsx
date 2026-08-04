@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, useState, useEffect, useCallback, useRef } from "react";
 import API_BASE from "../config/api.js";
+import { isPackagingAddon, packagingAddonOf } from "../utils/cartLine";
 
 const CartCtx = createContext(null);
 export const useCart = () => useContext(CartCtx);
@@ -298,14 +299,20 @@ export function CartProvider({ children }) {
   // ============================================================================
   
   /**
-   * Find cart line for a simple item (no variants/addons)
-   * Returns the line if found, null otherwise
+   * Find cart line for a simple item — no variants, and no addon the customer
+   * actually chose.
+   *
+   * Packaging does not disqualify a line. It is attached to every dish, it is
+   * locked, and the customer never picks it, so a dish whose only addon is
+   * packaging still belongs to the +/- controls. Requiring zero addons meant
+   * these lines were invisible to this lookup, and the quantity controls would
+   * add a second, duplicate line instead of incrementing the first.
    */
   const findSimpleItem = (itemId) => {
-    return lines.find(l => 
-      l.itemId === itemId && 
-      (!l.variants || l.variants.length === 0) && 
-      (!l.addons || l.addons.length === 0)
+    return lines.find(l =>
+      l.itemId === itemId &&
+      (!l.variants || l.variants.length === 0) &&
+      (l.addons || []).every(isPackagingAddon)
     ) || null;
   };
 
@@ -329,14 +336,19 @@ export function CartProvider({ children }) {
       // Item exists, increment quantity
       updateQty(existingLine.key, existingLine.qty + 1);
     } else {
-      // Item not in cart, add it
+      // Packaging has to ride along. AddToCartModal locks it onto every line it
+      // builds and the server adds it at order time regardless, so a line
+      // without it shows a total below what the customer is charged. This path
+      // used to always send addons: [], which was harmless only because every
+      // item with an addon went through the modal instead.
+      const pkg = packagingAddonOf(item);
       addLine({
         itemId: item.id,
         itemName: item.name,
         name: item.name,
         basePrice: parseFloat(item.basePrice || 0),
         variants: [],
-        addons: [],
+        addons: pkg ? [pkg] : [],
         qty: 1
       });
     }

@@ -14,10 +14,14 @@ import { useBackableOverlay } from "../hooks/useBackableOverlay";
 
 const CDN_BASE = import.meta.env.VITE_CDN_BASE || "http://localhost:5000";
 
-export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn = false }) {
+export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn = false, pushHistory = true }) {
   // Back button closes the sheet instead of popping the menu route underneath.
   // Called above the early return so hook order stays stable.
-  const closeModal = useBackableOverlay(isOpen && !!item, onClose);
+  //
+  // pushHistory={false} when the sheet was opened BY the navigation rather than
+  // by a tap on this page (see /menu?highlight=<id>): back should then undo the
+  // whole hop and return the customer to where they came from.
+  const closeModal = useBackableOverlay(isOpen && !!item, onClose, pushHistory);
 
   if (!isOpen || !item) return null;
 

@@ -20,6 +20,7 @@ import MakeYourMealModal from '../components/MakeYourMealModal';
 import '../components/MakeYourMealModal.css';
 import { useAuth } from '../context/AuthContext';
 import { useBackableOverlay } from '../hooks/useBackableOverlay';
+import { hasRealOptions } from '../utils/menuItems';
 
 import API_BASE from "../config/api";
 import { trackAddToCart, trackSearch, trackPhoneClick, trackWhatsAppClick, trackCtaClick, trackViewItem, trackFavoriteToggle, trackViewItemList } from "../utils/analytics";
@@ -27,22 +28,6 @@ import { trackAddToCart, trackSearch, trackPhoneClick, trackWhatsAppClick, track
 // Description length limits
 const DESC_MAX_RECOMMENDED = 40;  // compact cards - carousel
 const DESC_MAX_REGULAR = 100;     // regular items
-
-// Does this dish have anything worth choosing?
-//
-// Deliberately ignores the packaging addon. It is attached to every item on the
-// menu and is locked, so for ~130 dishes it is the ONLY thing in the modal —
-// auto-opening a sheet whose single row is a charge you cannot decline is pure
-// friction. Mirrors the server's needsOptions on /public/popular-items.
-const PACKAGING_RE = /packag/i;
-const notPackaging = (o) => !PACKAGING_RE.test(o?.name || '');
-
-function hasRealOptions(it) {
-  if (!it) return false;
-  return (it.families || []).some(f => (f.options || []).some(notPackaging))
-    || (it.variants || []).length > 0
-    || (it.addonGroups || []).some(g => (g.options || []).some(notPackaging));
-}
 
 // ========================
 // Description Modal
@@ -340,13 +325,22 @@ export default function Menu() {
     description: "",
   });
 
+  // True when the sheet was opened BY the ?highlight= navigation rather than by
+  // a tap on this page. Such a sheet takes no history entry of its own, so one
+  // back press undoes the whole hop and returns the customer to wherever they
+  // tapped through from — spending it closing a sheet they never opened, and
+  // leaving them on a menu they never asked for, is the wrong feel entirely.
+  const [modalFromHighlight, setModalFromHighlight] = useState(false);
+
   const openAddToCart = (item) => {
+    setModalFromHighlight(false);
     setSelectedItem(item);
     setShowAddToCartModal(true);
   };
   const closeAddToCart = () => {
     setSelectedItem(null);
     setShowAddToCartModal(false);
+    setModalFromHighlight(false);
   };
 
   const rightPaneRef = useRef(null);
@@ -541,6 +535,7 @@ export default function Menu() {
 
     const orderable = acceptingOnlineOrders && !found.effectiveDisabled;
     if (orderable && hasRealOptions(found)) {
+      setModalFromHighlight(true);
       setSelectedItem(found);
       setShowAddToCartModal(true);
     }
@@ -800,8 +795,13 @@ export default function Menu() {
   // Menu Item Card Component
   // ========================
   const MenuItemCard = ({ it, isRecommendedCard = false }) => {
+    // Drives the price range ("from ₹X"). Packaging is an addon, never a
+    // variant, so this one needs no packaging filter.
     const hasVariants = hasVariantsOrAddons(it, "variant");
-    const hasAddons = hasVariantsOrAddons(it, "addon");
+    // Drives the "Customisable" label and the Customize & Add button. Packaging
+    // is excluded — a dish whose only addon is a locked packaging charge is not
+    // customisable, and labelling it so promises a choice that isn't there.
+    const isCustomisable = hasRealOptions(it);
 
     const DESC_MAX = isRecommendedCard
       ? DESC_MAX_RECOMMENDED
@@ -886,7 +886,7 @@ export default function Menu() {
               >
                 {priceDisplay}
               </span>
-              {(hasVariants || hasAddons) && (
+              {isCustomisable && (
                 <span className="block text-xs text-neutral-400 mt-0.5">Customisable</span>
               )}
             </div>
@@ -914,7 +914,7 @@ export default function Menu() {
             </span>
           </div>
         )}
-        {(isRecommendedCard || !imageUrl) && (hasVariants || hasAddons) && (
+        {(isRecommendedCard || !imageUrl) && isCustomisable && (
           <span className="block text-xs text-neutral-400 mb-1">Customisable</span>
         )}
 
@@ -973,15 +973,19 @@ export default function Menu() {
 
           {/* ✅ NEW: Quantity Controls or Add to Cart Button */}
           {(() => {
-            const hasOptions = hasVariantsOrAddons(it, 'variant') || hasVariantsOrAddons(it, 'addon');
-            
-            // If item has variants/addons, always show "Customize" button
+            // Packaging alone is not a customisation. It is on every dish and
+            // locked, so ~130 items were showing "Customize & Add" for a sheet
+            // whose only row was a charge the customer cannot decline. Those get
+            // the +/- controls instead; incrementSimpleItem attaches packaging
+            // to the line, which is what makes skipping the modal safe.
+            const hasOptions = hasRealOptions(it);
+
+            // If item has real choices to make, always show "Customize" button
             if (hasOptions) {
               return (
                 <button
                   onClick={() => {
-                    setSelectedItem(it);
-                    setShowAddToCartModal(true);
+                    openAddToCart(it);
                     trackViewItem(it);
                   }}
                   className="add-to-cart-btn"
@@ -1641,9 +1645,11 @@ export default function Menu() {
           item={selectedItem}
           isOpen={showAddToCartModal}
           isDineIn={orderMode === 'dine_in'}
+          pushHistory={!modalFromHighlight}
           onClose={() => {
             setShowAddToCartModal(false);
             setSelectedItem(null);
+            setModalFromHighlight(false);
           }}
           onAdd={(lineItem) => {
             addLine(lineItem);

@@ -12,6 +12,7 @@
 // families, addonGroups and imageUrl, and it sits on the reorder money path.
 
 import API_BASE from '../config/api';
+import { isPackagingAddon } from './cartLine';
 
 /**
  * Fetch the public menu and return a Map of itemId -> full item object,
@@ -42,24 +43,28 @@ export async function fetchMenuItemsById() {
 }
 
 /**
- * Does this item need AddToCartModal, or can it go straight into the cart?
+ * Does this dish have anything worth choosing — i.e. must it go through
+ * AddToCartModal, or can it go straight into the cart?
  *
- * Mirrors Menu.jsx's hasVariantsOrAddons + hasOptions exactly, including the
- * part that looks conservative: the packaging addon is attached to every item
- * and counts here, so nearly everything routes through the modal. That is
- * correct — the modal is what auto-attaches and prices packaging. Adding such
- * an item directly would produce a cheaper line than the same dish added from
- * the menu.
+ * THE one implementation. Menu's item cards, Profile's favourites and the
+ * server's needsOptions on /public/popular-items all have to agree, or a dish
+ * offers a bare "Add" on one screen and demands a choice on another.
+ *
+ * Packaging does not count. It is attached to every item on the menu and is
+ * locked, so for ~130 dishes it is the only row in the sheet — opening a modal
+ * whose sole content is a charge you cannot decline is friction, not choice.
+ * Callers adding directly MUST still attach it via packagingAddonOf(), which is
+ * what makes excluding it here safe.
+ *
+ * Unknown item -> true. A wrong `true` costs one extra tap; a wrong `false`
+ * puts an incomplete line in someone's cart.
  */
-export function itemNeedsOptions(item) {
-  if (!item) return true; // unknown -> the safe direction is "open the modal"
+export function hasRealOptions(item) {
+  if (!item) return true;
 
-  const familyHasOptions = (type) => {
-    const fams = (item.families || []).filter(f => f.type === type);
-    if (fams.length > 0) return fams.some(f => (f.options || []).length > 0);
-    if (type === 'variant') return (item.variants || []).length > 0;
-    return (item.addonGroups || []).length > 0;
-  };
+  const realIn = (groups) => groups.some(g => (g.options || []).some(o => !isPackagingAddon(o)));
 
-  return familyHasOptions('variant') || familyHasOptions('addon');
+  return (item.variants || []).length > 0
+    || realIn(item.families || [])
+    || realIn(item.addonGroups || []);
 }

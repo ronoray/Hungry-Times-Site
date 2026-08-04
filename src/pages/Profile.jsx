@@ -18,7 +18,7 @@ import GoogleMapsAutocomplete from '../components/GoogleMapsAutocomplete';
 import AuthModal from '../components/AuthModal';
 import AddressLabelPicker from '../components/AddressLabelPicker';
 import { reorderIntoCart } from '../utils/reorder';
-import { fetchMenuItemsById, itemNeedsOptions } from '../utils/menuItems';
+import { fetchMenuItemsById, hasRealOptions } from '../utils/menuItems';
 import { useFavorites } from '../context/FavoritesContext';
 import {
   legacyAddressFrom,
@@ -1130,7 +1130,7 @@ export default function Profile() {
             </h2>
             <div className="space-y-2">
               {favoriteItems.map(item => {
-                const needsOptions = itemNeedsOptions(item);
+                const needsOptions = hasRealOptions(item);
                 const inCart = getSimpleItemQty(item.id);
                 return (
                   <div key={item.id} className="flex items-center gap-3 bg-neutral-700/50 rounded-lg p-3">

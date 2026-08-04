@@ -16,6 +16,28 @@ const PACKAGING_RE = /packag/i;
 
 export const isPackagingAddon = (addon) => PACKAGING_RE.test(addon?.name || '');
 
+/**
+ * The packaging addon attached to a menu item, in cart-line shape, or null.
+ *
+ * Any surface that adds to the cart WITHOUT going through AddToCartModal has to
+ * attach this itself: the modal auto-locks packaging onto every line, and the
+ * server adds it at order time regardless, so a line without it shows the
+ * customer a total below what they are charged.
+ */
+export function packagingAddonOf(item) {
+  const groups = [
+    ...(item?.addonGroups || []),
+    ...(item?.families || []).filter((f) => f.type === 'addon'),
+  ];
+  for (const g of groups) {
+    const opt = (g.options || []).find(isPackagingAddon);
+    if (opt) {
+      return { id: opt.id, name: opt.name, priceDelta: Number(opt.priceDelta) || 0, locked: true };
+    }
+  }
+  return null;
+}
+
 /** Addons that should be shown and priced for the current order mode. */
 export function visibleAddons(line, isDineIn) {
   const addons = line?.addons || [];
