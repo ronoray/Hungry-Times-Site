@@ -530,6 +530,18 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
 }
 
+/* "Search the menu" jump button at the top of the category sidebar.
+   Hidden by default: on desktop the sidebar is a permanent column next to a
+   search bar that is already visible, so the button would be noise. The mobile
+   breakpoint below turns it on, where the sidebar is a drawer behind the
+   hamburger and the search bar is out of reach.
+   Written as a class rather than Tailwind utilities because `.menu-page *`
+   resets margin and padding to 0 at equal specificity and wins on source order,
+   which silently strips px-/py-/mt- from anything inside this page. */
+.sidebar-search-btn {
+  display: none;
+}
+
 .sidebar-heading {
   font-size: 1.25rem !important;
   font-weight: 700 !important;
@@ -1121,6 +1133,31 @@
 
   .sidebar-sticky {
     position: static !important;
+  }
+
+  /* Sidebar search jump — mobile only, where the search bar is behind the
+     drawer. 48px tall so it clears the minimum tap target. */
+  .sidebar-search-btn {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.625rem !important;
+    width: 100% !important;
+    min-height: 48px !important;
+    padding: 0.75rem 1rem !important;
+    margin-bottom: 1.25rem !important;
+    background: rgba(245, 158, 11, 0.1) !important;
+    border: 1px solid rgba(245, 158, 11, 0.35) !important;
+    border-radius: 0.75rem !important;
+    color: var(--color-accent) !important;
+    font-family: inherit !important;
+    font-size: 0.9375rem !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: background 0.2s ease !important;
+  }
+
+  .sidebar-search-btn:active {
+    background: rgba(245, 158, 11, 0.2) !important;
   }
 
   .hero-grid {

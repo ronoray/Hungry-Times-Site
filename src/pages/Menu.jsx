@@ -345,6 +345,32 @@ export default function Menu() {
 
   const rightPaneRef = useRef(null);
   const searchResultsRef = useRef(null);
+  const searchInputRef = useRef(null);
+  const searchBarRef = useRef(null);
+
+  // "Search the menu" in the category sidebar.
+  //
+  // ORDER IS LOAD-BEARING. focus() must run synchronously inside this tap's own
+  // task or iOS will not raise the keyboard — and closeSidebar() goes through
+  // history.back(), which lands a task later. Focus first and the keyboard is
+  // already up when the sidebar slides away; close first and the customer gets a
+  // focused field they still have to tap.
+  const pendingSearchScrollRef = useRef(false);
+  const focusSearchFromSidebar = () => {
+    searchInputRef.current?.focus();
+    searchInputRef.current?.select(); // typing replaces an existing query
+    pendingSearchScrollRef.current = true;
+    closeSidebar();
+  };
+
+  // Scroll the search bar into view only once the sidebar has actually closed.
+  // While it is open the body carries overflow: hidden, so scrolling from inside
+  // the click handler is silently dropped and never retried.
+  useEffect(() => {
+    if (sidebarOpen || !pendingSearchScrollRef.current) return;
+    pendingSearchScrollRef.current = false;
+    searchBarRef.current?.scrollIntoView({ block: 'start' });
+  }, [sidebarOpen]);
 
   // Fetch menu data
   useEffect(() => {
@@ -1253,12 +1279,13 @@ export default function Menu() {
         </div>
 
         {/* 🔍 SEARCH BAR */}
-        <div className="search-bar-container">
+        <div className="search-bar-container" ref={searchBarRef}>
           <div className="search-bar">
             <div></div> {/* Empty spacer for sidebar column */}
             <div className="search-bar-input-wrapper relative">
               <Search className="search-icon" size={20} />
               <input
+                ref={searchInputRef}
                 type="text"
                 placeholder="Search menu items or categories..."
                 value={searchQuery}
@@ -1375,6 +1402,18 @@ export default function Menu() {
             {/* Sidebar */}
             <aside className={`categories-sidebar ${sidebarOpen ? "open" : ""}`}>
               <div className="sidebar-sticky">
+                {/* Jump to search. Mobile only (CSS): on desktop the sidebar is
+                    a permanent column sitting beside a search bar that is
+                    already on screen. */}
+                <button
+                  type="button"
+                  className="sidebar-search-btn"
+                  onClick={focusSearchFromSidebar}
+                >
+                  <Search size={16} />
+                  <span>Search the menu</span>
+                </button>
+
                 <h3 className="sidebar-heading">Categories</h3>
                 <nav className="sidebar-category-list">
                   {tops.map((tc) => (
