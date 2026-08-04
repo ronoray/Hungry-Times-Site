@@ -13,6 +13,7 @@ import { FavoritesProvider } from './context/FavoritesContext';
 import { ToastProvider } from "./components/Toast";
 import JamaiBanner, { isJamaiBannerActive } from "./components/JamaiBanner";
 import PromoBar from "./components/PromoBar";
+import ScrollMemory from "./components/ScrollMemory";
 import API_BASE from "./config/api.js";
 import "./styles/index.css";
 
@@ -303,10 +304,9 @@ export default function App() {
   // Show closed page immediately — no providers, no API calls, no hanging
   if (BUSINESS_CLOSED) return <ClosedPage />;
 
-  // Scroll to top on route change
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [location.pathname]);
+  // Scroll handling lives in <ScrollMemory /> below. It used to be an
+  // unconditional scrollTo(0, 0) here, which raced the browser's own
+  // restoration and treated a back press like a fresh navigation.
 
   // Defer non-critical overlays to browser idle so they don't compete with
   // the menu's first paint / hydration.
@@ -354,6 +354,9 @@ export default function App() {
             <FavoritesProvider>
             <ToastProvider>
             <div className="min-h-screen flex flex-col bg-[#0B0B0B] text-white">
+
+              {/* Remembers where each page was left; restores it on back */}
+              <ScrollMemory />
 
               {/* Top banner — Jamai Sasthi headline, self-expired after
                   20 Jun 2026 (IST). Renders nothing from the 21st onward. */}
