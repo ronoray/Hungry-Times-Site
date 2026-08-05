@@ -6,14 +6,17 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Copy, Check, Clock } from 'lucide-react';
 import { useBackableOverlay } from '../hooks/useBackableOverlay';
+import { useOfferFloor } from '../hooks/useOfferFloor';
 
 const STORAGE_KEY = 'ht_first_visit_seen';
 const CODE = 'WELCOME15';
 const DISCOUNT = '15%';
-const OFFER_MIN_ORDER = 500;
 const TIMER_MINUTES = 30;
 
 export default function FirstVisitPopup({ onDone }) {
+  // Never hardcode the floor — this popup promises a number the order path has
+  // to honour, and it is admin-tunable.
+  const OFFER_MIN_ORDER = useOfferFloor();
   const [show, setShow] = useState(false);
   const [copied, setCopied] = useState(false);
   const [timeLeft, setTimeLeft] = useState(TIMER_MINUTES * 60);

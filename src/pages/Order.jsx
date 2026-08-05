@@ -35,13 +35,20 @@ import {
 } from '../utils/addressBook';
 import AddressLabelPicker from '../components/AddressLabelPicker';
 import { round2, money, toPaise } from '../lib/money';
+import { useOfferFloor } from '../hooks/useOfferFloor';
 
-// Offers & loyalty points require an order subtotal ≥ this floor — mirror of the
-// server `min_order_for_offer` setting (default ₹500). Item-restricted combos are
-// exempt (deliberate sub-floor bundles). Module scope so both the totals memo and
-// the JSX can read it: it used to be declared inside the memo, and JSX referencing
-// it crashed the whole checkout page with "offersAllowed is not defined".
-const OFFER_MIN_ORDER = 500;
+// Offers & loyalty points require an order subtotal ≥ the server's
+// `min_order_for_offer` floor. Item-restricted combos are exempt (deliberate
+// sub-floor bundles).
+//
+// This used to be a hardcoded `const OFFER_MIN_ORDER = 500`. The floor is
+// admin-tunable from the ops panel, so a baked copy here meant raising it to
+// ₹1000 would still let checkout apply a code on a ₹700 order — which the
+// server then refuses — and lowering it would suppress discounts that are
+// perfectly valid. The live value now arrives with the offers feed and lives in
+// component state (`offerFloor`), which BOTH the totals memo and the JSX can
+// read. FALLBACK_MIN_ORDER is only for a failed request; it is never the source
+// of truth (see lib/discountRules.js).
 
 // Restaurant location for delivery radius calculation
 const RESTAURANT_LOCATION = {
@@ -336,6 +343,16 @@ export default function Order() {
   // Active Offers State
   const [activeOffers, setActiveOffers] = useState([]);
   const [appliedOffer, setAppliedOffer] = useState(null);
+
+  // The server's minimum-order floor for offers and loyalty. Component scope so
+  // the totals memo and the JSX both read the same value — the memo lists it as
+  // a dependency, or a floor arriving after the first render would leave the
+  // totals priced against the fallback.
+  //
+  // Fetched WITHOUT a phone on purpose: fetchActiveOffers below returns early
+  // for a signed-out visitor, and a guest checkout still has to price against
+  // the real floor.
+  const offerFloor = useOfferFloor();
 
   // Apply Code State
   const [codeExpanded, setCodeExpanded] = useState(false);
@@ -891,8 +908,8 @@ export default function Order() {
     if (isDineIn) total -= pkgTotal;
 
   // Item-restricted combos are exempt from the floor (deliberate sub-floor
-  // bundles). Manual/staff discounts don't exist here. OFFER_MIN_ORDER is module
-  // scope — see the note at the top of the file.
+  // bundles). Manual/staff discounts don't exist here. `offerFloor` is component
+  // state and IS in this memo's dependency list — see the note at the top.
   const isComboOffer = !!(appliedOffer && appliedOffer.applicable_item_ids);
   // A fixed-price bundle in the cart forbids EVERY code and all loyalty
   // redemption — the bundle price already carries the saving. Mirrors the
@@ -901,7 +918,7 @@ export default function Order() {
   // silently discarded, charging the customer more than the total they approved.
   // Blocks the isComboOffer floor-exemption too, or an item-restricted code
   // would still slip past.
-  const offersAllowed = total >= OFFER_MIN_ORDER && !hasNoStackItem;
+  const offersAllowed = total >= offerFloor && !hasNoStackItem;
 
   // Apply offer discount
   let discount = 0;
@@ -977,14 +994,14 @@ export default function Order() {
       finalTotal: round2(afterPoints + deliveryCharge + (hasDiscount ? gst : 0)),
       packagingDeduction: round2(pkgTotal),
     };
-  }, [lines, appliedOffer, deliveryCharge, pointsToRedeem, loyaltyPoints, orderType, hasNoStackItem]);
+  }, [lines, appliedOffer, deliveryCharge, pointsToRedeem, loyaltyPoints, orderType, hasNoStackItem, offerFloor]);
 
   // Component-scope twin of the memo's internal `offersAllowed`, for the JSX.
   // The memo's copy is local to its callback — reaching for it from the render
   // tree is what took checkout down on 2026-07-25.
   // Must stay in step with the memo's version, including the no-stack term, or
   // the "add ₹X more" hint appears on a cart whose problem isn't the floor.
-  const offersAllowed = cartTotal >= OFFER_MIN_ORDER && !hasNoStackItem;
+  const offersAllowed = cartTotal >= offerFloor && !hasNoStackItem;
 
   // Adding a combo to a cart that already had points or a code selected must
   // clear both. The totals memo ignores them either way, but the payload sends
@@ -2229,7 +2246,7 @@ export default function Order() {
                       rather than discovered as an error. */}
                   {!appliedCode && !offersAllowed && cartTotal > 0 && (
                     <p className="text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/25 rounded px-3 py-2 leading-relaxed">
-                      No discount on orders below ₹{OFFER_MIN_ORDER}. Add ₹{Math.ceil(OFFER_MIN_ORDER - cartTotal)} more
+                      No discount on orders below ₹{offerFloor}. Add ₹{Math.ceil(Math.max(0, offerFloor - cartTotal))} more
                       to use a promo code or your loyalty points.
                     </p>
                   )}

@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useOfferFloor } from '../hooks/useOfferFloor';
 import { Tag, Gift, Check } from 'lucide-react';
 import API_BASE from '../config/api.js';
 
 const SOURCE_ICONS = { promo: Tag, crm: Gift };
 
 export default function OffersPanel({ cartTotal, customerPhone, cartItemIds = [], onApplyOffer, onRemoveOffer, appliedCode }) {
+  const OFFER_MIN_ORDER = useOfferFloor();
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -47,9 +49,9 @@ export default function OffersPanel({ cartTotal, customerPhone, cartItemIds = []
       })
       .map(o => {
         let savings = 0;
-        // Minimum-order floor (mirror of server min_order_for_offer, default ₹500):
-        // whole-cart offers need cartTotal ≥ floor; item-restricted combos are exempt.
-        const OFFER_MIN_ORDER = 500;
+        // Minimum-order floor from the server (useOfferFloor): whole-cart offers
+        // need cartTotal ≥ floor; item-restricted combos are exempt. Hardcoding it
+        // here would show offers as applicable that the order path then refuses.
         const isCombo = !!o.applicable_item_ids;
         const effectiveMin = isCombo
           ? (o.min_order_value || 0)
@@ -69,7 +71,10 @@ export default function OffersPanel({ cartTotal, customerPhone, cartItemIds = []
       })
       .filter(o => o.meetsMin ? o.savings > 0 : o.shortfall > 0)
       .sort((a, b) => b.savings - a.savings);
-  }, [offers, cartTotal, cartIdSet]);
+    // OFFER_MIN_ORDER is now the SERVER's floor, which arrives after the first
+    // render — without it here the panel keeps ranking against the fallback and
+    // offers a code the order path will refuse.
+  }, [offers, cartTotal, cartIdSet, OFFER_MIN_ORDER]);
 
   if (loading || ranked.length === 0) return null;
 
