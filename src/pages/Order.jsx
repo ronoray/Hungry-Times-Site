@@ -449,6 +449,14 @@ export default function Order() {
 
   // ── Auto-apply ?promo= (or the combo landing page's stored code) once cart is ready ──
   const autoPromoTried = useRef(false);
+
+  // Drops the stored landing-page promo so the auto-apply effect cannot bring
+  // back a code the customer has removed. Called from every remove path.
+  const forgetStoredPromo = () => {
+    autoPromoTried.current = true;
+    try { sessionStorage.removeItem('ht_promo'); } catch { /* ignore */ }
+  };
+
   useEffect(() => {
     if (autoPromoTried.current) return;
     if (!lines.length) return;                 // wait for cart to load
@@ -466,6 +474,11 @@ export default function Order() {
   }, [lines, appliedCode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRemoveCode = () => {
+    // Removing must be permanent for this session. `ht_promo` is what the
+    // auto-apply effect reads, so leaving it behind meant the code the customer
+    // just removed came back on the next visit to checkout — the "it applies
+    // itself" complaint. Mark the effect as spent too, for this mount.
+    forgetStoredPromo();
     setAppliedCode(null);
     setCodeInput('');
     setCodeError('');
@@ -503,6 +516,7 @@ export default function Order() {
   };
 
   const handlePanelRemoveOffer = () => {
+    forgetStoredPromo();
     setAppliedCode(null);
     setSelectedOfferSource('auto');
     // Restore auto-apply if available
@@ -1003,6 +1017,15 @@ export default function Order() {
   // the "add ₹X more" hint appears on a cart whose problem isn't the floor.
   const offersAllowed = cartTotal >= offerFloor && !hasNoStackItem;
 
+  // The code the ORDER payload may carry — not the same thing as the code the
+  // customer typed. computeOrderDiscounts (server) rejects the whole order with
+  // a 400 when a code arrives on a cart below the offer floor, so a code that
+  // earned nothing here must not be sent: otherwise "no discount below ₹500"
+  // silently becomes "you cannot place this order at all", with no way out
+  // except emptying the cart. A code that did earn a discount is still sent, so
+  // combos (floor-exempt) and normal above-floor orders are unaffected.
+  const outboundCode = discountAmount > 0 ? (appliedCode?.code || null) : null;
+
   // Adding a combo to a cart that already had points or a code selected must
   // clear both. The totals memo ignores them either way, but the payload sends
   // the raw pointsToRedeem state, and leaving a code applied would keep an
@@ -1139,12 +1162,13 @@ export default function Order() {
         addons: visibleAddons(line, isDineIn),
       }));
 
-      // Ad attribution — UTM campaign + promo fallback from the combo landing page
+      // Ad attribution — UTM campaign from the landing page.
+      // The stored `ht_promo` is deliberately NOT used as a fallback applied_code:
+      // it is a landing-page hint, not a validated offer, and sending it made the
+      // server reject orders for a code the customer had never applied and could
+      // not remove from the UI. See `outboundCode`.
       const utm = (() => {
         try { return JSON.parse(sessionStorage.getItem('ht_utm') ?? '{}'); } catch { return {}; }
-      })();
-      const promoFallback = (() => {
-        try { return sessionStorage.getItem('ht_promo') || null; } catch { return null; }
       })();
 
       // ✅ STEP 1: INITIATE order (creates Razorpay order only, NO database order yet!)
@@ -1171,8 +1195,8 @@ export default function Order() {
           use_borzo: useBorzoDelivery,
           offer_id: appliedOffer?.id || null,
           offer_title: appliedOffer?.title || null,
-          applied_code: appliedCode?.code || promoFallback || null,
-          applied_code_type: appliedCode?.type || null,
+          applied_code: outboundCode,
+          applied_code_type: outboundCode ? (appliedCode?.type || null) : null,
           utm_campaign: utm.campaign || undefined,
           points_to_redeem: pointsToRedeem > 0 ? pointsToRedeem : 0,
           is_scheduled: isDineIn ? true : (isScheduled && scheduledDate && scheduledTime),
@@ -1422,12 +1446,10 @@ export default function Order() {
         addons: visibleAddons(line, isDineIn),
       }));
 
-      // Ad attribution — UTM campaign + promo fallback from the combo landing page
+      // Ad attribution — UTM campaign only; `ht_promo` is a landing-page hint,
+      // never an applied code (see the initiate path and `outboundCode`).
       const utm = (() => {
         try { return JSON.parse(sessionStorage.getItem('ht_utm') ?? '{}'); } catch { return {}; }
-      })();
-      const promoFallback = (() => {
-        try { return sessionStorage.getItem('ht_promo') || null; } catch { return null; }
       })();
 
       const orderPayload = {
@@ -1446,8 +1468,8 @@ export default function Order() {
         use_borzo: useBorzoDelivery,
         offer_id: appliedOffer?.id || null,
         offer_title: appliedOffer?.title || null,
-        applied_code: appliedCode?.code || promoFallback || null,
-        applied_code_type: appliedCode?.type || null,
+        applied_code: outboundCode,
+        applied_code_type: outboundCode ? (appliedCode?.type || null) : null,
         utm_campaign: utm.campaign || undefined,
         points_to_redeem: pointsToRedeem > 0 ? pointsToRedeem : 0,
         is_scheduled: isDineIn ? true : (isScheduled && scheduledDate && scheduledTime),
@@ -2246,8 +2268,8 @@ export default function Order() {
                       rather than discovered as an error. */}
                   {!appliedCode && !offersAllowed && cartTotal > 0 && (
                     <p className="text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/25 rounded px-3 py-2 leading-relaxed">
-                      No discount on orders below ₹{offerFloor}. Add ₹{Math.ceil(Math.max(0, offerFloor - cartTotal))} more
-                      to use a promo code or your loyalty points.
+                      Add ₹{Math.ceil(Math.max(0, offerFloor - cartTotal))} more to use a promo code or your
+                      loyalty points — discounts start at ₹{offerFloor}. Ordering now is fine too.
                     </p>
                   )}
 
@@ -2303,16 +2325,29 @@ export default function Order() {
                       )}
                     </div>
                   ) : (
-                    <div className="flex items-center justify-between bg-orange-500/10 -mx-6 px-6 py-2 rounded">
-                      <span className="text-orange-400 text-sm font-medium">
-                        Code: {appliedCode.code}
-                      </span>
-                      <button
-                        onClick={handleRemoveCode}
-                        className="text-neutral-400 hover:text-red-400 text-xs underline"
-                      >
-                        Remove
-                      </button>
+                    <div className={`-mx-6 px-6 py-2 rounded ${discountAmount > 0 ? 'bg-orange-500/10' : 'bg-neutral-700/40'}`}>
+                      <div className="flex items-center justify-between">
+                        <span className={`text-sm font-medium ${discountAmount > 0 ? 'text-orange-400' : 'text-neutral-400'}`}>
+                          Code: {appliedCode.code}
+                          {discountAmount === 0 && <span className="ml-2 text-xs">(not applied)</span>}
+                        </span>
+                        <button
+                          onClick={handleRemoveCode}
+                          className="text-neutral-400 hover:text-red-400 text-xs underline"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      {/* A code that earns nothing is no longer a dead end: the order
+                          goes through at full price. Saying so here is the difference
+                          between "add ₹X more" reading as advice and reading as a
+                          blocked checkout. */}
+                      {discountAmount === 0 && !offersAllowed && (
+                        <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
+                          Discounts start at ₹{offerFloor} — add ₹{Math.ceil(Math.max(0, offerFloor - cartTotal))} more to use it.
+                          You can place this order now without it.
+                        </p>
+                      )}
                     </div>
                   )}
 
