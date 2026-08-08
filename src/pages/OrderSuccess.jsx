@@ -296,9 +296,19 @@ export default function OrderSuccess() {
                 <span className="text-green-500">-₹{order.discount}</span>
               </div>
             )}
+            {/* GST is added on top ONLY when the order carried a discount. With
+                no discount it is already inside the menu price, so a bare "Tax"
+                line here reads as an extra charge and makes the total look like
+                broken maths — a Weekend Special shows Subtotal ₹549, Tax ₹26.14,
+                Total ₹549. Mirror of the checkout line in Order.jsx and of the
+                Add./Incl. split on the printed POS bill. */}
             <div className="flex justify-between items-center mb-2">
-              <span className="text-neutral-400">Tax (GST)</span>
-              <span className="text-white">₹{order.tax}</span>
+              <span className="text-neutral-400">
+                GST (5%){Number(order.discount) > 0 || Number(order.points_to_redeem) > 0 ? '' : ' — included'}
+              </span>
+              <span className="text-white">
+                ₹{order.tax}{Number(order.discount) > 0 || Number(order.points_to_redeem) > 0 ? '' : ' incl.'}
+              </span>
             </div>
             {/* online_orders exposes the fee as delivery_fee (NOT delivery_charge —
                 that field is always undefined here, which silently dropped the line

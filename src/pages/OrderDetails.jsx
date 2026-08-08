@@ -322,9 +322,14 @@ export default function OrderDetails() {
                 <span className="text-green-400">FREE</span>
               </div>
             )}
+            {/* Inclusive unless the order carried a discount — see OrderSuccess. */}
             <div className="flex justify-between text-neutral-400">
-              <span>GST</span>
-              <span>₹{order.tax}</span>
+              <span>
+                GST (5%){Number(order.discount) > 0 || Number(order.points_to_redeem) > 0 ? '' : ' — included'}
+              </span>
+              <span>
+                ₹{order.tax}{Number(order.discount) > 0 || Number(order.points_to_redeem) > 0 ? '' : ' incl.'}
+              </span>
             </div>
             <div className="border-t border-neutral-700 pt-2 mt-2 flex justify-between text-white font-bold text-lg">
               <span>Total</span>
