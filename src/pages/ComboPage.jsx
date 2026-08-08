@@ -49,6 +49,11 @@ function addComboToLocalCart(combo, addons = []) {
   }
   try {
     localStorage.setItem('ht_cart', JSON.stringify(cart));
+    // Tell the cart sync this device has an unsent edit. Without it, the next
+    // page that mounts CartProvider sees a clean cart, pulls the server copy,
+    // and the combo added here is silently discarded before it is ever pushed.
+    // See CART_DIRTY_KEY in src/context/CartContext.jsx.
+    localStorage.setItem('ht_cart_dirty', '1');
     sessionStorage.setItem('ht_promo', COMBO.code);
   } catch { /* storage blocked — ignore */ }
 }

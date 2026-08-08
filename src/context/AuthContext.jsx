@@ -356,6 +356,21 @@ export function AuthProvider({ children }) {
     }
 
     localStorage.removeItem('customerToken');
+
+    // Drop the cart with the session. Logout used to leave ht_cart behind, and
+    // because the cart sync preferred a non-empty local cart, the next person to
+    // sign in on a shared device pushed the previous person's items into their
+    // own account. Nothing is lost that mattered: whatever reached the server is
+    // still on the account and comes back on the next login.
+    //
+    // Cleared by key rather than through useCart — CartProvider is nested inside
+    // this provider (App.jsx), so importing the cart context here would invert
+    // the tree. CartContext watches `token` and drops its in-memory copy when it
+    // goes null.
+    localStorage.removeItem('ht_cart');
+    localStorage.removeItem('ht_cart_rev');
+    localStorage.removeItem('ht_cart_dirty');
+
     setToken(null);
     setCustomer(null);
     console.log('[Auth] Logged out');

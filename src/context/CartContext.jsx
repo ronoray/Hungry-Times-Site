@@ -1,14 +1,48 @@
 import { createContext, useContext, useMemo, useState, useEffect, useCallback, useRef } from "react";
 import API_BASE from "../config/api.js";
+import { useAuth } from "./AuthContext.jsx";
 import { isPackagingAddon, packagingAddonOf } from "../utils/cartLine";
 
 const CartCtx = createContext(null);
 export const useCart = () => useContext(CartCtx);
 
-// ─── Server cart helpers ───────────────────────────────────────────────────
+// ─── Server cart sync ──────────────────────────────────────────────────────
+//
+// One logged-in account is one cart, on every device. The server owns a
+// revision counter (customers.cart_rev, migration 0012) and bumps it on every
+// write; we remember the last rev we saw. A rev that has moved means another
+// device wrote after us, so the server copy is the newer one and we adopt it.
+//
+// This replaces a rule that preferred the local cart whenever it was non-empty
+// and pushed it on mount. That made a stale device the winner: clear the cart
+// on the phone, open the site on the desktop, and the desktop's old
+// localStorage cart was pushed back over the cleared one — so the clear never
+// stuck anywhere. src/main.jsx reloads any tab hidden for 60s, which ran that
+// path constantly.
+//
+// A timestamp would have been the wrong key: the two writers are two browsers
+// whose clocks disagree by an unknown amount. A counter the server owns needs
+// no agreement about what time it is.
+//
+// Local-wins survives in exactly one place — the login boundary — because
+// "I was browsing before I signed in" is a real cart that must not be dropped.
+export const CART_KEY = "ht_cart";
+export const CART_REV_KEY = "ht_cart_rev";
+export const CART_DIRTY_KEY = "ht_cart_dirty";
+
 function getToken() {
   return localStorage.getItem("customerToken") || null;
 }
+
+const readRev = () => Number(localStorage.getItem(CART_REV_KEY) || 0) || 0;
+const writeRev = (rev) => { try { localStorage.setItem(CART_REV_KEY, String(rev)); } catch {} };
+const isDirty = () => localStorage.getItem(CART_DIRTY_KEY) === "1";
+const setDirty = (on) => {
+  try {
+    if (on) localStorage.setItem(CART_DIRTY_KEY, "1");
+    else localStorage.removeItem(CART_DIRTY_KEY);
+  } catch {}
+};
 
 async function fetchServerCart() {
   const token = getToken();
@@ -19,26 +53,37 @@ async function fetchServerCart() {
     });
     if (!res.ok) return null;
     const data = await res.json();
-    return Array.isArray(data.cart) ? data.cart : null;
+    if (!Array.isArray(data.cart)) return null;
+    // A server that predates migration 0012 sends no rev. Reading it as 0 keeps
+    // this client on the old behaviour rather than breaking, which matters in
+    // the window between the two repos' deploys.
+    return { cart: data.cart, rev: Number(data.rev || 0) || 0 };
   } catch { return null; }
 }
 
 async function pushServerCart(cart) {
   const token = getToken();
-  if (!token) return;
+  if (!token) return null;
   try {
-    await fetch(`${API_BASE}/customer/cart`, {
+    const res = await fetch(`${API_BASE}/customer/cart`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ cart }),
     });
-  } catch {}
+    if (!res.ok) return null;
+    const data = await res.json();
+    return Number(data.rev || 0) || 0;
+  } catch { return null; }
 }
 // ──────────────────────────────────────────────────────────────────────────
 
+const SYNC_POLL_MS = 30000;
+
 export function CartProvider({ children }) {
+  const { token } = useAuth();
+
   const [lines, setLines] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("ht_cart") || "[]"); }
+    try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); }
     catch { return []; }
   });
 
@@ -52,41 +97,106 @@ export function CartProvider({ children }) {
     try { localStorage.setItem("ht_order_mode", mode); } catch {}
   };
 
-  // Debounce timer ref for server push
+  // Debounce timer for the outbound push.
   const syncTimer = useRef(null);
+  // Latest lines, readable from callbacks that must not re-subscribe on every
+  // keystroke of a quantity change.
+  const linesRef = useRef(lines);
+  // Guards against two reconciles overlapping (a poll landing on a focus).
+  const inFlight = useRef(false);
+  // Distinguishes "logged in since before this mount" from a fresh login.
+  const prevToken = useRef(token);
 
-  // Persist to localStorage on every change
+  // Persist on every change. The dirty flag is set by the mutations themselves,
+  // never here, so a cart adopted from the server also reaches localStorage
+  // without being mistaken for a local edit we owe the server.
+  //
+  // The flag lives in localStorage rather than in a ref because ComboPage writes
+  // ht_cart from outside this provider (/combo is a top-level route with no
+  // CartProvider) and needs a way to say it did.
   useEffect(() => {
-    localStorage.setItem("ht_cart", JSON.stringify(lines));
+    linesRef.current = lines;
+    try { localStorage.setItem(CART_KEY, JSON.stringify(lines)); } catch {}
   }, [lines]);
 
-  // Debounced push to server whenever lines change (only if logged in)
-  useEffect(() => {
-    if (!getToken()) return;
-    clearTimeout(syncTimer.current);
-    syncTimer.current = setTimeout(() => pushServerCart(lines), 1500);
-    return () => clearTimeout(syncTimer.current);
-  }, [lines]);
-
-  // On mount (or when token appears), sync cart from server
-  useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    fetchServerCart().then(serverCart => {
-      if (!serverCart) return;
-      setLines(local => {
-        // If local cart is non-empty keep it (user was browsing before login)
-        // and push it to server so both devices converge.
-        // If local is empty, use server cart.
-        if (local.length > 0) {
-          pushServerCart(local);
-          return local;
-        }
-        return serverCart;
-      });
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Adopt a server cart: it becomes the truth, and is explicitly not dirty.
+  const adopt = useCallback((cart, rev) => {
+    setLines(cart);
+    linesRef.current = cart;
+    try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch {}
+    writeRev(rev);
+    setDirty(false);
   }, []);
+
+  // The one sync primitive. Dirty → push ours. Clean → pull, and adopt when the
+  // rev has moved. An empty cart with a newer rev is a real state: that is what
+  // carries a clear from one device to the others.
+  const reconcile = useCallback(async () => {
+    if (!getToken() || inFlight.current) return;
+    inFlight.current = true;
+    try {
+      if (isDirty()) {
+        const rev = await pushServerCart(linesRef.current);
+        if (rev !== null) { writeRev(rev); setDirty(false); }
+        return;
+      }
+      const server = await fetchServerCart();
+      if (!server) return;
+      if (server.rev !== readRev()) adopt(server.cart, server.rev);
+    } finally {
+      inFlight.current = false;
+    }
+  }, [adopt]);
+
+  // Debounced push after a local edit, so dragging a quantity doesn't spam the
+  // API. reconcile picks the dirty branch and sends whatever the cart is by then.
+  useEffect(() => {
+    if (!token || !isDirty()) return;
+    clearTimeout(syncTimer.current);
+    syncTimer.current = setTimeout(reconcile, 1500);
+    return () => clearTimeout(syncTimer.current);
+  }, [lines, token, reconcile]);
+
+  // Login / logout boundary.
+  useEffect(() => {
+    const had = prevToken.current;
+    prevToken.current = token;
+
+    if (!token) {
+      // Logged out. AuthContext clears the stored cart keys; drop the in-memory
+      // copy too so the UI matches, and so nothing is left to push into the next
+      // account signed in on this device.
+      if (had) { setLines([]); linesRef.current = []; writeRev(0); setDirty(false); }
+      return;
+    }
+
+    if (!had) {
+      // Fresh login. This is the one moment local-wins is right — a cart built
+      // while browsing signed-out belongs to the account now signing in.
+      if (linesRef.current.length > 0) { setDirty(true); reconcile(); return; }
+      // Nothing local: take whatever the account already has, whatever our
+      // stored rev says, because that rev belonged to a different session.
+      fetchServerCart().then((server) => { if (server) adopt(server.cart, server.rev); });
+      return;
+    }
+
+    reconcile();
+  }, [token, reconcile, adopt]);
+
+  // Stay fresh: on return to the tab, and on a slow poll while it is visible.
+  // Same idiom as the rest of the site (ActiveOrderBar 15s, Menu 30s).
+  useEffect(() => {
+    if (!token) return;
+    const onVisible = () => { if (document.visibilityState === "visible") reconcile(); };
+    window.addEventListener("focus", reconcile);
+    document.addEventListener("visibilitychange", onVisible);
+    const id = setInterval(onVisible, SYNC_POLL_MS);
+    return () => {
+      window.removeEventListener("focus", reconcile);
+      document.removeEventListener("visibilitychange", onVisible);
+      clearInterval(id);
+    };
+  }, [token, reconcile]);
 
   // ============================================================================
   // CALCULATE UNIT PRICE - Support both singular and array variants
@@ -116,7 +226,10 @@ export function CartProvider({ children }) {
   // ADD LINE - Support both singular and array variants
   // ✅ CRITICAL FIX: Explicitly preserve ALL fields including itemName
   // ============================================================================
-  const addLine = (line) => setLines(prev => {
+  // Every mutation below marks the cart dirty before touching state, so the next
+  // reconcile pushes ours instead of pulling. Marking on a no-op edit is harmless
+  // — the push just re-sends the same cart and costs a rev.
+  const addLine = (line) => { setDirty(true); setLines(prev => {
     // Merge same config
     const same = (l) => {
       // Compare item IDs
@@ -161,14 +274,17 @@ export function CartProvider({ children }) {
       addons: line.addons || [],
       qty: line.qty || 1
     }];
-  });
+  }); };
 
-  const removeLine = (key) =>
+  const removeLine = (key) => {
+    setDirty(true);
     setLines(prev => prev.filter(l => l.key !== key));
+  };
 
   // ✅ UPDATED: Remove item if quantity becomes 0
   const updateQty = (key, qty) => {
     const newQty = Math.max(0, Number(qty) || 0);
+    setDirty(true);
     if (newQty === 0) {
       // Remove item when quantity is 0
       setLines(prev => prev.filter(l => l.key !== key));
@@ -177,9 +293,14 @@ export function CartProvider({ children }) {
     }
   };
 
+  // Clearing pushes immediately rather than waiting on the debounce: this is the
+  // change most likely to be followed by closing the tab, and an empty cart that
+  // never reached the server is exactly the bug this file exists to fix.
   const clearCart = () => {
+    setDirty(true);
     setLines([]);
-    pushServerCart([]);
+    linesRef.current = [];
+    reconcile();
   };
 
   // ============================================================================
@@ -270,7 +391,7 @@ export function CartProvider({ children }) {
   // correct any stale priceDelta values that may be cached in localStorage.
   useEffect(() => {
     // No cart items — nothing to reconcile
-    const stored = (() => { try { return JSON.parse(localStorage.getItem("ht_cart") || "[]"); } catch { return []; } })();
+    const stored = (() => { try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); } catch { return []; } })();
     if (stored.length === 0) return;
 
     fetch(`${API_BASE}/public/menu`)
