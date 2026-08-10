@@ -932,7 +932,16 @@ export default function Order() {
   // silently discarded, charging the customer more than the total they approved.
   // Blocks the isComboOffer floor-exemption too, or an item-restricted code
   // would still slip past.
-  const offersAllowed = total >= offerFloor && !hasNoStackItem;
+  //
+  // The floor is measured on the PRE-DISCOUNT BILL TOTAL — cart plus delivery —
+  // matching computeOrderDiscounts. Menu prices are GST-inclusive on the
+  // undiscounted branch, so cart + delivery is exactly the total quoted before
+  // anything comes off. Testing the cart alone told a customer looking at a ₹519
+  // bill to "add ₹40 more", which is both wrong and impossible to act on once
+  // they realise the fee already counted. Delivery lifts an order OVER the floor
+  // but is never itself discounted, and never widens the 20% loyalty cap below.
+  const floorBasis = total + (Number(deliveryCharge) || 0);
+  const offersAllowed = floorBasis >= offerFloor && !hasNoStackItem;
 
   // Apply offer discount
   let discount = 0;
@@ -1013,9 +1022,11 @@ export default function Order() {
   // Component-scope twin of the memo's internal `offersAllowed`, for the JSX.
   // The memo's copy is local to its callback — reaching for it from the render
   // tree is what took checkout down on 2026-07-25.
-  // Must stay in step with the memo's version, including the no-stack term, or
-  // the "add ₹X more" hint appears on a cart whose problem isn't the floor.
-  const offersAllowed = cartTotal >= offerFloor && !hasNoStackItem;
+  // Must stay in step with the memo's version, including the no-stack term and
+  // the delivery charge in the basis, or the "add ₹X more" hint appears on a
+  // cart whose problem isn't the floor.
+  const offerFloorBasis = cartTotal + (Number(deliveryCharge) || 0);
+  const offersAllowed = offerFloorBasis >= offerFloor && !hasNoStackItem;
 
   // The code the ORDER payload may carry — not the same thing as the code the
   // customer typed. computeOrderDiscounts (server) rejects the whole order with
@@ -2268,8 +2279,8 @@ export default function Order() {
                       rather than discovered as an error. */}
                   {!appliedCode && !offersAllowed && cartTotal > 0 && (
                     <p className="text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/25 rounded px-3 py-2 leading-relaxed">
-                      Add ₹{Math.ceil(Math.max(0, offerFloor - cartTotal))} more to use a promo code or your
-                      loyalty points — discounts start at ₹{offerFloor}. Ordering now is fine too.
+                      Add ₹{Math.ceil(Math.max(0, offerFloor - offerFloorBasis))} more to use a promo code or your
+                      loyalty points — discounts start at a ₹{offerFloor} bill. Ordering now is fine too.
                     </p>
                   )}
 
@@ -2344,7 +2355,7 @@ export default function Order() {
                           blocked checkout. */}
                       {discountAmount === 0 && !offersAllowed && (
                         <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
-                          Discounts start at ₹{offerFloor} — add ₹{Math.ceil(Math.max(0, offerFloor - cartTotal))} more to use it.
+                          Discounts start at a ₹{offerFloor} bill — add ₹{Math.ceil(Math.max(0, offerFloor - offerFloorBasis))} more to use it.
                           You can place this order now without it.
                         </p>
                       )}
