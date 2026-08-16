@@ -13,6 +13,7 @@ import { Link } from 'react-router-dom'
 import SEOHead from '../components/SEOHead'
 import StarRating from '../components/StarRating'
 import { useRatingSummary } from '../hooks/useRatingSummary'
+import { quoteOf } from '../utils/reviewText'
 import API_BASE from '../config/api'
 
 export default function Testimonials() {
@@ -76,9 +77,13 @@ export default function Testimonials() {
             {reviews.map((t, i) => (
               <div key={t.id ?? i} className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
                 <StarRating value={Number(t.rating) || 5} className="mb-3" />
-                <p className="text-sm sm:text-base text-neutral-300 leading-relaxed mb-3">
-                  &ldquo;{t.testimonial_text || t.text}&rdquo;
-                </p>
+                {/* Wordless reviews are the common case, not an edge case — see
+                    utils/reviewText.js. Stars and a name, no empty quote marks. */}
+                {quoteOf(t) && (
+                  <p className="text-sm sm:text-base text-neutral-300 leading-relaxed mb-3">
+                    &ldquo;{quoteOf(t)}&rdquo;
+                  </p>
+                )}
                 <p className="text-xs text-neutral-500 font-medium">
                   &mdash; {t.customer_name || t.name || 'Happy Customer'}
                 </p>

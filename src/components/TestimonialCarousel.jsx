@@ -11,6 +11,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import StarRating from './StarRating';
+import { quoteOf } from '../utils/reviewText';
 
 // Auto-advance is a motion effect: honour the OS setting rather than animating
 // at someone who has asked the whole system to stop moving.
@@ -98,10 +99,17 @@ export default function TestimonialCarousel({ items = [], intervalMs = 6000 }) {
             >
               <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 mx-auto max-w-2xl">
                 <StarRating value={Number(t.rating) || 5} className="mb-3" />
-                <p className="text-sm sm:text-base text-neutral-300 leading-relaxed mb-4">
-                  &ldquo;{t.testimonial_text || t.text}&rdquo;
-                </p>
-                <p className="text-xs text-neutral-500 font-medium">
+                {/* Most reviewers leave stars and no words, and every published
+                    rating belongs on the page. Rendering the quote block
+                    unconditionally drew a card containing an empty pair of quote
+                    marks — trim first, because ' ' is truthy. A wordless review
+                    is stars and a name. */}
+                {quoteOf(t) && (
+                  <p className="text-sm sm:text-base text-neutral-300 leading-relaxed mb-4">
+                    &ldquo;{quoteOf(t)}&rdquo;
+                  </p>
+                )}
+                <p className={`text-xs text-neutral-500 font-medium${quoteOf(t) ? '' : ' mt-1'}`}>
                   &mdash; {t.customer_name || t.name || 'Happy Customer'}
                 </p>
               </div>
