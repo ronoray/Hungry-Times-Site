@@ -47,6 +47,12 @@ jobs:
       # invariant that the displayed rows sum to the displayed Total) is money
       # the customer approves before paying. src/lib/billTotals.test.mjs pins it
       # against real order rows. Node's built-in runner — no extra dependencies.
+      #
+      # The npm script names the test file explicitly rather than globbing.
+      # `node --test "src/**/*.test.mjs"` does not expand on the Node 20 used
+      # here (runner globs arrived in 21), and `node --test <dir>` mangles the
+      # path on Windows, where the script also has to run. Add new test files to
+      # the script by name.
       - name: Test
         run: npm test
 
