@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import API_BASE from '../config/api.js';
 import { reorderIntoCart } from '../utils/reorder';
+import { buildTotalsLines, totalsArgsFromOrder } from '../lib/billTotals.js';
+import { money } from '../lib/money.js';
 
 // Progress bar steps
 const STEPS = [
@@ -299,42 +301,42 @@ export default function OrderDetails() {
         {/* Order Summary */}
         <div className="bg-neutral-800 rounded-lg p-5 mb-6">
           <h3 className="text-white font-bold mb-3 text-sm">Order Summary</h3>
+          {/* Totals from lib/billTotals.js, shared with OrderSuccess, the
+              checkout and the cart drawer. This block used to print Delivery
+              ABOVE the GST line (every other surface prints it below, because
+              delivery is never discounted), omit the loyalty redemption line
+              entirely, and show the inclusive GST inside the column where it
+              reads as an extra charge the Total then fails to include. */}
           <div className="space-y-1.5 text-sm">
-            <div className="flex justify-between text-neutral-400">
-              <span>Subtotal</span>
-              <span>₹{order.subtotal}</span>
-            </div>
-            {order.discount > 0 && (
-              <div className="flex justify-between text-green-500">
-                <span>Discount</span>
-                <span>-₹{order.discount}</span>
-              </div>
-            )}
-            {order.delivery_fee > 0 && (
-              <div className="flex justify-between text-neutral-400">
-                <span>Delivery</span>
-                <span>₹{order.delivery_fee}</span>
-              </div>
-            )}
-            {(order.delivery_fee === 0 || order.delivery_fee == null) && (
-              <div className="flex justify-between text-neutral-400">
-                <span>Delivery</span>
-                <span className="text-green-400">FREE</span>
-              </div>
-            )}
-            {/* Inclusive unless the order carried a discount — see OrderSuccess. */}
-            <div className="flex justify-between text-neutral-400">
-              <span>
-                GST (5%){Number(order.discount) > 0 || Number(order.points_to_redeem) > 0 ? '' : ' — included'}
-              </span>
-              <span>
-                ₹{order.tax}{Number(order.discount) > 0 || Number(order.points_to_redeem) > 0 ? '' : ' incl.'}
-              </span>
-            </div>
-            <div className="border-t border-neutral-700 pt-2 mt-2 flex justify-between text-white font-bold text-lg">
-              <span>Total</span>
-              <span className="text-orange-500">₹{order.total}</span>
-            </div>
+            {buildTotalsLines(totalsArgsFromOrder(order)).map((ln) => {
+              if (ln.kind === 'note') {
+                return (
+                  <p key={ln.key} className="text-neutral-500 text-xs text-right">
+                    {ln.text}
+                  </p>
+                );
+              }
+              if (ln.kind === 'total') {
+                return (
+                  <div key={ln.key} className="border-t border-neutral-700 pt-2 mt-2 flex justify-between text-white font-bold text-lg">
+                    <span>{ln.label}</span>
+                    <span className="text-orange-500">₹{money(ln.value)}</span>
+                  </div>
+                );
+              }
+              const tone =
+                ln.tone === 'discount' ? 'text-green-500'
+                  : ln.tone === 'points' ? 'text-purple-400'
+                    : 'text-neutral-400';
+              return (
+                <div key={ln.key} className={`flex justify-between ${tone}`}>
+                  <span>{ln.label}</span>
+                  {ln.free
+                    ? <span className="text-green-400">FREE</span>
+                    : <span>{ln.value < 0 ? '-' : ''}₹{money(Math.abs(ln.value))}</span>}
+                </div>
+              );
+            })}
           </div>
         </div>
 

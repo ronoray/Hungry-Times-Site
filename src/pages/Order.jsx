@@ -35,6 +35,7 @@ import {
 } from '../utils/addressBook';
 import AddressLabelPicker from '../components/AddressLabelPicker';
 import { round2, money, toPaise } from '../lib/money';
+import { gstIncludedNote } from '../lib/billTotals.js';
 import { useOfferFloor } from '../hooks/useOfferFloor';
 
 // Offers & loyalty points require an order subtotal ≥ the server's
@@ -2372,11 +2373,20 @@ export default function Order() {
                     </div>
                   )}
 
-                  {/* 🍽️ DINE-IN PACKAGING WAIVER */}
+                  {/* 🍽️ DINE-IN PACKAGING WAIVER — a NOTE, not a deduction row.
+                      The server strips packaging addons for dine-in before it
+                      prices anything (utils/packaging.js normalizePackaging), and
+                      the memo above does the same, so the Subtotal shown here is
+                      ALREADY net of packaging. Printing it as a "- ₹X" line in
+                      the column subtracted it a second time: a ₹500 cart with ₹20
+                      packaging read Subtotal ₹480, No packaging -₹20, Total ₹480,
+                      which does not add up. The saving is real and still worth
+                      saying — it just isn't arithmetic. */}
                   {isDineIn && packagingDeduction > 0 && (
-                    <div className="flex justify-between items-center bg-green-500/10 -mx-6 px-6 py-2 rounded">
-                      <span className="text-green-400 font-medium text-sm">No packaging (Dine-in)</span>
-                      <span className="text-green-400 font-bold">- ₹{money(packagingDeduction)}</span>
+                    <div className="bg-green-500/10 -mx-6 px-6 py-2 rounded">
+                      <span className="text-green-400 font-medium text-sm">
+                        ✓ No packaging charge on dine-in — saves ₹{money(packagingDeduction)}
+                      </span>
                     </div>
                   )}
 
@@ -2434,13 +2444,19 @@ export default function Order() {
                     </div>
                   )}
 
-                  {/* When no discount applied, GST is already inside the menu
-                      price — show it as included so the line doesn't read as an
-                      extra charge the total then fails to include. */}
-                  <div className="flex justify-between text-neutral-400">
-                    <span>GST (5%){gstOnTop ? '' : ' — included'}</span>
-                    <span className="text-white">{gstOnTop ? `₹${money(gstAmount)}` : `₹${money(gstAmount)} incl.`}</span>
-                  </div>
+                  {/* GST appears in the column ONLY when it was added on top of
+                      a discounted value. With no discount it is already inside
+                      the menu price and nothing was added, so a column line
+                      makes the figures overshoot the Total by 5% however it is
+                      labelled — it is stated below the Total instead. Same rule
+                      and same wording as lib/billTotals.js, which drives the
+                      confirmation and order-details pages. */}
+                  {gstOnTop && (
+                    <div className="flex justify-between text-neutral-400">
+                      <span>GST (5%)</span>
+                      <span className="text-white">₹{money(gstAmount)}</span>
+                    </div>
+                  )}
 
                   {/* Borzo delivery partner toggle — only shown when quote is available */}
                   {orderType === 'delivery' && borzoQuote.charge != null && (
@@ -2486,7 +2502,10 @@ export default function Order() {
                     <span className="text-lg font-bold text-white">Total</span>
                     <span className="text-xl font-bold text-orange-500">₹{money(finalTotal)}</span>
                   </div>
-                  
+                  {!gstOnTop && (
+                    <p className="text-neutral-500 text-xs text-right">{gstIncludedNote(gstAmount)}</p>
+                  )}
+
                   {/* 🎊 SAVINGS MESSAGE */}
                   {(discountAmount > 0 || pointsDiscount > 0) && (
                     <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-2 text-center mt-2">

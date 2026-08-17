@@ -43,6 +43,13 @@ jobs:
       - name: Check for undefined identifiers
         run: npm run lint:undef
 
+      # The order-summary rule (GST added vs already included, and the
+      # invariant that the displayed rows sum to the displayed Total) is money
+      # the customer approves before paying. src/lib/billTotals.test.mjs pins it
+      # against real order rows. Node's built-in runner — no extra dependencies.
+      - name: Test
+        run: npm test
+
       - name: Build
         run: npm run build
 

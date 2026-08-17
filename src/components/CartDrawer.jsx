@@ -11,6 +11,7 @@ import { useBackableOverlay } from "../hooks/useBackableOverlay";
 import GoogleMapsAutocomplete from "./GoogleMapsAutocomplete";
 import { lineUnitPrice } from "../utils/cartLine";
 import { money } from "../lib/money";
+import { gstIncludedNote } from "../lib/billTotals.js";
 
 export default function CartDrawer({
   isOpen,
@@ -189,10 +190,18 @@ export default function CartDrawer({
                   <span>-₹{money(pointsDiscount)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-neutral-400">
-                <span>GST (5%){gstOnTop ? '' : ' — included'}</span>
-                <span>{gstOnTop ? `₹${money(gstAmount)}` : `₹${money(gstAmount)} incl.`}</span>
-              </div>
+              {/* GST appears in the column ONLY when it was added on top of a
+                  discounted value. With no discount it is already inside the
+                  menu price, so a column line makes the figures overshoot the
+                  Total by 5% — it is stated below the Total instead. Same rule
+                  and same wording as lib/billTotals.js, which drives the
+                  confirmation and order-details pages. */}
+              {gstOnTop && (
+                <div className="flex justify-between text-neutral-400">
+                  <span>GST (5%)</span>
+                  <span>₹{money(gstAmount)}</span>
+                </div>
+              )}
               {orderType !== 'pickup' && orderType !== 'dine_in' && (
                 <div className="flex justify-between text-neutral-400">
                   <span>Delivery</span>
@@ -205,6 +214,9 @@ export default function CartDrawer({
                 <span>Total</span>
                 <span className="text-orange-500">₹{money(finalTotal)}</span>
               </div>
+              {!gstOnTop && (
+                <p className="text-neutral-500 text-xs text-right">{gstIncludedNote(gstAmount)}</p>
+              )}
             </div>
 
             {/* Delivery Address */}

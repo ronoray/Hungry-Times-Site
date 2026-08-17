@@ -6,6 +6,8 @@ import { useAuth } from '../context/AuthContext';
 import { CheckCircle, Package, MapPin, CreditCard, ShoppingBag } from 'lucide-react';
 import API_BASE from '../config/api.js';
 import { trackPurchase } from '../utils/analytics';
+import { buildTotalsLines, totalsArgsFromOrder } from '../lib/billTotals.js';
+import { money } from '../lib/money.js';
 
 export default function OrderSuccess() {
   const { orderId } = useParams();
@@ -284,50 +286,46 @@ export default function OrderSuccess() {
             ))}
           </div>
 
-          {/* Total */}
+          {/* Totals — every line comes from lib/billTotals.js, shared with the
+              checkout, the cart drawer and the order-details page. This block
+              used to omit the loyalty redemption entirely, so a points order
+              showed Subtotal ₹720 and Total ₹604.80 with nothing accounting for
+              the difference. It also printed the inclusive GST as a column line,
+              which made a Weekend Special read ₹549 + ₹26.14 = ₹549.
+              online_orders exposes the fee as delivery_fee (NOT delivery_charge —
+              that field is always undefined here). */}
           <div className="border-t border-neutral-700 pt-4">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-neutral-400">Subtotal</span>
-              <span className="text-white">₹{order.subtotal}</span>
-            </div>
-            {order.discount > 0 && (
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-green-500">Discount</span>
-                <span className="text-green-500">-₹{order.discount}</span>
-              </div>
-            )}
-            {/* GST is added on top ONLY when the order carried a discount. With
-                no discount it is already inside the menu price, so a bare "Tax"
-                line here reads as an extra charge and makes the total look like
-                broken maths — a Weekend Special shows Subtotal ₹549, Tax ₹26.14,
-                Total ₹549. Mirror of the checkout line in Order.jsx and of the
-                Add./Incl. split on the printed POS bill. */}
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-neutral-400">
-                GST (5%){Number(order.discount) > 0 || Number(order.points_to_redeem) > 0 ? '' : ' — included'}
-              </span>
-              <span className="text-white">
-                ₹{order.tax}{Number(order.discount) > 0 || Number(order.points_to_redeem) > 0 ? '' : ' incl.'}
-              </span>
-            </div>
-            {/* online_orders exposes the fee as delivery_fee (NOT delivery_charge —
-                that field is always undefined here, which silently dropped the line
-                even when ₹70 was charged, so the total looked wrong). */}
-            {Number(order.delivery_fee) > 0 ? (
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-neutral-400">Delivery</span>
-                <span className="text-white">₹{order.delivery_fee}</span>
-              </div>
-            ) : (
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-neutral-400">Delivery</span>
-                <span className="text-green-400 font-medium">FREE</span>
-              </div>
-            )}
-            <div className="flex justify-between items-center pt-2 border-t border-neutral-700">
-              <span className="text-white font-bold text-lg">Total</span>
-              <span className="text-orange-500 font-bold text-xl">₹{order.total}</span>
-            </div>
+            {buildTotalsLines(totalsArgsFromOrder(order)).map((ln) => {
+              if (ln.kind === 'note') {
+                return (
+                  <p key={ln.key} className="text-neutral-500 text-xs text-right mt-1">
+                    {ln.text}
+                  </p>
+                );
+              }
+              if (ln.kind === 'total') {
+                return (
+                  <div key={ln.key} className="flex justify-between items-center pt-2 border-t border-neutral-700">
+                    <span className="text-white font-bold text-lg">{ln.label}</span>
+                    <span className="text-orange-500 font-bold text-xl">₹{money(ln.value)}</span>
+                  </div>
+                );
+              }
+              const tone =
+                ln.tone === 'discount' ? 'text-green-500'
+                  : ln.tone === 'points' ? 'text-purple-400'
+                    : 'text-neutral-400';
+              return (
+                <div key={ln.key} className="flex justify-between items-center mb-2">
+                  <span className={tone}>{ln.label}</span>
+                  {ln.free
+                    ? <span className="text-green-400 font-medium">FREE</span>
+                    : <span className={ln.tone === 'muted' ? 'text-white' : tone}>
+                        {ln.value < 0 ? '-' : ''}₹{money(Math.abs(ln.value))}
+                      </span>}
+                </div>
+              );
+            })}
           </div>
         </div>
 
