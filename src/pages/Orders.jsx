@@ -75,7 +75,7 @@ const STATUS_COLORS = {
 };
 
 export default function Orders() {
-  const { isAuthenticated, customer, token } = useAuth();
+  const { isAuthenticated, customer, token, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { lines, addLine, clearCart } = useCart();
   const showToast = useToast();
@@ -126,13 +126,18 @@ export default function Orders() {
   const DATE_GROUP_ORDER = ['Today', 'Yesterday', 'This Week', 'Earlier'];
 
   useEffect(() => {
+    // Same cold-load race as OrderSuccess: auth resolves async, and the Razorpay
+    // callback can land here directly, so bouncing before it settles throws a
+    // logged-in customer out to the menu.
+    if (authLoading) return;
+
     if (!isAuthenticated) {
       navigate('/menu');
       return;
     }
-    
+
     fetchOrders();
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, authLoading]);
 
   const fetchOrders = async () => {
     try {

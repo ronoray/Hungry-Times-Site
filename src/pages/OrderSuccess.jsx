@@ -14,7 +14,7 @@ export default function OrderSuccess() {
   const { orderId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const { clearCart } = useCart();
 
   const [order, setOrder] = useState(null);
@@ -30,6 +30,12 @@ export default function OrderSuccess() {
   const paymentId = searchParams.get('pid') || null;
 
   useEffect(() => {
+    // AuthContext hydrates the customer asynchronously, so isAuthenticated is
+    // false for the first render of any COLD load — and Razorpay's redirect mode
+    // lands here as a cold load. Deciding before that settles bounced a customer
+    // who had just paid straight to the login prompt. Wait for auth to resolve.
+    if (authLoading) return;
+
     if (!isAuthenticated) {
       // No /login route exists — Profile shows the login prompt
       navigate('/profile');
@@ -37,7 +43,7 @@ export default function OrderSuccess() {
     }
 
     fetchOrderDetails();
-  }, [orderId, isAuthenticated]);
+  }, [orderId, isAuthenticated, authLoading]);
 
   // If we arrived with pending=1, poll until payment_status flips to 'paid'
   useEffect(() => {
