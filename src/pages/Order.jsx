@@ -1389,7 +1389,10 @@ export default function Order() {
       // the order and 302s to /order-success. Non-standalone keeps the popup.
       if (isStandalone) {
         options.redirect = true;
-        options.callback_url = 'https://hungrytimes.in/api/customer/payments/razorpay/callback';
+        // Same origin the customer is already on — the apex 301s to
+        // home.hungrytimes.in, so a hard-coded apex URL sent the PWA out of its
+        // own scope on the way back and dropped the customer into a browser tab.
+        options.callback_url = `${window.location.origin}/api/customer/payments/razorpay/callback`;
         console.log('🔄 Standalone PWA detected — using Razorpay redirect mode');
       }
 
