@@ -281,6 +281,18 @@ export default function Order() {
     }
   }, [paymentError]);
 
+  // Razorpay redirect mode bounces a failed or cancelled payment back here as
+  // /order?payment=failed. Without this the customer returns to a checkout page
+  // that looks untouched and has no idea the payment did not go through.
+  // Strip the param so a later reload does not resurrect the banner.
+  useEffect(() => {
+    if (searchParams.get('payment') !== 'failed') return;
+    setPaymentError('Payment was not completed. No charges were made — please try again.');
+    const url = new URL(window.location.href);
+    url.searchParams.delete('payment');
+    window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+  }, []);
+
   // Loyalty Points State
   const [pointsToRedeem, setPointsToRedeem] = useState(0);
   const loyaltyPoints = customer?.loyaltyPoints || 0;

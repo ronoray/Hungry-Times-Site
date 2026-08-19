@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { CheckCircle, Package, MapPin, CreditCard, ShoppingBag } from 'lucide-react';
 import API_BASE from '../config/api.js';
 import { trackPurchase } from '../utils/analytics';
@@ -14,7 +15,8 @@ export default function OrderSuccess() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  
+  const { clearCart } = useCart();
+
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const paymentType = searchParams.get('type'); // 'online' or 'cod'
@@ -74,6 +76,18 @@ export default function OrderSuccess() {
       clearTimeout(pollTimeout.current);
     };
   }, [awaitingConfirmation, orderId]);
+
+  // Razorpay redirect mode navigates the page away, so Order.jsx's success
+  // handler — and its clearCart() — never runs. Landing here on a paid order is
+  // the only proof the checkout completed, so empty the cart now or the customer
+  // finds their just-bought items still sitting in it.
+  const cartCleared = useRef(false);
+  useEffect(() => {
+    if (!order || cartCleared.current) return;
+    if (order.payment_status !== 'paid') return;
+    cartCleared.current = true;
+    clearCart();
+  }, [order]);
 
   // Fire Purchase pixel event once when order loads
   useEffect(() => {
