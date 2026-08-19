@@ -839,8 +839,14 @@ export default function Menu() {
     // Use ONLY the API-provided imageUrl (already normalized on the server)
     const imageUrl = it.imageUrl || null;
 
+    // Some items have no packaging and so cannot leave the building (the teas,
+    // the coffee, the made-to-order sodas). They stay visible but unorderable
+    // outside dine-in mode: greying them with a reason reads as "come and have
+    // it here", where hiding them would just look like a menu that lost items.
+    const dineInOnlyBlocked = Boolean(it.dineInOnly) && orderMode !== 'dine_in';
+
     // Check if item is disabled
-    const isDisabled = !acceptingOnlineOrders || it.effectiveDisabled;
+    const isDisabled = !acceptingOnlineOrders || it.effectiveDisabled || dineInOnlyBlocked;
     
     // Price display: show range for items with variants
     const priceDisplay = (() => {
@@ -964,6 +970,16 @@ export default function Menu() {
               <span className="read-more-inline">… Read more</span>
             )}
           </p>
+        )}
+
+        {/* Dine-in only — explain WHY it can't be added, so it reads as an
+            invitation rather than a broken button. Its own message, because
+            the item is otherwise perfectly available. */}
+        {dineInOnlyBlocked && !it.effectiveDisabled && (
+          <div style={{ marginTop: '8px', color: '#d4af37', fontSize: '0.8125rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span>&#9749;</span>
+            <span>Available at the restaurant only</span>
+          </div>
         )}
 
         {/* Disabled Message */}

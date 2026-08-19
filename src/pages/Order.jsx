@@ -25,6 +25,7 @@ import './Order.css';
 import API_BASE from '../config/api.js';
 import { visibleAddons, lineUnitPrice, isPackagingAddon } from '../utils/cartLine';
 import { useNoStackItems, cartHasNoStack } from '../hooks/useNoStackItems';
+import { useFulfilmentRules, cartFulfilmentBlock } from '../hooks/useFulfilmentRules';
 import {
   pickPreferredAddress,
   legacyAddressFrom,
@@ -916,6 +917,15 @@ export default function Order() {
   const hasNoStackItem = useMemo(
     () => cartHasNoStack(lines, noStackIds),
     [lines, noStackIds]
+  );
+
+  // Items that can't be packed, and items that can't travel alone. Checked here
+  // so the customer learns while they can still fix the cart — the server gate
+  // would otherwise reject the whole order at payment, which reads as a crash.
+  const fulfilmentRules = useFulfilmentRules();
+  const fulfilmentBlock = useMemo(
+    () => cartFulfilmentBlock(lines, orderMode, fulfilmentRules),
+    [lines, orderMode, fulfilmentRules]
   );
 
   const { cartTotal, discountAmount, pointsDiscount, maxRedeemablePoints, gstAmount, gstOnTop, finalTotal, packagingDeduction } = useMemo(() => {
@@ -2571,12 +2581,22 @@ export default function Order() {
                   return null;
                 })()}
 
+                {/* An item that can't be packed, or a cart that is only dips.
+                    Shown above the buttons and the buttons disabled, so the
+                    customer fixes it here rather than meeting a rejection at
+                    payment. */}
+                {fulfilmentBlock && (
+                  <div className="mb-3 p-3 bg-amber-500/10 border border-amber-500/50 rounded-lg text-amber-300 text-sm">
+                    {fulfilmentBlock.message}
+                  </div>
+                )}
+
                 {/* Payment buttons */}
                 <div className="space-y-2">
                   {!isEditMode && (
                     <button
                       onClick={handleRazorpayPayment}
-                      disabled={paymentProcessing || lines.length === 0 || (orderType === 'delivery' && (!selectedAddressId || geocodingPending))}
+                      disabled={paymentProcessing || lines.length === 0 || !!fulfilmentBlock || (orderType === 'delivery' && (!selectedAddressId || geocodingPending))}
                       className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors"
                     >
                       {paymentProcessing ? (
@@ -2592,7 +2612,7 @@ export default function Order() {
 
                   <button
                     onClick={handleCODPayment}
-                    disabled={paymentProcessing || lines.length === 0 || (orderType === 'delivery' && (!selectedAddressId || geocodingPending))}
+                    disabled={paymentProcessing || lines.length === 0 || !!fulfilmentBlock || (orderType === 'delivery' && (!selectedAddressId || geocodingPending))}
                     className={`w-full py-3 ${isEditMode ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700'} disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors`}
                   >
                     {paymentProcessing ? (
