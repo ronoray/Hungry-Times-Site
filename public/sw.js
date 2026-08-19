@@ -1,10 +1,10 @@
 // site/public/sw.js - Customer Site Service Worker
 // ============================================================================
 // CORRECTED VERSION - Fixed icon paths to match actual files
-// Version: v7
+// Version: v8
 // ============================================================================
 
-const CACHE_NAME = 'hungry-times-v7';
+const CACHE_NAME = 'hungry-times-v8';
 
 // ✅ FIXED: Match actual icon filenames in /public folder
 const STATIC_ASSETS = [
@@ -93,20 +93,29 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Stale-while-revalidate for menu API (offline menu browsing)
+  // NETWORK-FIRST for the menu, cache only as an offline fallback.
+  //
+  // This was stale-while-revalidate, which served the cached copy FIRST and
+  // refreshed in the background — so a connected customer saw the previous
+  // visit's menu. That is wrong for the one response that must never be stale:
+  // it showed items the kitchen had disabled, hid items that had been switched
+  // back on, ignored out_of_stock, and served yesterday's PRICES. The server
+  // already sends this with `Cache-Control: no-store`; the worker was
+  // overriding that.
+  //
+  // Offline browsing still works — the cached copy is returned when the network
+  // fails, which is the case that feature was actually for.
   if (url.pathname === '/api/public/menu' || url.pathname === '/api/public/categories') {
     event.respondWith(
-      caches.open(CACHE_NAME).then((cache) => {
-        return cache.match(event.request).then((cached) => {
-          const fetched = fetch(event.request).then((response) => {
-            if (response && response.status === 200) {
-              cache.put(event.request, response.clone());
-            }
-            return response;
-          }).catch(() => cached);
-          return cached || fetched;
-        });
-      })
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
     );
     return;
   }
