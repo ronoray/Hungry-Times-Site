@@ -923,9 +923,13 @@ export default function Order() {
   // so the customer learns while they can still fix the cart — the server gate
   // would otherwise reject the whole order at payment, which reads as a crash.
   const fulfilmentRules = useFulfilmentRules();
+  // orderType, NOT the cart context's orderMode. This page owns the choice and
+  // the customer can change it here, so orderMode is only the seed value — a
+  // cart assembled in dine-in mode and then switched to delivery at checkout
+  // would otherwise keep dine-in's exemption and sail straight through.
   const fulfilmentBlock = useMemo(
-    () => cartFulfilmentBlock(lines, orderMode, fulfilmentRules),
-    [lines, orderMode, fulfilmentRules]
+    () => cartFulfilmentBlock(lines, orderType, fulfilmentRules),
+    [lines, orderType, fulfilmentRules]
   );
 
   const { cartTotal, discountAmount, pointsDiscount, maxRedeemablePoints, gstAmount, gstOnTop, finalTotal, packagingDeduction } = useMemo(() => {
