@@ -145,10 +145,21 @@ export default function DeliveryView() {
   let items = [];
   try { items = JSON.parse(order.items_json || '[]'); } catch (e) {}
 
+  // The server decides both of these — see server/utils/deliveryPayment.js.
+  // This page used to re-derive the amount from advance_payment alone, which
+  // meant a fully-paid order with no advance showed the rider the whole bill
+  // and a live UPI QR. Fall back to the old derivation only for a server that
+  // predates amount_due, so a stale cached page degrades rather than breaks.
   const isPaid = order.payment_status === 'paid';
-  const advancePaid = Number(order.advance_payment || 0);
-  const collectAmount = advancePaid > 0 ? Math.max(0, Number(order.total) - advancePaid) : Number(order.total);
+  const advancePaid = Number(order.amount_paid_so_far ?? order.advance_payment ?? 0);
+  const collectAmount = order.amount_due != null
+    ? Number(order.amount_due)
+    : (advancePaid > 0 ? Math.max(0, Number(order.total) - advancePaid) : Number(order.total));
   const upiUrl = `upi://pay?pa=8420822919@okbizaxis&pn=HungryTimes&am=${collectAmount}&tn=Order+%23${order.id}&cu=INR`;
+  // A third-party courier is off our payroll and must never be handed our cash —
+  // the same rule that stops sendCodQrToPartner going to them. They still need to
+  // know whether the order is settled, but not a QR that collects on our behalf.
+  const isOutsourced = order.delivery_channel === 'outsourced';
   const canPickUp = ['pending', 'confirmed', 'preparing'].includes(order.status);
   const canDeliver = order.status === 'out_for_delivery';
   const isPickup = order.delivery_address === 'Pickup' || order.order_type?.includes('pickup');
@@ -156,6 +167,25 @@ export default function DeliveryView() {
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
       <h1 className="text-xl font-bold text-white mb-1">{isPickup ? 'Pickup' : 'Delivery'} — Order #{order.id}</h1>
+      {/* Payment verdict up top. The rider decides whether to ask for money in
+          the first few seconds of opening this, long before scrolling to the
+          payment block further down. */}
+      <div
+        className={`inline-flex items-center gap-2 rounded-full px-3 py-1 mb-2 text-sm font-bold ${
+          isPaid
+            ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/40'
+            : 'bg-amber-500/15 text-amber-300 border border-amber-500/40'
+        }`}
+      >
+        <span>{isPaid ? '✓' : '!'}</span>
+        <span>
+          {isPaid
+            ? 'PAID — collect nothing'
+            : isOutsourced
+              ? `PAYMENT PENDING — ₹${collectAmount} (do not collect)`
+              : `PAYMENT PENDING — collect ₹${collectAmount}`}
+        </span>
+      </div>
       <p className="text-neutral-500 text-sm mb-6">
         {new Date(order.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
       </p>
@@ -272,6 +302,12 @@ export default function DeliveryView() {
             <p className="text-amber-400 text-sm font-medium text-center mb-1">Collect Payment at Door</p>
           )}
           {!advancePaid && <p className="text-white text-3xl font-bold text-center mb-4">₹{collectAmount}</p>}
+          {isOutsourced ? (
+            <p className="text-neutral-300 text-sm text-center">
+              Do not collect payment. Hungry Times settles this order directly — hand it over and mark it delivered.
+            </p>
+          ) : (
+          <>
           {/* GPay QR */}
           <div className="flex flex-col items-center gap-3">
             <div className="bg-white p-3 rounded-xl">
@@ -285,6 +321,8 @@ export default function DeliveryView() {
               Open GPay / UPI App
             </a>
           </div>
+          </>
+          )}
         </div>
       )}
 
