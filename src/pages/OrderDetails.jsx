@@ -380,34 +380,53 @@ export default function OrderDetails() {
                 </button>
               </>
             )}
-            <button
-              onClick={async () => {
-                if (!confirm('Are you sure you want to cancel this order?')) return;
+            {/* The button appears only where the server will actually accept it.
+                It used to be shown on 'preparing' too, where the API refuses —
+                so its entire behaviour there was to fail with "Order cannot be
+                cancelled in current status". can_self_cancel is computed by the
+                same function the API enforces, so the two cannot disagree. */}
+            {order.can_self_cancel && (
+              <button
+                onClick={async () => {
+                  if (!confirm('Are you sure you want to cancel this order?')) return;
 
-                try {
-                  const token = localStorage.getItem('customerToken');
-                  const response = await fetch(`${API_BASE}/customer/orders/${orderId}/cancel`, {
-                    method: 'POST',
-                    headers: {
-                      'Authorization': `Bearer ${token}`,
-                      'Content-Type': 'application/json'
+                  try {
+                    const token = localStorage.getItem('customerToken');
+                    const response = await fetch(`${API_BASE}/customer/orders/${orderId}/cancel`, {
+                      method: 'POST',
+                      headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                      }
+                    });
+
+                    const data = await response.json().catch(() => ({}));
+
+                    if (response.ok) {
+                      // A prepaid cancellation refunds automatically; say so, and
+                      // say how long it takes, or the money looks lost.
+                      showToast(data.message || 'Order cancelled', 'success');
+                      fetchOrderDetails();
+                    } else {
+                      showToast(data.error || 'Failed to cancel order', 'error');
                     }
-                  });
-
-                  if (response.ok) {
-                    showToast('Order cancelled', 'success');
-                    fetchOrderDetails();
-                  } else {
-                    showToast('Failed to cancel order', 'error');
+                  } catch (err) {
+                    showToast('Error cancelling order', 'error');
                   }
-                } catch (err) {
-                  showToast('Error cancelling order', 'error');
-                }
-              }}
-              className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg"
-            >
-              Cancel Order
-            </button>
+                }}
+                className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg"
+              >
+                Cancel Order
+              </button>
+            )}
+
+            {/* Not cancellable from here — tell them what to do instead of
+                leaving a dead end or, worse, a button that fails. */}
+            {!order.can_self_cancel && order.self_cancel_reason && (
+              <div className="bg-neutral-800/60 border border-neutral-700 rounded-lg px-4 py-3">
+                <p className="text-neutral-300 text-sm text-center">{order.self_cancel_reason}</p>
+              </div>
+            )}
           </div>
         )}
       </div>
