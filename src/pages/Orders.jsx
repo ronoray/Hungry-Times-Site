@@ -500,6 +500,56 @@ export default function Orders() {
                   </div>
                 </div>
               )}
+
+              {/* What happened to the money. A cancelled order shows "N/A" for
+                  payment status above, which says nothing about a refund — so
+                  say it here. 'refunded' is only written once the money has
+                  actually settled; an accepted refund reads 'processing', and
+                  Razorpay takes 5-7 working days to land it. Promising it has
+                  arrived when it has not is how a refund turns into a complaint. */}
+              {CANCELLED_STATUSES.includes(selectedOrder.status) && selectedOrder.refund_status && (
+                <div>
+                  <h3 className="text-neutral-400 text-sm font-medium mb-2">Refund</h3>
+                  <div className="bg-neutral-800/60 border border-neutral-700 rounded-lg p-3">
+                    {selectedOrder.refund_status === 'refunded' ? (
+                      <p className="text-green-400 text-sm">
+                        ₹{Number(selectedOrder.refund_amount || 0).toFixed(2)} has been refunded to your original payment method.
+                      </p>
+                    ) : selectedOrder.refund_status === 'processing' ? (
+                      <p className="text-green-400 text-sm">
+                        ₹{Number(selectedOrder.refund_amount || 0).toFixed(2)} is on its way back to your original
+                        payment method. It usually takes 5–7 working days to appear.
+                      </p>
+                    ) : (
+                      <p className="text-neutral-300 text-sm">
+                        Please contact us about the payment on this order.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Loyalty points move when an order is cancelled — points it
+                  earned come off, points it spent go back — and until now
+                  nothing told the customer, so a balance simply changed. */}
+              {CANCELLED_STATUSES.includes(selectedOrder.status) &&
+                (Number(selectedOrder.points_earned) > 0 || Number(selectedOrder.points_redeemed) > 0) && (
+                <div>
+                  <h3 className="text-neutral-400 text-sm font-medium mb-2">Loyalty Points</h3>
+                  <div className="bg-neutral-800/60 border border-neutral-700 rounded-lg p-3 space-y-1">
+                    {Number(selectedOrder.points_redeemed) > 0 && (
+                      <p className="text-green-400 text-sm">
+                        {selectedOrder.points_redeemed} points you spent on this order have been returned to your balance.
+                      </p>
+                    )}
+                    {Number(selectedOrder.points_earned) > 0 && (
+                      <p className="text-neutral-300 text-sm">
+                        {selectedOrder.points_earned} points this order earned have been reversed.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Modal Footer */}
