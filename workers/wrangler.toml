@@ -2,8 +2,39 @@ name = "hungry-times-bot-meta"
 main = "bot-meta.js"
 compatibility_date = "2024-01-01"
 
-# Intercepts all requests to home.hungrytimes.in
-# Real users are passed through; social bots get static meta HTML
+# Per-document routes ONLY — never a bare /*.
+#
+# Cloudflare bills per INVOCATION, and every non-bot request is a pure
+# passthrough (`return fetch(request)`) that still costs one. Under the old
+# `home.hungrytimes.in/*` route a single page view billed 10-15 invocations,
+# because the SPA's ~44 hashed chunks under /assets/ are served from this same
+# hostname. That put the zone at 91% of the free 100k/day cap on 2026-08-24,
+# and home.hungrytimes.in returned HTTP 000 while the origin was healthy.
+#
+# An early return inside bot-meta.js does NOT help — the invocation is already
+# billed by the time the code runs. The route pattern is the only lever.
+#
+# Listed below: one pattern per path that is (a) an HTML document and (b) has
+# an entry in the ROUTES map in bot-meta.js. Everything else — /assets/*,
+# icons, sw.js, site.webmanifest, robots.txt, sitemap.xml, /images/*, and the
+# static /policy/*.html pages — now reaches the origin without a Worker hop.
+#
+# Trailing `*` absorbs trailing slashes and query strings. It is safe here
+# because no asset path shares any of these prefixes.
+#
+# Paths deliberately left off: /order, /orders, /profile and the dynamic
+# /track/:token, /delivery/:token, /order-success/:orderId. They were never in
+# the ROUTES map, so they only ever received the generic `/` fallback — the
+# same tags index.html already carries. Covering them would bill an invocation
+# for every real customer and rider opening a tracking link, for no gain.
 routes = [
-  { pattern = "home.hungrytimes.in/*", zone_name = "hungrytimes.in" }
+  { pattern = "home.hungrytimes.in/",              zone_name = "hungrytimes.in" },
+  { pattern = "home.hungrytimes.in/home*",         zone_name = "hungrytimes.in" },
+  { pattern = "home.hungrytimes.in/menu*",         zone_name = "hungrytimes.in" },
+  { pattern = "home.hungrytimes.in/gallery*",      zone_name = "hungrytimes.in" },
+  { pattern = "home.hungrytimes.in/combo*",        zone_name = "hungrytimes.in" },
+  { pattern = "home.hungrytimes.in/offers*",       zone_name = "hungrytimes.in" },
+  { pattern = "home.hungrytimes.in/contact*",      zone_name = "hungrytimes.in" },
+  { pattern = "home.hungrytimes.in/feedback*",     zone_name = "hungrytimes.in" },
+  { pattern = "home.hungrytimes.in/testimonials*", zone_name = "hungrytimes.in" },
 ]
