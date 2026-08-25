@@ -123,17 +123,22 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
   // SELECT SIZE / STYLE (from the variants table). Independent of each other,
   // one pick each, and clicking the current pick clears it — both groups are
   // optional, and with no selection the item is added at base price.
-  // Every option row below is a <label> that WRAPS its own radio, with the
-  // handler on the label. Clicking the row makes the browser forward the click
-  // to that radio, and the forwarded click bubbles back up to the label — so the
-  // handler runs TWICE for one row click. These handlers are toggles, so the
-  // second run undid the first and the row appeared dead; only clicking the
-  // radio itself (one event) worked. Every row's onClick therefore calls
-  // e.preventDefault() to stop the forwarding.
+  // Every option row below is a <label> that WRAPS its own radio, and the
+  // handler sits on the RADIO — never on the label.
   //
-  // Moving the handler to the input's onChange would also stop the double-fire,
-  // but a radio that is already checked fires no change event, which would
-  // silently remove click-again-to-deselect.
+  // The label is the one place it must not sit. Clicking the row makes the
+  // browser forward the click to the radio, and that forwarded click bubbles
+  // back up to the label, so a label handler runs TWICE per row click. These
+  // handlers are toggles, so the second run undid the first. Cancelling the
+  // forward with e.preventDefault() fixed the row but broke the radio: clicking
+  // the radio directly then had its selection cancelled along with the forward,
+  // which is why Regular/Large went dead when you aimed at the button itself.
+  //
+  // On the input there is exactly one click either way — forwarded from the row,
+  // or landing on the radio directly — and nothing to cancel.
+  //
+  // It must be onClick, not onChange: a radio that is already checked fires no
+  // change event, which would silently remove click-again-to-deselect.
   const selectSize = (variant) => {
     setSelectedSize((prev) => (prev?.id === variant.id ? null : variant));
   };
@@ -532,7 +537,6 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
               </h3>
               <div className="space-y-2">
                 <label
-                  onClick={(e) => { e.preventDefault(); setSelectedSize(null); }}
                   className={`flex items-center justify-between p-3 md:p-4 rounded-lg border-2 cursor-pointer transition ${
                     selectedSize === null
                       ? "border-orange-500 bg-orange-500/10"
@@ -544,6 +548,7 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
                       type="radio"
                       name="variant-size"
                       checked={selectedSize === null}
+                      onClick={() => setSelectedSize(null)}
                       onChange={() => {}}
                       className="w-5 h-5 text-orange-500 cursor-pointer"
                     />
@@ -555,7 +560,6 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
                 {sizeVariants.map((variant) => (
                   <label
                     key={variant.id}
-                    onClick={(e) => { e.preventDefault(); selectSize(variant); }}
                     className={`flex items-center justify-between p-3 md:p-4 rounded-lg border-2 cursor-pointer transition ${
                       selectedSize?.id === variant.id
                         ? "border-orange-500 bg-orange-500/10"
@@ -567,6 +571,7 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
                         type="radio"
                         name="variant-size"
                         checked={selectedSize?.id === variant.id}
+                        onClick={() => selectSize(variant)}
                         onChange={() => {}}
                         className="w-5 h-5 text-orange-500 cursor-pointer"
                       />
@@ -593,7 +598,6 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
               </h3>
               <div className="space-y-2">
                 <label
-                  onClick={(e) => { e.preventDefault(); setSelectedStyle(null); }}
                   className={`flex items-center justify-between p-3 md:p-4 rounded-lg border-2 cursor-pointer transition ${
                     selectedStyle === null
                       ? "border-orange-500 bg-orange-500/10"
@@ -605,6 +609,7 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
                       type="radio"
                       name="variant-style"
                       checked={selectedStyle === null}
+                      onClick={() => setSelectedStyle(null)}
                       onChange={() => {}}
                       className="w-5 h-5 text-orange-500 cursor-pointer"
                     />
@@ -616,7 +621,6 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
                 {styleVariants.map((variant) => (
                   <label
                     key={variant.id}
-                    onClick={(e) => { e.preventDefault(); selectStyle(variant); }}
                     className={`flex items-center justify-between p-3 md:p-4 rounded-lg border-2 cursor-pointer transition ${
                       selectedStyle?.id === variant.id
                         ? "border-orange-500 bg-orange-500/10"
@@ -628,6 +632,7 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
                         type="radio"
                         name="variant-style"
                         checked={selectedStyle?.id === variant.id}
+                        onClick={() => selectStyle(variant)}
                         onChange={() => {}}
                         className="w-5 h-5 text-orange-500 cursor-pointer"
                       />
@@ -664,7 +669,6 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
                     {family.options.map((opt) => (
                       <label
                         key={opt.id}
-                        onClick={(e) => { e.preventDefault(); selectFamilyVariant(family.id, opt); }}
                         className={`flex items-center justify-between p-3 md:p-4 rounded-lg border-2 cursor-pointer transition ${
                           selectedFamilyVariants[family.id]?.id === opt.id
                             ? "border-orange-500 bg-orange-500/10"
@@ -678,6 +682,7 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
                             type="radio"
                             name={`family-variant-${family.id}`}
                             checked={selectedFamilyVariants[family.id]?.id === opt.id}
+                            onClick={() => selectFamilyVariant(family.id, opt)}
                             onChange={() => {}}
                             className="w-5 h-5 text-orange-500 cursor-pointer"
                           />
