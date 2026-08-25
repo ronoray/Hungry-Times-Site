@@ -36,5 +36,6 @@ routes = [
   { pattern = "home.hungrytimes.in/offers*",       zone_name = "hungrytimes.in" },
   { pattern = "home.hungrytimes.in/contact*",      zone_name = "hungrytimes.in" },
   { pattern = "home.hungrytimes.in/feedback*",     zone_name = "hungrytimes.in" },
+  { pattern = "home.hungrytimes.in/reservation*",  zone_name = "hungrytimes.in" },
   { pattern = "home.hungrytimes.in/testimonials*", zone_name = "hungrytimes.in" },
 ]

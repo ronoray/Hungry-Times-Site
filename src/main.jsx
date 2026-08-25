@@ -45,7 +45,6 @@ const Home = lazy(() => import("./pages/Home"));
 const Gallery = lazy(() => import("./pages/Gallery"));
 const Feedback = lazy(() => import("./pages/Feedback"));
 const Contact = lazy(() => import("./pages/Contact"));
-const Careers = lazy(() => import("./pages/Careers"));
 const Offers = lazy(() => import("./pages/Offers"));
 const Testimonials = lazy(() => import("./pages/Testimonials"));
 const Order = lazy(() => import("./pages/Order"));
@@ -159,7 +158,6 @@ const router = createBrowserRouter(
         { path: "testimonials", element: withSkeleton(Testimonials, DefaultSkeleton) },
         { path: "feedback", element: withSkeleton(Feedback, DefaultSkeleton) },
         { path: "contact", element: withSkeleton(Contact, DefaultSkeleton) },
-        { path: "careers", element: withSkeleton(Careers, DefaultSkeleton) },
         { path: "reservation", element: withSkeleton(Reservation, DefaultSkeleton) },
         { path: "offers", element: withSkeleton(Offers, DefaultSkeleton) },
 

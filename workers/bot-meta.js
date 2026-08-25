@@ -56,6 +56,10 @@ const ROUTES = {
     title:       'Share Your Feedback — Hungry Times',
     description: 'Had a meal at Hungry Times? Share your experience and help us serve you better.',
   },
+  '/reservation': {
+    title:       'Book a Table — Hungry Times | Dhakuria, Kolkata',
+    description: 'Reserve a table at Hungry Times, Dhakuria / Gariahat, Kolkata. Pick your date, time and party size — we confirm your booking on WhatsApp.',
+  },
   '/testimonials': {
     title:       'Customer Reviews — Hungry Times | Kolkata',
     description: 'Read what our customers say about Hungry Times. Real reviews from diners who love our Chinese-Continental food in Kolkata.',

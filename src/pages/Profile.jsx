@@ -1210,10 +1210,10 @@ export default function Profile() {
           </label>
         </div>
 
-        {/* Help & Support — Contact, Feedback, Reservation and Careers have real
-            routes and desktop nav links but no mobile entry point anywhere else,
-            so this is the only way a phone user reaches them without typing a
-            URL. Low-frequency pages: plain rows, no cards or icons. */}
+        {/* Help & Support — Contact, Feedback and Reservation have real routes
+            but no mobile entry point anywhere else, so this is the only way a
+            phone user reaches them without typing a URL. Low-frequency pages:
+            plain rows, no cards or icons. */}
         <div className="bg-neutral-800 rounded-lg p-6 mb-6">
           <h2 className="text-xl font-semibold text-white mb-4">Help &amp; Support</h2>
           <div className="divide-y divide-neutral-700/70">
@@ -1221,7 +1221,6 @@ export default function Profile() {
               { to: '/contact', label: 'Contact Us' },
               { to: '/feedback', label: 'Feedback' },
               { to: '/reservation', label: 'Book a Table' },
-              { to: '/careers', label: 'Careers' },
             ].map(link => (
               <Link
                 key={link.to}

@@ -2,8 +2,13 @@
 // The old version was a dead form: type="button" with no handler.
 import { useState } from 'react';
 import { Calendar, Clock, Users, Phone, User, MessageCircle } from 'lucide-react';
+import SEOHead from '../components/SEOHead';
+import { BRAND } from '../lib/constants';
 
-const RESTAURANT_WA = '916290471281';
+// Bookings go to the canonical number, read from BRAND rather than hardcoded.
+// This page used to send them to 916290471281 while the "call us" line below
+// showed 8420822919 — the same page pointed a customer at two different lines.
+const RESTAURANT_WA = BRAND.whatsapp;
 
 export default function Reservation() {
   const [form, setForm] = useState({ name: '', phone: '', date: '', time: '', guests: '' });
@@ -33,6 +38,12 @@ export default function Reservation() {
     'w-full px-4 py-2.5 bg-neutral-900 border border-neutral-700 rounded-md text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-orange-500';
 
   return (
+    <>
+    <SEOHead
+      title="Book a Table"
+      description="Reserve a table at Hungry Times, Dhakuria / Gariahat, Kolkata. Pick your date, time and party size — we confirm your booking on WhatsApp."
+      canonicalPath="/reservation"
+    />
     <section className="container-section py-12 px-4">
       <div className="max-w-xl mx-auto">
         <h2 className="text-2xl font-semibold mb-2 text-white">Reserve a Table</h2>
@@ -80,10 +91,12 @@ export default function Reservation() {
             Book via WhatsApp
           </button>
           <p className="text-xs text-neutral-500">
-            Or call us directly: <a href="tel:+918420822919" className="text-orange-400">+91 84208 22919</a>
+            Or call us directly:{' '}
+            <a href={`tel:${BRAND.phone1}`} className="text-orange-400">{BRAND.phone1}</a>
           </p>
         </div>
       </div>
     </section>
+    </>
   );
 }

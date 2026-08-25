@@ -22,7 +22,7 @@ export default function SEOHead({ title, description, canonicalPath, ogImage }) 
     setMeta('og:title', title || 'Hungry Times — Order Food Online in Kolkata');
     setMeta('og:description', desc);
     setMeta('og:url', `${BASE_URL}${canonical}`);
-    setMeta('og:image', ogImage || `${BASE_URL}/banner.png`);
+    setMeta('og:image', ogImage || `${BASE_URL}/og-image.jpg`);
     setMeta('og:image:width', '1200');
     setMeta('og:image:height', '630');
     setMeta('og:type', 'restaurant');
@@ -33,7 +33,7 @@ export default function SEOHead({ title, description, canonicalPath, ogImage }) 
     setMeta('twitter:card', 'summary_large_image');
     setMeta('twitter:title', title || 'Hungry Times — Order Food Online');
     setMeta('twitter:description', desc);
-    setMeta('twitter:image', ogImage || `${BASE_URL}/banner.png`);
+    setMeta('twitter:image', ogImage || `${BASE_URL}/og-image.jpg`);
   }, [title, description, canonical, ogImage]);
 
   return null;
