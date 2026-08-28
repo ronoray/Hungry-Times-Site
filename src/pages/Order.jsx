@@ -2401,6 +2401,14 @@ export default function Order() {
                   {serverQuote?.autoItemOffers?.titles?.length > 0 && (
                     <p className="text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/25 rounded px-3 py-2 leading-relaxed">
                       {serverQuote.autoItemOffers.titles.join(' · ')} — applied automatically.
+                      {/* Said once, plainly, BEFORE the buttons. Menu prices include
+                          GST until a discount applies, at which point 5% is charged
+                          on top — so a discounted total is higher than the headline
+                          and the customer should meet that here, not discover it in
+                          the GST row on the way to paying. */}
+                      <span className="block mt-1 text-emerald-300/70">
+                        Discounted orders are charged 5% GST on top, shown below.
+                      </span>
                     </p>
                   )}
 

@@ -881,7 +881,11 @@ export default function Menu() {
                 a second money authority and would drift from the bill. */}
             {it.autoOffer ? (
               <span
-                title={it.autoOffer.title}
+                // Title carries the full terms on hover/long-press. The badge
+                // itself stays two words — a tile is not the place to litigate
+                // tax, and the checkout shows GST as its own line before anyone
+                // pays. Subtle, but not hidden.
+                title={`${it.autoOffer.title} — applied automatically at checkout. Discounted orders are charged 5% GST on top.`}
                 className="inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded"
               >
                 {it.autoOffer.label}
