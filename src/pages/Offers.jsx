@@ -292,8 +292,20 @@ export default function Offers() {
         if (res.ok) {
           const data = await res.json();
           if (cancelled) return;
-          // Only codes are shown — auto-apply offers have nothing for a customer to do.
-          setOffers((data.offers || []).filter((o) => o.promo_code));
+          // Codes, PLUS automatic offers.
+          //
+          // This used to be `.filter((o) => o.promo_code)` on the reasoning that
+          // an auto-apply offer "has nothing for a customer to do". That was true
+          // when every automatic offer was whole-cart. It is wrong for an offer
+          // attached to specific DISHES — the September campaign (Fish n Chips
+          // ₹255, any Meifoon 20% off) is precisely something the customer acts
+          // on: they have to choose that dish. Filtering it out left the offers
+          // page silent about the only promotion actually running, while posters
+          // and a WhatsApp blast pointed people straight at it.
+          //
+          // The card already handles a codeless offer: it hides the code chip and
+          // its button reads "Order Now" instead of "Use this code".
+          setOffers((data.offers || []).filter((o) => o.promo_code || o.apply_automatically));
           setPointsPromo(data.points_promo || null);
           if (Number(data.min_order_for_offer) >= 0) setFloor(Number(data.min_order_for_offer));
           if (Array.isArray(data.discount_tiers) && data.discount_tiers.length) {

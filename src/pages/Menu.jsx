@@ -871,13 +871,28 @@ export default function Menu() {
           pointerEvents: isDisabled ? 'none' : 'auto'
         }}
       >
-        {/* Bestseller badge + Favorite heart */}
+        {/* Offer badge + Bestseller badge + Favorite heart */}
         <div className="flex items-center justify-between mb-1">
-          {it.isBestseller ? (
-            <span className="inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-amber-500/20 text-amber-500 border border-amber-500/30 rounded">
-              Bestseller
-            </span>
-          ) : <span />}
+          <span className="flex items-center gap-1.5">
+            {/* Automatic item offer (e.g. September: any Meifoon 20% off).
+                The LABEL comes from the server — never computed here. The price
+                below deliberately stays the list price; the saving lands at
+                checkout. Any attempt to render a discounted price here would be
+                a second money authority and would drift from the bill. */}
+            {it.autoOffer ? (
+              <span
+                title={it.autoOffer.title}
+                className="inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded"
+              >
+                {it.autoOffer.label}
+              </span>
+            ) : null}
+            {it.isBestseller ? (
+              <span className="inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-amber-500/20 text-amber-500 border border-amber-500/30 rounded">
+                Bestseller
+              </span>
+            ) : null}
+          </span>
           <button
             onClick={(e) => { e.stopPropagation(); toggleFavorite(it.id); }}
             className="p-1 -mr-1 transition-colors"
