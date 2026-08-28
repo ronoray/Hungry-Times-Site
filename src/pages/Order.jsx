@@ -2347,8 +2347,13 @@ export default function Order() {
                     </p>
                   )}
 
-                  {/* YOUR OFFERS PANEL */}
-                  {!hasNoStackItem && isAuthenticated && customer?.phone && (
+                  {/* YOUR OFFERS PANEL — hidden when a fixed-price bundle is in
+                      the cart, and equally when an automatic item offer is, since
+                      every code here would be refused. Showing WELCOME15 with
+                      "Add ₹190 more" beside an offer that is already applied and
+                      cannot be stacked onto is an instruction the customer cannot
+                      act on. */}
+                  {!hasNoStackItem && !serverQuote?.autoItemOffers && isAuthenticated && customer?.phone && (
                     <OffersPanel
                       cartTotal={cartTotal}
                       customerPhone={customer.phone}
@@ -2480,8 +2485,18 @@ export default function Order() {
                   {/* 💚 DISCOUNT ROW */}
                   {discountAmount > 0 && (
                     <div className="flex justify-between items-center bg-green-500/10 -mx-6 px-6 py-2 rounded">
+                      {/* Name the offer the SERVER actually applied. This read
+                          appliedOffer, which is offers.find(o => o.apply_automatically)
+                          — the first automatic offer in the list, not necessarily
+                          the one that priced this cart. With two live (Fish n
+                          Chips flat ₹65, Meifoon 20%), a Meifoon order correctly
+                          discounted ₹60 under a label reading "(65₹)". */}
                       <span className="text-green-400 font-medium text-sm">
-                        Offer Discount ({appliedOffer?.discount_value}{appliedOffer?.discount_type === 'percent' ? '%' : '₹'})
+                        {serverQuote?.autoItemOffers?.titles?.length
+                          ? serverQuote.autoItemOffers.titles.join(' · ')
+                          : serverQuote?.offerTitle
+                            ? serverQuote.offerTitle
+                            : `Offer Discount (${appliedOffer?.discount_value ?? ''}${appliedOffer?.discount_type === 'percent' ? '%' : '₹'})`}
                       </span>
                       <span className="text-green-400 font-bold">- ₹{money(discountAmount)}</span>
                     </div>
