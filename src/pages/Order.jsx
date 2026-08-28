@@ -932,6 +932,10 @@ export default function Order() {
     [lines, orderType, fulfilmentRules]
   );
 
+  // Authoritative discount from the server — see the note inside the memo.
+  // { promoDiscount, loyaltyDiscount, rejected, autoItemOffers, offerTitle }
+  const [serverQuote, setServerQuote] = useState(null);
+
   const { cartTotal, discountAmount, pointsDiscount, maxRedeemablePoints, gstAmount, gstOnTop, finalTotal, packagingDeduction } = useMemo(() => {
     let total = 0;
     let pkgTotal = 0;
@@ -1007,11 +1011,36 @@ export default function Order() {
     }
   }
 
+    // ── The server is the authority on the discount ────────────────────────
+    // Everything above is a local ESTIMATE, kept only so the page renders
+    // instantly and still works if the quote call fails. Once /offers/quote
+    // answers, its numbers win outright.
+    //
+    // This exists because the local rules could not express an item-scoped
+    // automatic offer: they applied the ₹500 floor (these offers are exempt),
+    // read applicable_item_ids but not applicable_category_ids, chose a single
+    // apply_automatically offer when two are live, and knew nothing of the
+    // whole-cart suppression. On 28 Aug 2026 a ₹310 Meifoon cart therefore
+    // showed a server-issued "20% OFF" badge next to a browser-computed ₹310
+    // total. Re-implementing the engine here is what caused that; asking the
+    // engine is the fix.
+    //
+    // quotedDiscount/quotedPoints are null until the first response, so the
+    // estimate is what shows for that instant, and null again on failure.
+    if (serverQuote) {
+      discount = serverQuote.promoDiscount;
+    }
+
     const subtotalAfterDiscount = Math.max(0, total - discount);
     // Points redemption: max 20% of subtotalAfterDiscount, min 50 points.
     // Blocked entirely below the offer floor (matches the server).
     const maxPts = offersAllowed ? Math.min(loyaltyPoints, Math.floor(subtotalAfterDiscount * 0.2)) : 0;
-    const pointsDiscount = pointsToRedeem > 0 ? Math.min(pointsToRedeem, maxPts) : 0;
+    let pointsDiscount = pointsToRedeem > 0 ? Math.min(pointsToRedeem, maxPts) : 0;
+    if (serverQuote) {
+      // The server zeroes points on a suppressed cart. Honour that here, or the
+      // page offers a slider whose value the order path will silently discard.
+      pointsDiscount = serverQuote.loyaltyDiscount;
+    }
     const afterPoints = Math.max(0, subtotalAfterDiscount - pointsDiscount);
 
     // GST: added ON TOP only when a discount applied; otherwise it is already
@@ -1044,7 +1073,45 @@ export default function Order() {
       finalTotal: round2(afterPoints + deliveryCharge + (hasDiscount ? gst : 0)),
       packagingDeduction: round2(pkgTotal),
     };
-  }, [lines, appliedOffer, deliveryCharge, pointsToRedeem, loyaltyPoints, orderType, hasNoStackItem, offerFloor]);
+  }, [lines, appliedOffer, deliveryCharge, pointsToRedeem, loyaltyPoints, orderType, hasNoStackItem, offerFloor, serverQuote]);
+
+  // Ask the server to price the cart. Same call order creation makes, so the
+  // quoted total and the charged total come from one implementation.
+  useEffect(() => {
+    if (!lines.length) { setServerQuote(null); return; }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/offers/quote`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subtotal: cartTotal,
+            deliveryFee: deliveryCharge,
+            appliedCode: appliedCode?.code || null,
+            pointsToRedeem: pointsToRedeem || 0,
+            customerPhone: customer?.phone || null,
+            items: lines.map((l) => ({
+              itemId: l.itemId,
+              basePrice: l.basePrice || 0,
+              variants: l.variants || [],
+              addons: l.addons || [],
+              quantity: l.qty || 1,
+            })),
+          }),
+        });
+        if (!res.ok) throw new Error(String(res.status));
+        const data = await res.json();
+        if (!cancelled) setServerQuote(data);
+      } catch {
+        // Leave the local estimate in place rather than blocking checkout. The
+        // order path recomputes server-side regardless, so a failed quote costs
+        // accuracy in the preview, never correctness in the charge.
+        if (!cancelled) setServerQuote(null);
+      }
+    }, 250);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [lines, cartTotal, deliveryCharge, appliedCode, pointsToRedeem, customer?.phone]);
 
   // Component-scope twin of the memo's internal `offersAllowed`, for the JSX.
   // The memo's copy is local to its callback — reaching for it from the render
@@ -2307,10 +2374,28 @@ export default function Order() {
                   {/* Offer floor, stated before the customer tries a code. The server
                       refuses sub-floor codes anyway; this is so the rule is visible
                       rather than discovered as an error. */}
-                  {!appliedCode && !offersAllowed && cartTotal > 0 && (
+                  {/* When the server has a reason of its own — an automatic item
+                      offer already on the cart, or a fixed-price bundle — show
+                      THAT instead. The floor nudge would be actively wrong there:
+                      it tells a customer to spend ₹190 more to unlock a discount
+                      they are already receiving, and which no extra spend can
+                      stack onto. */}
+                  {serverQuote?.rejected ? (
+                    <p className="text-xs text-emerald-300/90 bg-emerald-500/10 border border-emerald-500/25 rounded px-3 py-2 leading-relaxed">
+                      {serverQuote.rejected}
+                    </p>
+                  ) : !appliedCode && !offersAllowed && cartTotal > 0 && !serverQuote?.autoItemOffers ? (
                     <p className="text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/25 rounded px-3 py-2 leading-relaxed">
                       Add ₹{Math.ceil(Math.max(0, offerFloor - offerFloorBasis))} more to use a promo code or your
                       loyalty points — discounts start at a ₹{offerFloor} bill. Ordering now is fine too.
+                    </p>
+                  ) : null}
+
+                  {/* The saving, named. An automatic offer with an unexplained
+                      deduction reads as a pricing error; this says which offer. */}
+                  {serverQuote?.autoItemOffers?.titles?.length > 0 && (
+                    <p className="text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/25 rounded px-3 py-2 leading-relaxed">
+                      {serverQuote.autoItemOffers.titles.join(' · ')} — applied automatically.
                     </p>
                   )}
 
