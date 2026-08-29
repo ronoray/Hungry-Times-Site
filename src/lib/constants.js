@@ -16,11 +16,6 @@ gstin: '19ABCFP2512M1Z4',
 }
 
 
-export const ORDER_LINKS = {
-swiggy: '#',
-zomato: '#',
-}
-
 
 export const SOCIAL = {
 instagram: 'https://www.instagram.com/hungrytimes2023/',

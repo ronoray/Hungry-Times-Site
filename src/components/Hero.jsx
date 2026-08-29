@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { ORDER_LINKS } from '../lib/constants'
 import hero1200 from '../assets/hero-1200.jpg';
 
 
@@ -12,8 +11,6 @@ return (
 <p className="mt-4 text-neutral-300">Signature dishes like Chili Pork, Chili Chicken, creamy Risottos, and bacon‑wrapped specials. Dine‑in, takeaway, or order online.</p>
 <div className="mt-6 flex flex-wrap gap-3">
 <Link to="/order" className="btn btn-primary">Order on Website</Link>
-<a href={ORDER_LINKS.swiggy} target="_blank" rel="noreferrer" className="btn btn-ghost">Swiggy</a>
-<a href={ORDER_LINKS.zomato} target="_blank" rel="noreferrer" className="btn btn-ghost">Zomato</a>
 </div>
 </div>
 <div className="card h-64 md:h-80 overflow-hidden">
