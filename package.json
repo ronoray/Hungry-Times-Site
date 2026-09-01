@@ -7,7 +7,7 @@
     "dev": "vite --port 5174 --host",
     "build": "vite build",
     "lint": "eslint .",
-    "test": "node --test src/lib/billTotals.test.mjs src/lib/fulfilmentRules.test.mjs",
+    "test": "node --test src/lib/billTotals.test.mjs src/lib/fulfilmentRules.test.mjs src/lib/discountRules.test.mjs src/utils/offerLink.test.mjs",
     "preview": "vite preview --port 4174 --host",
     "lint:undef": "eslint src -c eslint.undef.config.js"
   },

@@ -19,6 +19,7 @@ import { X } from 'lucide-react';
 import API_BASE from '../config/api.js';
 import { useAuth } from '../context/AuthContext';
 import { useExpiryLabel } from '../hooks/useExpiryLabel';
+import { offerDeepLink } from '../utils/offerLink';
 
 const DISMISS_KEY = 'ht_promo_bar_dismissed';
 const WA_NUMBER = '916290471281';
@@ -95,7 +96,14 @@ export default function PromoBar() {
               if (offer.promo_code) {
                 try { sessionStorage.setItem('ht_promo', offer.promo_code); } catch { /* private mode */ }
               }
-              navigate(offer.promo_code === 'COMBO50' ? '/combo' : '/menu');
+              // COMBO50 has a page of its own. Every other CODE applies to
+              // whatever the customer builds, so the menu is the right landing.
+              // A codeless DISH offer is neither: it advertises one dish, and
+              // sending them to a bare /menu made this strip the loudest dead
+              // end on the site — it is on every page. offerDeepLink points it
+              // at the dish (or, for "any Meifoon", at the section).
+              if (offer.promo_code === 'COMBO50') return navigate('/combo');
+              navigate((!offer.promo_code && offerDeepLink(offer)) || '/menu');
             }}
             className="bg-white text-emerald-700 px-3 py-1 rounded font-bold text-xs hover:bg-emerald-50 transition-colors"
           >

@@ -14,6 +14,7 @@ import {
 import API_BASE from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { msUntilExpiry } from '../utils/offerCountdown';
+import { offerDeepLink } from '../utils/offerLink';
 import SEOHead from '../components/SEOHead';
 import {
   ceilingFor, offerSavingFor, loyaltySavingFor, bestOf, pointsEarnedOn, audienceLabel,
@@ -38,7 +39,16 @@ function OfferCard({ offer, floor }) {
     ? `${offer.discount_value}% OFF`
     : `${rupee(offer.discount_value)} OFF`;
 
-  const restricted = !!(offer.applicable_item_ids && String(offer.applicable_item_ids).trim());
+  // Item- OR category-restricted. Both are floor-exempt on the server
+  // (autoItemOffers.js: "scoped to offers carrying an item or category
+  // restriction"), so testing item ids alone stamped a "Min order ₹500" chip on
+  // the September Meifoon offer — which is category-scoped, names no items, and
+  // is exempt precisely so a lone ₹240 Meifoon qualifies. The page was telling
+  // customers to spend ₹260 more than the offer actually asks for.
+  const restricted = !!(
+    (offer.applicable_item_ids && String(offer.applicable_item_ids).trim()) ||
+    (offer.applicable_category_ids && String(offer.applicable_category_ids).trim())
+  );
 
   // Item-restricted bundles are exempt from the global floor; everything else
   // must clear it, so the higher of the two is the real minimum.
@@ -62,9 +72,18 @@ function OfferCard({ offer, floor }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // A code offer stashes the code and drops the customer on the menu — the code
+  // is the thing they carry, and it applies to whatever they build.
+  //
+  // A codeless DISH offer is the opposite: there is nothing to carry and exactly
+  // one thing to do, so "Order Now" used to be a lie. It navigated to a bare
+  // /menu, leaving the customer at the top of a 443-item list with no hint which
+  // dish the offer they just tapped was even about. Item-scoped offers now land
+  // on the dish (?highlight scrolls to it and opens its options); category-scoped
+  // ones land on the section (?sub), because "any Meifoon" names no single dish.
   const useCode = () => {
     stashCode(offer.promo_code);
-    navigate('/menu');
+    navigate((!offer.promo_code && offerDeepLink(offer)) || '/menu');
   };
 
   // Shares the expiry parsing (valid_till is a date, good through 23:59:59 —

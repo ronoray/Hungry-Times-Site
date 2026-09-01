@@ -12,6 +12,7 @@ import VegDot from "../components/VegDot";
 import ComboPromoCard from "../components/ComboPromoCard";
 import FeaturedComboCard from "../components/FeaturedComboCard";
 import OffersStrip from "../components/OffersStrip";
+import AutoOfferCard from "../components/AutoOfferCard";
 import { useMenuCategory } from '../context/MenuCategoryContext';
 import { useFavorites } from '../context/FavoritesContext';
 import SEOHead from '../components/SEOHead';
@@ -261,8 +262,6 @@ export default function Menu() {
   });
 
   // Active Offers State
-  const [activeOffers, setActiveOffers] = useState([]);
-  const [appliedOffer, setAppliedOffer] = useState(null);
 
   // Track items that were just added (for success animation)
   const [addedItems, setAddedItems] = useState(new Set());
@@ -516,11 +515,54 @@ export default function Menu() {
       }
     }
 
+    // ?sub=<subcategoryId> — the category-scoped twin of ?highlight. A dish
+    // offer that names a CATEGORY ("any Meifoon") has no single item to point
+    // at, so AutoOfferCard links the section instead. Resolved here for the same
+    // reason ?highlight is: the section cannot be scrolled to until its top
+    // category is the one mounted in the right pane.
+    const subRaw = params.get('sub');
+    if (subRaw) {
+      for (const tc of tops) {
+        for (const sc of tc.subcategories || []) {
+          if (String(sc.id) === subRaw) {
+            setActiveTop(tc.id);
+            setActiveSub(sc.id);
+            return;
+          }
+        }
+      }
+    }
+
     const raw = params.get('cat');
     const target = (raw && tops.find(t => String(t.id) === raw)) || tops[0];
     setActiveTop(target.id);
     setActiveSub(target.subcategories?.[0]?.id ?? null);
   }, [location.search, data]);
+
+  // ?sub=<id> — scroll the section into view once it has mounted. Mirrors the
+  // ?highlight effect below, including its once-per-arrival ref: without that,
+  // any later render (a scroll-spy tick, an offers fetch resolving) would yank
+  // the customer back to the section they had already scrolled away from.
+  const handledSubRef = useRef(null);
+  useEffect(() => {
+    if (!tops.length) return undefined;
+
+    const subId = new URLSearchParams(location.search).get('sub');
+    if (!subId) {
+      handledSubRef.current = null;
+      return undefined;
+    }
+    if (handledSubRef.current === subId) return undefined;
+    handledSubRef.current = subId;
+
+    // Let the category switch above commit and paint before looking for it.
+    const t = setTimeout(() => {
+      const el = rightPaneRef.current?.querySelector(`[data-sub="${subId}"]`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 250);
+
+    return () => clearTimeout(t);
+  }, [tops, location.search, data]);
 
   // ?highlight=<id> — scroll to the dish, and open its options when it has any.
   //
@@ -569,29 +611,16 @@ export default function Menu() {
     return () => clearTimeout(t);
   }, [tops, location.search, data, acceptingOnlineOrders]);
 
-  // Fetch active offers
-  useEffect(() => {
-    fetchActiveOffers();
-  }, []);
-
-  const fetchActiveOffers = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/offers/active`);
-      if (!response.ok) throw new Error('Failed to fetch offers');
-      
-      const data = await response.json();
-      const offers = data.offers || [];
-      
-      setActiveOffers(offers);
-      
-      const autoOffer = offers.find(o => o.apply_automatically);
-      if (autoOffer) {
-        setAppliedOffer(autoOffer);
-      }
-    } catch (err) {
-      console.error('[Menu] Error fetching offers:', err);
-    }
-  };
+  // The page used to fetch /offers/active here to render a one-offer banner below
+  // the search bar, built from `offers.find(o => o.apply_automatically)`. `find`
+  // is the bug: it returns the FIRST automatic offer and silently discards the
+  // rest, so the September campaign's two codeless offers showed up as Fish n
+  // Chips alone and Meifoon appeared nowhere on the menu at all. The banner also
+  // rendered a flat discount as "65₹ OFF" and linked to nothing.
+  //
+  // AutoOfferCard replaces it above the search bar: it lists every codeless offer
+  // and each row deep-links to the dish. It owns its own fetch, so the state,
+  // the banner and this second call to the same endpoint are all gone.
 
   const subs = useMemo(() => {
     const t = tops.find((x) => x.id === activeTop);
@@ -1305,6 +1334,14 @@ export default function Menu() {
           <ComboPromoCard />
         </div>
 
+        {/* Codeless dish offers (September: Fish n Chips ₹255, any Meifoon 20%
+            off). Sits ABOVE the code strip because it is the only offer block a
+            customer can act on without leaving the page — each row deep-links to
+            the dish. Renders nothing once the campaign's date window closes. */}
+        <div className="max-w-5xl !mx-auto w-full !px-4 !mt-3">
+          <AutoOfferCard />
+        </div>
+
         {/* Live promo codes → /offers; renders nothing when none are live.
             `!` on the spacing utilities: Menu.css resets margin/padding on every
             descendant of .menu-page at equal specificity and wins on source
@@ -1391,38 +1428,6 @@ export default function Menu() {
             >
               Switch
             </button>
-          </div>
-        )}
-
-        {/* 🎉 OFFERS BANNER */}
-        {appliedOffer && (
-          <div className="offers-banner-container">
-            <div className="offers-banner">
-              <div className="offers-banner-icon">
-                <Sparkles className="sparkle-icon" />
-              </div>
-              <div className="offers-banner-content">
-                <h3 className="offers-banner-title">{appliedOffer.title}</h3>
-                <p className="offers-banner-description">{appliedOffer.description}</p>
-                {appliedOffer.valid_till && (
-                  <p className="offers-banner-validity">
-                    Valid till: {new Date(appliedOffer.valid_till).toLocaleDateString('en-IN', { 
-                      day: 'numeric', 
-                      month: 'long', 
-                      year: 'numeric' 
-                    })}
-                  </p>
-                )}
-              </div>
-              <div className="offers-banner-badge">
-                <div className="offers-badge-content">
-                  <span className="offers-badge-value">
-                    {appliedOffer.discount_value}{appliedOffer.discount_type === 'percent' ? '%' : '₹'}
-                  </span>
-                  <span className="offers-badge-label">OFF</span>
-                </div>
-              </div>
-            </div>
           </div>
         )}
 

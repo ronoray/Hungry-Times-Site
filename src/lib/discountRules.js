@@ -68,7 +68,16 @@ export function offerSavingFor(offer, subtotal, { tiers = FALLBACK_TIERS, floor 
   const st = Number(subtotal) || 0;
   if (!offer) return { saving: 0, blocked: null, unknown: false };
 
-  const restricted = !!(offer.applicable_item_ids && String(offer.applicable_item_ids).trim());
+  // Item- OR category-restricted. Category-scoped offers name no items at all —
+  // the September "any Meifoon 20% off" is the whole point of the field — so an
+  // item-ids-only test classed it as a plain whole-cart percent offer and quoted
+  // 20% of the ENTIRE subtotal: ₹160 on ₹800, against a real saving of ₹44 on one
+  // ₹220 dish. Both kinds are floor-exempt on the server for the same reason,
+  // and neither has an honest figure without a real cart.
+  const restricted = !!(
+    (offer.applicable_item_ids && String(offer.applicable_item_ids).trim()) ||
+    (offer.applicable_category_ids && String(offer.applicable_category_ids).trim())
+  );
   if (restricted) return { saving: 0, blocked: null, unknown: true };
 
   if (st < floor) return { saving: 0, blocked: 'floor', unknown: false };
