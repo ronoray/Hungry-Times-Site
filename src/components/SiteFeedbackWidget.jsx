@@ -107,7 +107,12 @@ export default function SiteFeedbackWidget() {
   if (phase === 'hidden') return null;
 
   return (
-    <div className="fixed bottom-20 left-4 z-[9990] flex flex-col items-start gap-2">
+    // z-30 keeps this UNDER every overlay (modals z-50/60), the bottom nav
+    // (z-50) and the floating cart / active-order bars (z-40). It is a passive
+    // nudge, never something that may sit on top of an Add to Cart button.
+    // Bottom offset clears the nav (80px) AND the cart bar above it, so it
+    // shares a row with WhatsAppFloat instead of colliding with the CTA band.
+    <div className="fixed bottom-[calc(144px+env(safe-area-inset-bottom,0px))] md:bottom-6 left-4 z-30 flex flex-col items-start gap-2">
 
       {/* ── Slide-up card ── */}
       {(phase === 'card' || phase === 'followup' || phase === 'done') && (
