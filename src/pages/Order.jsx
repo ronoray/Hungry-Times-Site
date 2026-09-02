@@ -38,6 +38,7 @@ import AddressLabelPicker from '../components/AddressLabelPicker';
 import { round2, money, toPaise } from '../lib/money';
 import { gstIncludedNote } from '../lib/billTotals.js';
 import { useOfferFloor } from '../hooks/useOfferFloor';
+import { istNow, slotDateRange, buildSlots, label12, isSlotInPast } from '../lib/scheduleSlots.js';
 
 // Offers & loyalty points require an order subtotal ≥ the server's
 // `min_order_for_offer` floor. Item-restricted combos are exempt (deliberate
@@ -1244,6 +1245,14 @@ export default function Order() {
       return;
     }
 
+    // The grid only offers future slots, but a customer can sit on this page for
+    // an hour after picking one. Catch the stale slot here rather than at payment.
+    if ((isScheduled || orderType === 'dine_in') && isSlotInPast(scheduledDate, scheduledTime)) {
+      setScheduledTime("");
+      setPaymentError("The time you picked has already passed. Please choose a later time.");
+      return;
+    }
+
     setPaymentProcessing(true);
     setPaymentError("");
     trackBeginCheckout(lines, finalTotal);
@@ -1530,6 +1539,14 @@ export default function Order() {
 
     if (isScheduled && (!scheduledDate || !scheduledTime)) {
       setPaymentError("Please select a date and time for your scheduled order.");
+      return;
+    }
+
+    // The grid only offers future slots, but a customer can sit on this page for
+    // an hour after picking one. Catch the stale slot here rather than at payment.
+    if ((isScheduled || orderType === 'dine_in') && isSlotInPast(scheduledDate, scheduledTime)) {
+      setScheduledTime("");
+      setPaymentError("The time you picked has already passed. Please choose a later time.");
       return;
     }
 
@@ -1856,11 +1873,8 @@ export default function Order() {
                     </p>
                     <p className="text-neutral-500 text-xs mb-3">We'll have everything ready at this time.</p>
                     {(() => {
-                      const nowIST = new Date(Date.now() + 330 * 60 * 1000);
-                      const todayStr = nowIST.toISOString().slice(0, 10);
-                      const maxDate = new Date(nowIST);
-                      maxDate.setUTCDate(maxDate.getUTCDate() + 2);
-                      const maxDateStr = maxDate.toISOString().slice(0, 10);
+                      const nowIST = istNow();
+                      const { min: todayStr, max: maxDateStr } = slotDateRange(nowIST);
                       return (
                         <div className="space-y-3">
                           <div className="flex flex-col sm:flex-row gap-3">
@@ -1881,26 +1895,8 @@ export default function Order() {
                             {!scheduledDate ? (
                               <p className="text-neutral-500 text-xs px-1 py-2">Pick a date above first.</p>
                             ) : (() => {
-                              const isToday = scheduledDate === todayStr;
-                              const nowMins = nowIST.getUTCHours() * 60 + nowIST.getUTCMinutes();
-                              const OPEN = 12 * 60, CLOSE = 23 * 60, LEAD = 10;
-                              const fmt = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
-                              const label12 = (t) => {
-                                const [h, mn] = t.split(':').map(Number);
-                                const ap = h < 12 ? 'AM' : 'PM';
-                                const h12 = h % 12 === 0 ? 12 : h % 12;
-                                return `${h12}:${String(mn).padStart(2, '0')} ${ap}`;
-                              };
-                              // ASAP = next 15-min mark after a short lead (walk-in diner arriving now)
-                              const asapMins = isToday ? Math.ceil((nowMins + LEAD) / 15) * 15 : null;
-                              const showAsap = asapMins != null && asapMins >= OPEN && asapMins <= CLOSE;
-                              const asapTime = showAsap ? fmt(asapMins) : null;
-                              const slots = [];
-                              for (let m = OPEN; m <= CLOSE; m += 15) {
-                                if (isToday && asapMins != null && m <= asapMins) continue; // ASAP covers the earliest slot
-                                if (isToday && asapMins == null && m < nowMins + LEAD) continue;
-                                slots.push(fmt(m));
-                              }
+                              const { asapTime, slots } = buildSlots(scheduledDate, nowIST);
+                              const showAsap = !!asapTime;
                               if (!showAsap && slots.length === 0) {
                                 return <p className="text-neutral-500 text-xs px-1 py-2">No slots left today — pick tomorrow above.</p>;
                               }
@@ -2279,11 +2275,11 @@ export default function Order() {
                   </button>
                 </div>
                 {isScheduled && (() => {
-                  const nowIST = new Date(Date.now() + 330 * 60 * 1000);
-                  const todayStr = nowIST.toISOString().slice(0, 10);
-                  const maxDate = new Date(nowIST);
-                  maxDate.setUTCDate(maxDate.getUTCDate() + 2);
-                  const maxDateStr = maxDate.toISOString().slice(0, 10);
+                  // Slots, not a free <input type="time">. Its min/max are advisory
+                  // on mobile, so a 6 PM order could ask for 10 AM the same day —
+                  // and one did. buildSlots never offers a time that has passed.
+                  const nowIST = istNow();
+                  const { min: todayStr, max: maxDateStr } = slotDateRange(nowIST);
                   return (
                     <div className="space-y-3">
                       <div className="flex flex-col sm:flex-row gap-3">
@@ -2298,21 +2294,54 @@ export default function Order() {
                             className="w-full px-3 py-2.5 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                           />
                         </div>
-                        <div className="flex-1">
-                          <label className="text-neutral-400 text-xs mb-1 block">Time (12 PM – 11 PM)</label>
-                          <input
-                            type="time"
-                            value={scheduledTime}
-                            min="12:00"
-                            max="23:00"
-                            onChange={e => setScheduledTime(e.target.value)}
-                            className="w-full px-3 py-2.5 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                          />
-                        </div>
+                      </div>
+                      <div>
+                        <label className="text-neutral-400 text-xs mb-1 block">Time (12 PM – 11 PM)</label>
+                        {!scheduledDate ? (
+                          <p className="text-neutral-500 text-xs px-1 py-2">Pick a date above first.</p>
+                        ) : (() => {
+                          const { asapTime, slots } = buildSlots(scheduledDate, nowIST);
+                          const showAsap = !!asapTime;
+                          if (!showAsap && slots.length === 0) {
+                            return <p className="text-neutral-500 text-xs px-1 py-2">No slots left today — pick tomorrow above.</p>;
+                          }
+                          return (
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                              {showAsap && (
+                                <button
+                                  type="button"
+                                  onClick={() => setScheduledTime(asapTime)}
+                                  className={`rounded-lg border px-2 py-2 text-xs font-semibold transition flex flex-col items-center leading-tight ${
+                                    scheduledTime === asapTime
+                                      ? 'border-orange-500 bg-orange-500/15 text-orange-300'
+                                      : 'border-orange-500/50 bg-orange-500/5 text-orange-200 hover:border-orange-500'
+                                  }`}
+                                >
+                                  <span>⚡ ASAP</span>
+                                  <span className="text-[10px] opacity-80">~{label12(asapTime)}</span>
+                                </button>
+                              )}
+                              {slots.map(t => (
+                                <button
+                                  key={t}
+                                  type="button"
+                                  onClick={() => setScheduledTime(t)}
+                                  className={`rounded-lg border px-2 py-2 text-xs font-semibold transition ${
+                                    scheduledTime === t
+                                      ? 'border-orange-500 bg-orange-500/15 text-orange-300'
+                                      : 'border-neutral-600 bg-neutral-700 text-neutral-200 hover:border-neutral-500'
+                                  }`}
+                                >
+                                  {label12(t)}
+                                </button>
+                              ))}
+                            </div>
+                          );
+                        })()}
                       </div>
                       {scheduledDate && scheduledTime && (
                         <div className="bg-orange-900/30 border border-orange-700 rounded-lg px-3 py-2 text-sm text-orange-300">
-                          We'll start preparing on {scheduledDate} at {scheduledTime}
+                          We'll start preparing on {scheduledDate} at {label12(scheduledTime)}
                         </div>
                       )}
                     </div>
