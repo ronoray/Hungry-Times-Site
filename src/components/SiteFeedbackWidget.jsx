@@ -2,6 +2,15 @@
 // Non-intrusive visitor feedback widget.
 // Appears as a small chat-bubble bottom-left after 60s of browsing.
 // Opens a gentle slide-up card — never blocks content, instant dismiss.
+//
+// The idle pill is deliberately SEE-THROUGH and collapsed to its icon: it sits
+// over menu content, and a solid pill reading "How's your experience?" hid the
+// line underneath it. It announces itself once — full width, full opacity, for
+// five seconds after it first appears — then settles back to a translucent dot.
+// Hover, keyboard focus or a tap brings it back to full strength, so it is
+// legible the moment anyone actually reaches for it and invisible the rest of
+// the time. Fading it is not enough on its own; the width has to go too, or it
+// still covers the same text at 60% opacity.
 
 import { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Send, ChevronRight } from 'lucide-react';
@@ -50,14 +59,26 @@ export default function SiteFeedbackWidget() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // Expanded = the labelled pill. Collapsed = a translucent icon that does not
+  // cover the text behind it.
+  const [expanded, setExpanded] = useState(false);
   const timerRef = useRef(null);
+  const settleRef = useRef(null);
 
   useEffect(() => {
     if (!shouldShow()) return;
 
     // Show the bubble after 60s — user has had time to browse
-    timerRef.current = setTimeout(() => setPhase('bubble'), 60_000);
-    return () => clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      setPhase('bubble');
+      // Announce once at full strength, then get out of the way.
+      setExpanded(true);
+      settleRef.current = setTimeout(() => setExpanded(false), 5_000);
+    }, 60_000);
+    return () => {
+      clearTimeout(timerRef.current);
+      clearTimeout(settleRef.current);
+    };
   }, []);
 
   const openCard = () => setPhase('card');
@@ -235,18 +256,39 @@ export default function SiteFeedbackWidget() {
       {(phase === 'bubble' || phase === 'card' || phase === 'followup') && (
         <button
           onClick={phase === 'bubble' ? openCard : dismiss}
+          onMouseEnter={() => setExpanded(true)}
+          onMouseLeave={() => setExpanded(false)}
+          onFocus={() => setExpanded(true)}
+          onBlur={() => setExpanded(false)}
+          aria-label={phase === 'bubble' ? "Share your feedback" : 'Close feedback'}
           title={phase === 'bubble' ? 'Share your feedback' : 'Close'}
-          className={`flex items-center gap-2 rounded-full shadow-lg transition-all active:scale-95 ${
+          className={`flex items-center rounded-full shadow-lg transition-all duration-300 active:scale-95 backdrop-blur-sm ${
             phase === 'bubble'
-              ? 'bg-neutral-800 border border-neutral-600 text-neutral-300 hover:border-[#D4AF37] hover:text-[#D4AF37] px-3 py-2'
-              : 'bg-neutral-700 border border-neutral-600 text-neutral-400 hover:text-white p-2'
+              ? `gap-2 py-2 border text-neutral-300 hover:text-[#D4AF37] focus-visible:text-[#D4AF37] ${
+                  expanded
+                    ? 'opacity-100 bg-neutral-800 border-neutral-600 hover:border-[#D4AF37] px-3'
+                    : 'opacity-50 hover:opacity-100 focus-visible:opacity-100 bg-neutral-800/40 border-neutral-600/40 px-2'
+                }`
+              : 'gap-2 bg-neutral-700 border border-neutral-600 text-neutral-400 hover:text-white p-2'
           }`}
         >
           {phase === 'bubble' ? (
             <>
-              <MessageCircle className="w-4 h-4" />
-              <span className="text-xs font-medium">How's your experience?</span>
-              <ChevronRight className="w-3 h-3" />
+              <MessageCircle className="w-4 h-4 shrink-0" />
+              {/* Width, not just opacity — a faded label still covers the line
+                  behind it. Collapsing to zero width lets the menu show through. */}
+              <span
+                className={`overflow-hidden whitespace-nowrap text-xs font-medium transition-all duration-300 ${
+                  expanded ? 'max-w-[12rem] opacity-100' : 'max-w-0 opacity-0'
+                }`}
+              >
+                How's your experience?
+              </span>
+              <ChevronRight
+                className={`w-3 h-3 shrink-0 transition-all duration-300 ${
+                  expanded ? 'opacity-100 max-w-[1rem]' : 'opacity-0 max-w-0'
+                }`}
+              />
             </>
           ) : (
             <X className="w-4 h-4" />
