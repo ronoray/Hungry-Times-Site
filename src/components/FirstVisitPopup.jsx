@@ -1,7 +1,15 @@
 // components/FirstVisitPopup.jsx
 // Shows the welcome offer to new visitors — once per device, never to logged-in
-// users with orders. Was FIRST30 (30%) until 2026-07-25; WELCOME15 is now the
-// only live code, and every offer needs a ₹500+ order (server min_order_for_offer).
+// users. Was FIRST30 (30%) until 2026-07-25; WELCOME15 is now the only live
+// code, and every offer needs a ₹500+ order (server min_order_for_offer).
+//
+// The copy here must state the rule the SERVER actually enforces
+// (utils/offerEligibility.js, case 'WELCOME15'): eligible only on a customer's
+// FIRST EVER order, counted by phone across BOTH channels — a walk-in paid at
+// the counter disqualifies you exactly as an online order does — and refused if
+// the delivery address already belongs to another account with order history.
+// It used to say "your first online order", which read as though counter orders
+// did not count. They do.
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Copy, Check, Clock } from 'lucide-react';
@@ -158,7 +166,7 @@ export default function FirstVisitPopup({ onDone }) {
               First-time customers only
             </span>
             <p className="text-gray-400 text-sm mb-5">
-              On your first online order of ₹{OFFER_MIN_ORDER} or more.
+              On your first ever order of ₹{OFFER_MIN_ORDER} or more.
             </p>
 
             {/* Code box */}
@@ -209,6 +217,10 @@ export default function FirstVisitPopup({ onDone }) {
 
             <p className="text-xs text-gray-500 mt-3">
               Max discount ₹200. No discount on orders below ₹{OFFER_MIN_ORDER}. Online orders only.
+            </p>
+            <p className="text-xs text-gray-600 mt-2">
+              Already ordered from us — online or at the counter? This one is for
+              first-timers, so it won&rsquo;t apply.
             </p>
           </div>
         </div>
