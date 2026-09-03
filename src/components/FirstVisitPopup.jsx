@@ -195,8 +195,12 @@ export default function FirstVisitPopup({ onDone }) {
                 What replaces it is true on both counts — the money is the real
                 pull, and the only real deadline is the offer's own valid_till,
                 read live so a retune in the ops panel moves it. */}
-            <div className="flex items-center justify-center gap-2 text-sm text-gray-400 mb-5">
-              <Clock className="w-4 h-4 text-orange-400" />
+            {/* Mobile first: at 320-390px this line is wider than the card's
+                content box, so it must be allowed to wrap rather than squeeze
+                the icon or overflow. flex-wrap + text-center keeps it centred on
+                two lines on a small phone and one line everywhere else. */}
+            <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-gray-400 mb-5 text-center">
+              <Clock className="w-4 h-4 shrink-0 text-orange-400" />
               <span>
                 Save up to <span className="font-bold text-orange-400">₹{maxDiscount}</span>
                 {validTill ? ` — yours until ${validTill}` : ' — no rush, it keeps'}
