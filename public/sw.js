@@ -1,10 +1,10 @@
 // site/public/sw.js - Customer Site Service Worker
 // ============================================================================
 // CORRECTED VERSION - Fixed icon paths to match actual files
-// Version: v8
+// Version: v9
 // ============================================================================
 
-const CACHE_NAME = 'hungry-times-v8';
+const CACHE_NAME = 'hungry-times-v9';
 
 // ✅ FIXED: Match actual icon filenames in /public folder
 const STATIC_ASSETS = [
@@ -206,6 +206,25 @@ self.addEventListener('fetch', (event) => {
 // PUSH EVENT - Handle push notifications
 // ============================================================================
 
+// Report a rendered notification back to the server, so a subscription that
+// keeps accepting sends but never displays them can be identified. Best
+// effort: a failure here must never surface to the user, and must never
+// prevent the notification itself.
+async function ackDelivery() {
+  try {
+    const sub = await self.registration.pushManager.getSubscription();
+    if (!sub || !sub.endpoint) return;
+    await fetch('/api/push/ack', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endpoint: sub.endpoint })
+    });
+    console.log('[SW] 📨 Delivery acknowledged');
+  } catch (err) {
+    console.warn('[SW] ⚠️ Could not acknowledge delivery:', err && err.message);
+  }
+}
+
 self.addEventListener('push', (event) => {
   console.log('[SW] 📬 Push notification received');
 
@@ -252,6 +271,15 @@ self.addEventListener('push', (event) => {
     self.registration.showNotification(notificationData.title, notificationData)
       .then(() => {
         console.log('[SW] ✅ Notification shown');
+        // Tell the server this device actually RENDERED the push.
+        //
+        // A 201 from FCM only means the push service accepted the message; a
+        // dead registration accepts everything and shows nothing, and from the
+        // server the two are indistinguishable. Without this call every
+        // customer subscription has last_ack_at NULL forever, so there is no
+        // way to tell a live device from a silently dead one. The ops panel's
+        // service worker has always sent this; the customer site never did.
+        return ackDelivery();
       })
       .catch((error) => {
         console.error('[SW] ❌ Error showing notification:', error);
