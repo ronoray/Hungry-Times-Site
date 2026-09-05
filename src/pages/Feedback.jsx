@@ -7,6 +7,7 @@
 import { useState } from 'react'
 import { BRAND } from '../lib/constants'
 import SEOHead from '../components/SEOHead'
+import GoogleReviewHandoff from '../components/GoogleReviewHandoff'
 
 import API_BASE from '../config/api';
 
@@ -19,12 +20,24 @@ export default function Feedback() {
   const [submitting, setSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState(null) // 'success' | 'error' | null
 
+  // What they actually sent, kept so we can offer it back to them for Google.
+  // The form is cleared on success, so the text has to be captured here or the
+  // review handoff has nothing to hand over.
+  const [submitted, setSubmitted] = useState(null) // { feedback } | null
+
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
       [name]: name === 'rating' ? parseInt(value) : value
     }))
+  }
+
+  // Back to a blank form. Clears the handoff too — the text belongs to the
+  // review they already sent, not to whatever they type next.
+  const handleWriteAnother = () => {
+    setSubmitted(null)
+    setSubmitStatus(null)
   }
 
   const handleSubmit = async (e) => {
@@ -58,11 +71,14 @@ export default function Feedback() {
         throw new Error('Failed to submit feedback')
       }
 
+      // Capture before clearing — the Google handoff renders from this.
+      setSubmitted({ feedback: formData.feedback.trim() })
       setSubmitStatus('success')
       setFormData({ name: '', feedback: '', rating: 5 })
-      
-      // Clear success message after 5 seconds
-      setTimeout(() => setSubmitStatus(null), 5000)
+
+      // Deliberately NOT auto-dismissed. The old five-second timeout was fine
+      // for a bare thank-you, but the review handoff now lives in this panel
+      // and yanking it away mid-read loses the review.
     } catch (error) {
       console.error('Feedback submission error:', error)
       setSubmitStatus('error')
@@ -83,8 +99,30 @@ export default function Feedback() {
       <h2 className="text-2xl font-semibold mb-6">Share Your Feedback</h2>
       
       <div className="grid md:grid-cols-2 gap-8">
-        {/* Feedback Form */}
+        {/* Feedback Form — replaced by the thank-you + Google handoff once sent */}
         <div>
+          {submitted ? (
+          <div className="grid gap-4">
+            <div className="card p-5 sm:p-6">
+              <h3 className="font-semibold mb-2 text-green-500">
+                Thank you — we have got it.
+              </h3>
+              <p className="text-neutral-300 text-sm leading-relaxed">
+                Every message is read by the owner, not a bot. If something went
+                wrong we will act on it.
+              </p>
+              <button
+                type="button"
+                onClick={handleWriteAnother}
+                className="text-orange-500 hover:text-orange-400 text-sm mt-4 underline underline-offset-4"
+              >
+                Leave more feedback
+              </button>
+            </div>
+
+            <GoogleReviewHandoff text={submitted.feedback} />
+          </div>
+          ) : (
           <form onSubmit={handleSubmit} className="card p-6 grid gap-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium mb-2 text-neutral-300">
@@ -144,12 +182,6 @@ export default function Feedback() {
               />
             </div>
 
-            {submitStatus === 'success' && (
-              <div className="bg-green-500/10 border border-green-500/20 rounded-md p-3 text-green-500 text-sm">
-                Thank you for your feedback! We truly appreciate your input.
-              </div>
-            )}
-
             {submitStatus === 'error' && (
               <div className="bg-red-500/10 border border-red-500/20 rounded-md p-3 text-red-500 text-sm">
                 Something went wrong. Please try again or contact us directly.
@@ -174,6 +206,7 @@ export default function Feedback() {
               )}
             </button>
           </form>
+          )}
         </div>
 
         {/* Why Feedback Matters */}
