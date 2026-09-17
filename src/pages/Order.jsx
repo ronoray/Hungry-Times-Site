@@ -1122,6 +1122,12 @@ export default function Order() {
   // cart whose problem isn't the floor.
   const offerFloorBasis = cartTotal + (Number(deliveryCharge) || 0);
   const offersAllowed = offerFloorBasis >= offerFloor && !hasNoStackItem;
+  // Offers can be off for two unrelated reasons, and only ONE of them is the
+  // customer's to fix. `offersAllowed` folds both together, so anything that
+  // renders "add ₹X more" must test THIS instead: a fixed-price bundle refuses
+  // every code at any bill size, and a ₹449 combo telling the customer to spend
+  // ₹51 more is an instruction that buys them nothing.
+  const belowOfferFloor = offerFloorBasis < offerFloor;
 
   // The code the ORDER payload may carry — not the same thing as the code the
   // customer typed. computeOrderDiscounts (server) rejects the whole order with
@@ -2408,17 +2414,19 @@ export default function Order() {
                   {/* Offer floor, stated before the customer tries a code. The server
                       refuses sub-floor codes anyway; this is so the rule is visible
                       rather than discovered as an error. */}
-                  {/* When the server has a reason of its own — an automatic item
-                      offer already on the cart, or a fixed-price bundle — show
-                      THAT instead. The floor nudge would be actively wrong there:
-                      it tells a customer to spend ₹190 more to unlock a discount
-                      they are already receiving, and which no extra spend can
-                      stack onto. */}
+                  {/* Only when the FLOOR is the reason. An automatic item offer,
+                      a server rejection, or a fixed-price bundle each blocks codes
+                      for its own reason, and the nudge is actively wrong for all
+                      three: it tells a customer to spend more to unlock a discount
+                      they already have, or one that no extra spend can stack onto.
+                      Test `belowOfferFloor`, never `!offersAllowed` — the latter is
+                      also false on a combo, which is how a ₹449 bundle came to be
+                      told "add ₹51 more" right under "combos can't take a code". */}
                   {serverQuote?.rejected ? (
                     <p className="text-xs text-emerald-300/90 bg-emerald-500/10 border border-emerald-500/25 rounded px-3 py-2 leading-relaxed">
                       {serverQuote.rejected}
                     </p>
-                  ) : !appliedCode && !offersAllowed && cartTotal > 0 && !serverQuote?.autoItemOffers ? (
+                  ) : !appliedCode && belowOfferFloor && !hasNoStackItem && cartTotal > 0 && !serverQuote?.autoItemOffers ? (
                     <p className="text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/25 rounded px-3 py-2 leading-relaxed">
                       Add ₹{Math.ceil(Math.max(0, offerFloor - offerFloorBasis))} more to use a promo code or your
                       loyalty points — discounts start at a ₹{offerFloor} bill. Ordering now is fine too.
@@ -2510,7 +2518,7 @@ export default function Order() {
                           goes through at full price. Saying so here is the difference
                           between "add ₹X more" reading as advice and reading as a
                           blocked checkout. */}
-                      {discountAmount === 0 && !offersAllowed && (
+                      {discountAmount === 0 && belowOfferFloor && !hasNoStackItem && (
                         <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
                           Discounts start at a ₹{offerFloor} bill — add ₹{Math.ceil(Math.max(0, offerFloor - offerFloorBasis))} more to use it.
                           You can place this order now without it.
