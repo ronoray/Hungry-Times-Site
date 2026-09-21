@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HungryTimes Backups — Private backup &amp; recovery</title>
+  <meta name="description" content="HungryTimes Backups is a private utility for backing up, verifying and restoring owner-authorized files with Google Drive. Learn about access, privacy and support.">
+  <link rel="canonical" href="https://home.hungrytimes.in/backups/">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/backups/styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="/backups/">HungryTimes Backups<span>Private backup &amp; recovery</span></a>
+      <nav aria-label="Backup information">
+        <a href="/backups/" aria-current="page">Overview</a>
+        <a href="/backups/privacy/">Privacy</a>
+        <a href="/backups/terms/">Terms</a>
+        <a href="mailto:admin@hungrytimes.in">Contact</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main" class="wrap">
+    <div class="hero">
+      <p class="eyebrow">Hungry Times · Owner-operated utility</p>
+      <h1>A recoverable copy.<br>A clearer picture.</h1>
+      <p class="lead">HungryTimes Backups keeps owner-selected files, application databases and configuration archives in Google Drive, with verification and status checks to help identify missing or outdated backups.</p>
+      <div class="notice"><p>This is a private utility for the owner of Hungry Times and explicitly authorized operators. This public information page does not provide account registration or access to backup files.</p></div>
+      <div class="policy-links">
+        <a class="button primary" href="/backups/privacy/">Read the privacy policy</a>
+        <a class="button" href="/backups/terms/">Read the terms of use</a>
+      </div>
+    </div>
+    <div class="grid">
+      <section class="card"><span class="number">01 / BACK UP</span><h2>Keep a separate copy</h2><p>Scheduled jobs on owner-managed computers and servers create and upload selected archives and database snapshots to the authorized Google Drive account.</p></section>
+      <section class="card"><span class="number">02 / VERIFY</span><h2>Check what arrived</h2><p>Jobs inspect file metadata and, where configured, download copies to compare checksums. Monitoring reports freshness, transfer errors and backup availability.</p></section>
+      <section class="card"><span class="number">03 / RECOVER</span><h2>Restore when needed</h2><p>The owner can download retained copies for recovery. Retention rules remove older backups according to the settings for each backup category.</p></section>
+    </div>
+    <section class="section prose">
+      <h2>How Google Drive access is used</h2>
+      <p>The utility uses rclone, an open-source file-transfer tool, and Google's authorization process. Drive access supports listing backup files, uploading and downloading content, checking metadata, managing backup folders and removing old copies.</p>
+      <p>The requested Drive permission can technically allow access beyond individual backup folders. The configured jobs use it for the owner's selected backup, synchronization and recovery operations. The owner grants access in Google's browser sign-in flow and can revoke it in Google Account settings.</p>
+      <p>Google account passwords are entered with Google, not on this website. The backup scripts use OAuth credentials and tokens stored on the owner's managed systems.</p>
+    </section>
+    <section class="section prose">
+      <h2>Status notifications</h2>
+      <p>Configured monitoring sends operational notices to the owner's private Telegram chat. These can include backup filenames, timestamps, sizes, freshness and error summaries. A fresh database file confirms that file's freshness; it does not by itself prove that every stage of a backup completed.</p>
+      <p>See the <a href="/backups/privacy/">privacy policy</a> for storage, sharing, retention and deletion details.</p>
+    </section>
+    <section class="section prose">
+      <h2>Contact &amp; access requests</h2>
+      <p>HungryTimes Backups is operated by Hungry Times for its owner's private workflows. For questions about the utility, authorized access or data handling, contact <a href="mailto:admin@hungrytimes.in">admin@hungrytimes.in</a>.</p>
+      <p class="meta">Last updated: <time datetime="2026-09-21">21 September 2026</time>.</p>
+    </section>
+  </main>
+  <footer class="site-footer"><div class="wrap footer-inner"><p>HungryTimes Backups · Hungry Times</p><div class="footer-links"><a href="/backups/privacy/">Privacy policy</a><a href="/backups/terms/">Terms of use</a><a href="mailto:admin@hungrytimes.in">Contact</a></div></div></footer>
+</body>
+</html>
