@@ -2,6 +2,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { resubscribeOnLogin } from '../App';
 import API_BASE from '../config/api.js';
+import { identifyCartSession } from '../utils/siteActivity';
 
 const AuthContext = createContext(null);
 
@@ -53,6 +54,8 @@ export function AuthProvider({ children }) {
     localStorage.setItem('customerToken', newToken);
     setToken(newToken);
     setCustomer(customer);
+    // Claim this tab's anonymous cart adds for the account (ops panel view).
+    identifyCartSession();
     
     // ✅ FETCH COMPLETE PROFILE FROM SERVER
     console.log('[Auth] Fetching complete customer profile...');

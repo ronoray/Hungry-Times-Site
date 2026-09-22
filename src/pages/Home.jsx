@@ -16,6 +16,7 @@ import StarRating from '../components/StarRating'
 import InstallAppSection from '../components/InstallAppSection'
 import { useToast } from '../components/Toast'
 import { trackAddToCart } from '../utils/analytics'
+import { logCartAdd } from '../utils/siteActivity'
 import TestimonialCarousel from '../components/TestimonialCarousel'
 import { useRatingSummary } from '../hooks/useRatingSummary'
 import API_BASE from '../config/api'
@@ -106,6 +107,7 @@ export default function Home() {
       qty: 1,
     });
     trackAddToCart(item, 1);
+    logCartAdd(item, { price: Number(item.price) || 0, source: 'home_popular' });
     showToast(`${item.name} added to cart`, 'success');
   };
 

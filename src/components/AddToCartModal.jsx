@@ -9,6 +9,7 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { trackAddToCart } from "../utils/analytics";
+import { logCartAdd } from "../utils/siteActivity";
 import { X, Plus, Minus, ShoppingCart, AlertCircle } from "lucide-react";
 import { useBackableOverlay } from "../hooks/useBackableOverlay";
 
@@ -366,17 +367,7 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
     trackAddToCart(item, quantity);
 
     // Fire-and-forget: log cart add to our DB for ops panel visibility
-    fetch('/api/site-activity/cart-add', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        item_id: item.id,
-        item_name: item.name,
-        price: basePrice,
-        customer_id: null, // anonymous — Order.jsx can pass if known
-        session_id: sessionStorage.getItem('ht_session_id') || null,
-      }),
-    }).catch(() => {}); // never block the cart action
+    logCartAdd(item, { price: basePrice, qty: quantity, source: 'item_modal' });
 
     onAdd(lineItem);
     // Route the success close through the backable closer too, so the history

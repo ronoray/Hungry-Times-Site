@@ -24,6 +24,7 @@ import { useBackableOverlay } from '../hooks/useBackableOverlay';
 import { hasRealOptions } from '../utils/menuItems';
 
 import API_BASE from "../config/api";
+import { logCartAdd, getVisitorSessionId } from "../utils/siteActivity";
 import { trackAddToCart, trackSearch, trackPhoneClick, trackWhatsAppClick, trackCtaClick, trackViewItem, trackFavoriteToggle, trackViewItemList } from "../utils/analytics";
 
 // Description length limits
@@ -303,7 +304,8 @@ export default function Menu() {
   // Menu session tracking — fire once per browser session for conversion denominator
   useEffect(() => {
     if (sessionStorage.getItem('menu_view_tracked')) return;
-    const sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    // Same id the cart log uses, so a menu visit and its cart adds line up.
+    const sid = getVisitorSessionId() || Math.random().toString(36).slice(2) + Date.now().toString(36);
     fetch(`${API_BASE}/public/menu-view`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1148,11 +1150,7 @@ export default function Menu() {
                   if (!isDisabled) {
                     incrementSimpleItem(it);
                     trackAddToCart(it, 1);
-                    fetch('/api/site-activity/cart-add', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ item_id: it.id, item_name: it.name, price: it.basePrice }),
-                    }).catch(() => {});
+                    logCartAdd(it, { price: it.basePrice, source: 'menu' });
                   }
                 }}
                 className="add-to-cart-btn"
