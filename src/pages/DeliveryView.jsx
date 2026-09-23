@@ -12,8 +12,11 @@ export default function DeliveryView() {
   const [updating, setUpdating] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [sharingLocation, setSharingLocation] = useState(false);
+  const [gpsError, setGpsError] = useState(null);
   const watchIdRef = useRef(null);
   const locationIntervalRef = useRef(null);
+  const wakeLockRef = useRef(null);
+  const lastFixRef = useRef(null);
 
   const fetchOrder = async () => {
     try {
@@ -49,39 +52,90 @@ export default function DeliveryView() {
   }, [token, completed]);
 
   // GPS broadcasting — runs while order is out_for_delivery
+  //
+  // This is a web page, so the honest limit is that a locked phone or a switch
+  // to WhatsApp suspends it and the customer's map freezes. Three things push
+  // that as far back as a browser allows: a wake lock so the screen does not
+  // sleep while a delivery is running, maximumAge 0 so every fix is fresh rather
+  // than up to ten seconds old, and an immediate re-send the moment the page
+  // comes back to the foreground, so the first thing the customer sees on the
+  // rider's return is the truth instead of a stale dot.
   useEffect(() => {
     const isOFD = order?.status === 'out_for_delivery';
-
-    if (isOFD && 'geolocation' in navigator) {
-      const sendLocation = (lat, lng) => {
-        fetch(`${API_BASE}/delivery/location/${token}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ lat, lng }),
-        }).catch(() => {});
-      };
-
-      // Start watching position
-      watchIdRef.current = navigator.geolocation.watchPosition(
-        (pos) => {
-          const { latitude, longitude } = pos.coords;
-          sendLocation(latitude, longitude);
-          setSharingLocation(true);
-        },
-        (err) => { console.warn('GPS error:', err.message); },
-        { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
-      );
-
-      return () => {
-        if (watchIdRef.current != null) {
-          navigator.geolocation.clearWatch(watchIdRef.current);
-          watchIdRef.current = null;
-        }
-        setSharingLocation(false);
-      };
-    } else {
+    if (!isOFD || !('geolocation' in navigator)) {
       setSharingLocation(false);
+      return undefined;
     }
+
+    const sendLocation = (coords) => {
+      lastFixRef.current = coords;
+      fetch(`${API_BASE}/delivery/location/${token}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        // heading and speed come free from the browser and save the map
+        // inferring both from two dots a few seconds apart.
+        body: JSON.stringify(coords),
+      }).catch(() => {});
+    };
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (pos) => {
+        const { latitude, longitude, accuracy, heading, speed } = pos.coords;
+        sendLocation({
+          lat: latitude,
+          lng: longitude,
+          accuracy: Number.isFinite(accuracy) ? accuracy : null,
+          heading: Number.isFinite(heading) ? heading : null,
+          speed: Number.isFinite(speed) ? speed : null,
+        });
+        setSharingLocation(true);
+        setGpsError(null);
+      },
+      (err) => {
+        console.warn('GPS error:', err.message);
+        // Tell the rider. Silent failure here is invisible to everyone until a
+        // customer rings up asking where their food is.
+        setSharingLocation(false);
+        setGpsError(
+          err.code === 1
+            ? 'Location permission denied — the customer cannot see you'
+            : 'Location unavailable right now'
+        );
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
+    );
+
+    // Keep the screen awake while out for delivery. Not supported everywhere,
+    // and it is released by the browser whenever the page is hidden, so it is
+    // re-requested on every return to the foreground.
+    const requestWakeLock = async () => {
+      if (!('wakeLock' in navigator)) return;
+      try {
+        wakeLockRef.current = await navigator.wakeLock.request('screen');
+      } catch { /* denied or unsupported — the rest still works */ }
+    };
+    requestWakeLock();
+
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      requestWakeLock();
+      // The watch may have been suspended; re-post what we last had so the
+      // customer's map is not left on a position from before the pocket.
+      if (lastFixRef.current) sendLocation(lastFixRef.current);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      if (watchIdRef.current != null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+      const lock = wakeLockRef.current;
+      wakeLockRef.current = null;
+      if (lock) lock.release().catch(() => {});
+      setSharingLocation(false);
+    };
   }, [order?.status, token]);
 
   const handleStatusUpdate = async (newStatus) => {
@@ -327,6 +381,15 @@ export default function DeliveryView() {
       )}
 
       {/* GPS sharing indicator */}
+      {gpsError && (
+        <div className="bg-amber-500/10 border border-amber-500/40 rounded-xl p-3 mb-3">
+          <p className="text-amber-400 text-sm font-medium">{gpsError}</p>
+          <p className="text-amber-500/80 text-xs mt-1">
+            Open this page and allow location, then keep the screen on.
+          </p>
+        </div>
+      )}
+
       {sharingLocation && (
         <div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/30 rounded-xl px-4 py-2.5 mb-4">
           <Radio className="w-4 h-4 text-blue-400 animate-pulse" />

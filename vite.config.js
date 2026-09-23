@@ -35,6 +35,10 @@ export default defineConfig({
         target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
+        // The live-tracking socket (/api/delivery/ws/<token>) is upgraded on
+        // this same prefix; without ws the dev server answers the upgrade with
+        // a 404 and the map silently falls back to polling only here.
+        ws: true,
         configure: (proxy) => {
           proxy.on('error', (err) => {
             console.error('[VITE PROXY ERROR] /api → http://localhost:5000', err?.code || err?.message)
