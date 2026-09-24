@@ -74,3 +74,37 @@ export function identifyCartSession() {
     body: JSON.stringify({ session_id: sessionId }),
   }).catch(() => {});
 }
+
+const SNAPSHOT_SENT_KEY = 'ht_cart_snapshot_sent';
+
+/**
+ * Send the whole cart as it stands. cart-add only ever sees adds, so without
+ * this the ops panel could not know an item was taken back out, or that a dish
+ * was switched to Large. Skips a send when nothing changed since the last one,
+ * and never sends an empty cart for a tab that has not sent a full one.
+ * @param {Array<{itemId?: number, name: string, qty: number, unitPrice: number, options?: string}>} lines
+ */
+export function syncCartSnapshot(lines) {
+  const sessionId = getVisitorSessionId();
+  if (!sessionId || !Array.isArray(lines)) return;
+  const payload = lines.map((l) => ({
+    item_id: l.itemId ?? null,
+    name: l.name,
+    qty: l.qty,
+    unit_price: l.unitPrice,
+    options: l.options || '',
+  }));
+  const sig = JSON.stringify(payload);
+  try {
+    const last = sessionStorage.getItem(SNAPSHOT_SENT_KEY);
+    if (last === sig) return;
+    if (last === null && payload.length === 0) return;
+    sessionStorage.setItem(SNAPSHOT_SENT_KEY, sig);
+  } catch { /* storage blocked: send anyway */ }
+  fetch(`${API_BASE}/site-activity/cart-snapshot`, {
+    method: 'POST',
+    headers: authHeaders(),
+    keepalive: true,
+    body: JSON.stringify({ session_id: sessionId, lines: payload }),
+  }).catch(() => {});
+}

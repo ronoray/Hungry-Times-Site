@@ -2,6 +2,7 @@ import { createContext, useContext, useMemo, useState, useEffect, useCallback, u
 import API_BASE from "../config/api.js";
 import { useAuth } from "./AuthContext.jsx";
 import { isPackagingAddon, packagingAddonOf } from "../utils/cartLine";
+import { syncCartSnapshot } from "../utils/siteActivity";
 
 const CartCtx = createContext(null);
 export const useCart = () => useContext(CartCtx);
@@ -221,6 +222,24 @@ export function CartProvider({ children }) {
     
     return basePrice + variantPrice + addonPrice;
   };
+
+  // Tell the ops panel what is in the cart now, not just what was ever added.
+  // Debounced like the server push; fire-and-forget, never blocks a cart edit.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      syncCartSnapshot(lines.map((l) => {
+        const variants = Array.isArray(l.variants) ? l.variants : (l.variant ? [l.variant] : []);
+        return {
+          itemId: l.itemId,
+          name: l.itemName || l.name,
+          qty: Number(l.qty) || 1,
+          unitPrice: calcUnit(l),
+          options: variants.map((v) => v?.name).filter(Boolean).join(', '),
+        };
+      }));
+    }, 2000);
+    return () => clearTimeout(t);
+  }, [lines]);
 
   // ============================================================================
   // ADD LINE - Support both singular and array variants
