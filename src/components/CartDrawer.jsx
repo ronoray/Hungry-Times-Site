@@ -12,6 +12,7 @@ import GoogleMapsAutocomplete from "./GoogleMapsAutocomplete";
 import { lineUnitPrice } from "../utils/cartLine";
 import { money } from "../lib/money";
 import { gstIncludedNote } from "../lib/billTotals.js";
+import { codAllowed, COD_MAX_TOTAL, RESTAURANT_PHONE, RESTAURANT_PHONE_DISPLAY } from "../utils/paymentPolicy";
 
 export default function CartDrawer({
   isOpen,
@@ -268,6 +269,11 @@ export default function CartDrawer({
                   💵 Want to pay cash?{' '}
                   <a href="tel:+918420822919" className="text-orange-400 font-medium underline">Call +91 84208 22919</a>
                   {' '}and we'll try to arrange our own delivery.
+                </div>
+              ) : !codAllowed(finalTotal) ? (
+                <div className="w-full py-3 px-3 bg-neutral-800 border border-neutral-700 rounded-lg text-neutral-400 text-xs text-center leading-relaxed">
+                  Orders above ₹{COD_MAX_TOTAL} must be paid online. To arrange it differently, call{' '}
+                  <a href={`tel:${RESTAURANT_PHONE}`} className="text-orange-400 font-medium underline">{RESTAURANT_PHONE_DISPLAY}</a>.
                 </div>
               ) : (
                 <button

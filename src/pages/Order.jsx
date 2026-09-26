@@ -39,6 +39,7 @@ import { round2, money, toPaise } from '../lib/money';
 import { gstIncludedNote } from '../lib/billTotals.js';
 import { useOfferFloor } from '../hooks/useOfferFloor';
 import { istNow, slotDateRange, buildSlots, label12, isSlotInPast } from '../lib/scheduleSlots.js';
+import { codAllowed, COD_MAX_TOTAL, RESTAURANT_PHONE, RESTAURANT_PHONE_DISPLAY, leadTimeFor, leadTimeNote, slotAllowedForTier } from "../utils/paymentPolicy";
 
 // Offers & loyalty points require an order subtotal ≥ the server's
 // `min_order_for_offer` floor. Item-restricted combos are exempt (deliberate
@@ -1076,6 +1077,19 @@ export default function Order() {
     };
   }, [lines, appliedOffer, deliveryCharge, pointsToRedeem, loyaltyPoints, orderType, hasNoStackItem, offerFloor, serverQuote]);
 
+  // Large orders need advance notice: above ₹5000 two hours, above ₹10000 the
+  // next day (utils/paymentPolicy, mirroring the server). Such an order cannot
+  // be placed "now", so scheduling is switched on, and a time picked before the
+  // cart grew is cleared once it no longer leaves enough notice.
+  const leadTier = leadTimeFor(finalTotal);
+  useEffect(() => {
+    if (!leadTier) return;
+    if (orderType !== 'dine_in' && !isScheduled) setIsScheduled(true);
+    if (scheduledDate && scheduledTime && !slotAllowedForTier(leadTier, scheduledDate, scheduledTime, istNow())) {
+      setScheduledTime('');
+    }
+  }, [leadTier, orderType, isScheduled, scheduledDate, scheduledTime]);
+
   // Ask the server to price the cart. Same call order creation makes, so the
   // quoted total and the charged total come from one implementation.
   useEffect(() => {
@@ -1253,6 +1267,16 @@ export default function Order() {
 
     // The grid only offers future slots, but a customer can sit on this page for
     // an hour after picking one. Catch the stale slot here rather than at payment.
+    // Large orders need advance notice (utils/paymentPolicy mirrors the server).
+    if (leadTier) {
+      const hasSlot = isScheduled || orderType === 'dine_in';
+      if (!slotAllowedForTier(leadTier, hasSlot ? scheduledDate : '', hasSlot ? scheduledTime : '', istNow())) {
+        if (orderType !== 'dine_in') setIsScheduled(true);
+        setPaymentError(`${leadTimeNote(leadTier)} Please pick a later time, or call us at ${RESTAURANT_PHONE_DISPLAY}.`);
+        return;
+      }
+    }
+
     if ((isScheduled || orderType === 'dine_in') && isSlotInPast(scheduledDate, scheduledTime)) {
       setScheduledTime("");
       setPaymentError("The time you picked has already passed. Please choose a later time.");
@@ -1513,6 +1537,10 @@ export default function Order() {
   // ============================================================================
   const handleCODPayment = async () => {
     if (paymentProcessing) return; // guard against re-entry / rapid duplicate submits
+    if (!codAllowed(finalTotal)) {
+      setPaymentError(`Orders above ₹${COD_MAX_TOTAL} must be paid online. Please choose Pay Online, or call us at ${RESTAURANT_PHONE_DISPLAY}.`);
+      return;
+    }
     if (orderType === 'dine_in' && (!scheduledDate || !scheduledTime)) {
       setPaymentError("Please select your arrival date and time to continue.");
       return;
@@ -1550,6 +1578,16 @@ export default function Order() {
 
     // The grid only offers future slots, but a customer can sit on this page for
     // an hour after picking one. Catch the stale slot here rather than at payment.
+    // Large orders need advance notice (utils/paymentPolicy mirrors the server).
+    if (leadTier) {
+      const hasSlot = isScheduled || orderType === 'dine_in';
+      if (!slotAllowedForTier(leadTier, hasSlot ? scheduledDate : '', hasSlot ? scheduledTime : '', istNow())) {
+        if (orderType !== 'dine_in') setIsScheduled(true);
+        setPaymentError(`${leadTimeNote(leadTier)} Please pick a later time, or call us at ${RESTAURANT_PHONE_DISPLAY}.`);
+        return;
+      }
+    }
+
     if ((isScheduled || orderType === 'dine_in') && isSlotInPast(scheduledDate, scheduledTime)) {
       setScheduledTime("");
       setPaymentError("The time you picked has already passed. Please choose a later time.");
@@ -1878,9 +1916,16 @@ export default function Order() {
                       <span className="text-red-400 text-sm">*</span>
                     </p>
                     <p className="text-neutral-500 text-xs mb-3">We'll have everything ready at this time.</p>
+                    {leadTier && (
+                      <p className="mb-3 text-xs text-amber-300 bg-amber-950/40 border border-amber-900/60 rounded-lg px-3 py-2 leading-relaxed">
+                        {leadTimeNote(leadTier)} It must also be paid online. For anything sooner, call{' '}
+                        <a href={`tel:${RESTAURANT_PHONE}`} className="underline font-medium">{RESTAURANT_PHONE_DISPLAY}</a>.
+                      </p>
+                    )}
                     {(() => {
                       const nowIST = istNow();
                       const { min: todayStr, max: maxDateStr } = slotDateRange(nowIST);
+                      const tomorrowStr = new Date(nowIST.getTime() + 86400000).toISOString().slice(0, 10);
                       return (
                         <div className="space-y-3">
                           <div className="flex flex-col sm:flex-row gap-3">
@@ -1889,7 +1934,7 @@ export default function Order() {
                               <input
                                 type="date"
                                 value={scheduledDate}
-                                min={todayStr}
+                                min={leadTier?.nextDay ? tomorrowStr : todayStr}
                                 max={maxDateStr}
                                 onChange={e => { setScheduledDate(e.target.value); setScheduledTime(''); }}
                                 className="w-full px-3 py-2.5 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
@@ -1901,10 +1946,13 @@ export default function Order() {
                             {!scheduledDate ? (
                               <p className="text-neutral-500 text-xs px-1 py-2">Pick a date above first.</p>
                             ) : (() => {
-                              const { asapTime, slots } = buildSlots(scheduledDate, nowIST);
+                              const built = buildSlots(scheduledDate, nowIST);
+                              // A large order gets no ASAP and no slot inside its notice period.
+                              const asapTime = leadTier ? null : built.asapTime;
+                              const slots = built.slots.filter(t => slotAllowedForTier(leadTier, scheduledDate, t, nowIST));
                               const showAsap = !!asapTime;
                               if (!showAsap && slots.length === 0) {
-                                return <p className="text-neutral-500 text-xs px-1 py-2">No slots left today — pick tomorrow above.</p>;
+                                return <p className="text-neutral-500 text-xs px-1 py-2">{leadTier ? 'No slots left on this day for an order this size. Pick a later date above.' : 'No slots left today — pick tomorrow above.'}</p>;
                               }
                               return (
                                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
@@ -2270,7 +2318,9 @@ export default function Order() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => { setIsScheduled(!isScheduled); setScheduledDate(""); setScheduledTime(""); }}
+                    disabled={!!leadTier}
+                    aria-disabled={!!leadTier}
+                    onClick={() => { if (leadTier) return; setIsScheduled(!isScheduled); setScheduledDate(""); setScheduledTime(""); }}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
                       isScheduled ? "bg-orange-500" : "bg-neutral-600"
                     }`}
@@ -2280,12 +2330,19 @@ export default function Order() {
                     }`} />
                   </button>
                 </div>
+                {leadTier && (
+                  <p className="mb-3 text-xs text-amber-300 bg-amber-950/40 border border-amber-900/60 rounded-lg px-3 py-2 leading-relaxed">
+                    {leadTimeNote(leadTier)} It must also be paid online. For anything sooner, call{' '}
+                    <a href={`tel:${RESTAURANT_PHONE}`} className="underline font-medium">{RESTAURANT_PHONE_DISPLAY}</a>.
+                  </p>
+                )}
                 {isScheduled && (() => {
                   // Slots, not a free <input type="time">. Its min/max are advisory
                   // on mobile, so a 6 PM order could ask for 10 AM the same day —
                   // and one did. buildSlots never offers a time that has passed.
                   const nowIST = istNow();
                   const { min: todayStr, max: maxDateStr } = slotDateRange(nowIST);
+                  const tomorrowStr = new Date(nowIST.getTime() + 86400000).toISOString().slice(0, 10);
                   return (
                     <div className="space-y-3">
                       <div className="flex flex-col sm:flex-row gap-3">
@@ -2294,7 +2351,7 @@ export default function Order() {
                           <input
                             type="date"
                             value={scheduledDate}
-                            min={todayStr}
+                            min={leadTier?.nextDay ? tomorrowStr : todayStr}
                             max={maxDateStr}
                             onChange={e => { setScheduledDate(e.target.value); setScheduledTime(""); }}
                             className="w-full px-3 py-2.5 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
@@ -2306,10 +2363,13 @@ export default function Order() {
                         {!scheduledDate ? (
                           <p className="text-neutral-500 text-xs px-1 py-2">Pick a date above first.</p>
                         ) : (() => {
-                          const { asapTime, slots } = buildSlots(scheduledDate, nowIST);
+                          const built = buildSlots(scheduledDate, nowIST);
+                          // A large order gets no ASAP and no slot inside its notice period.
+                          const asapTime = leadTier ? null : built.asapTime;
+                          const slots = built.slots.filter(t => slotAllowedForTier(leadTier, scheduledDate, t, nowIST));
                           const showAsap = !!asapTime;
                           if (!showAsap && slots.length === 0) {
-                            return <p className="text-neutral-500 text-xs px-1 py-2">No slots left today — pick tomorrow above.</p>;
+                            return <p className="text-neutral-500 text-xs px-1 py-2">{leadTier ? 'No slots left on this day for an order this size. Pick a later date above.' : 'No slots left today — pick tomorrow above.'}</p>;
                           }
                           return (
                             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
@@ -2759,9 +2819,18 @@ export default function Order() {
                     </button>
                   )}
 
+                  {!codAllowed(finalTotal) && (
+                    <p className="text-xs text-amber-300 bg-amber-950/40 border border-amber-900/60 rounded-lg px-3 py-2 leading-relaxed">
+                      {isEditMode
+                        ? <>This change takes the bill above ₹{COD_MAX_TOTAL}, which must be paid online. To change this order, call{' '}</>
+                        : <>Orders above ₹{COD_MAX_TOTAL} must be paid online. To arrange it differently, call{' '}</>}
+                      <a href={`tel:${RESTAURANT_PHONE}`} className="underline font-medium">{RESTAURANT_PHONE_DISPLAY}</a>.
+                    </p>
+                  )}
+
                   <button
                     onClick={handleCODPayment}
-                    disabled={paymentProcessing || lines.length === 0 || !!fulfilmentBlock || (orderType === 'delivery' && (!selectedAddressId || geocodingPending))}
+                    disabled={paymentProcessing || lines.length === 0 || !!fulfilmentBlock || !codAllowed(finalTotal) || (orderType === 'delivery' && (!selectedAddressId || geocodingPending))}
                     className={`w-full py-3 ${isEditMode ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700'} disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors`}
                   >
                     {paymentProcessing ? (
