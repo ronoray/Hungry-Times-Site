@@ -39,7 +39,7 @@ import { round2, money, toPaise } from '../lib/money';
 import { gstIncludedNote } from '../lib/billTotals.js';
 import { useOfferFloor } from '../hooks/useOfferFloor';
 import { istNow, slotDateRange, buildSlots, label12, isSlotInPast } from '../lib/scheduleSlots.js';
-import { codAllowed, COD_MAX_TOTAL, RESTAURANT_PHONE, RESTAURANT_PHONE_DISPLAY, leadTimeFor, leadTimeNote, slotAllowedForTier } from "../utils/paymentPolicy";
+import { codAllowed, COD_MAX_TOTAL, RESTAURANT_PHONE, RESTAURANT_PHONE_DISPLAY, leadTimeFor, leadTimeNote, slotAllowedForTier, codAllowedForDistance, COD_MAX_DISTANCE_KM } from "../utils/paymentPolicy";
 
 // Offers & loyalty points require an order subtotal ≥ the server's
 // `min_order_for_offer` floor. Item-restricted combos are exempt (deliberate
@@ -1082,6 +1082,10 @@ export default function Order() {
   // be placed "now", so scheduling is switched on, and a time picked before the
   // cart grew is cleared once it no longer leaves enough notice.
   const leadTier = leadTimeFor(finalTotal);
+  // Beyond 3 km a new delivery is online-only (owner, 27 Sep 2026). The server
+  // re-checks against the distance it prices from; an unknown distance does not
+  // block cash here or there. An edit keeps its address, so it is not re-judged.
+  const cashTooFar = !isEditMode && !codAllowedForDistance(orderType, deliveryStatus?.distance);
   useEffect(() => {
     if (!leadTier) return;
     if (orderType !== 'dine_in' && !isScheduled) setIsScheduled(true);
@@ -1539,6 +1543,10 @@ export default function Order() {
     if (paymentProcessing) return; // guard against re-entry / rapid duplicate submits
     if (!codAllowed(finalTotal)) {
       setPaymentError(`Orders above ₹${COD_MAX_TOTAL} must be paid online. Please choose Pay Online, or call us at ${RESTAURANT_PHONE_DISPLAY}.`);
+      return;
+    }
+    if (cashTooFar) {
+      setPaymentError(`Deliveries more than ${COD_MAX_DISTANCE_KM} km away must be paid online. To discuss it, call us at ${RESTAURANT_PHONE_DISPLAY}.`);
       return;
     }
     if (orderType === 'dine_in' && (!scheduledDate || !scheduledTime)) {
@@ -2827,10 +2835,16 @@ export default function Order() {
                       <a href={`tel:${RESTAURANT_PHONE}`} className="underline font-medium">{RESTAURANT_PHONE_DISPLAY}</a>.
                     </p>
                   )}
+                  {codAllowed(finalTotal) && cashTooFar && (
+                    <p className="text-xs text-amber-300 bg-amber-950/40 border border-amber-900/60 rounded-lg px-3 py-2 leading-relaxed">
+                      Deliveries more than {COD_MAX_DISTANCE_KM} km away must be paid online. To discuss it, call{' '}
+                      <a href={`tel:${RESTAURANT_PHONE}`} className="underline font-medium">{RESTAURANT_PHONE_DISPLAY}</a>.
+                    </p>
+                  )}
 
                   <button
                     onClick={handleCODPayment}
-                    disabled={paymentProcessing || lines.length === 0 || !!fulfilmentBlock || !codAllowed(finalTotal) || (orderType === 'delivery' && (!selectedAddressId || geocodingPending))}
+                    disabled={paymentProcessing || lines.length === 0 || !!fulfilmentBlock || !codAllowed(finalTotal) || cashTooFar || (orderType === 'delivery' && (!selectedAddressId || geocodingPending))}
                     className={`w-full py-3 ${isEditMode ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700'} disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors`}
                   >
                     {paymentProcessing ? (

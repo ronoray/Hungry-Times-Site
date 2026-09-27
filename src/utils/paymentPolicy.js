@@ -11,6 +11,17 @@ export const RESTAURANT_PHONE_DISPLAY = '+91 84208 22919';
 /** May this bill be paid in cash? Exactly the limit still may. */
 export const codAllowed = (total) => Number.isFinite(Number(total)) && Number(total) <= COD_MAX_TOTAL;
 
+// Deliveries more than 3 km away must be paid online (owner, 27 Sep 2026).
+// Exactly 3 km may be cash; an unknown distance does not block it. MIRROR of
+// codAllowedForDistance on the server, which judges by its own distance.
+export const COD_MAX_DISTANCE_KM = 3;
+export function codAllowedForDistance(orderType, distanceKm) {
+  if (orderType !== 'delivery') return true;
+  if (distanceKm == null || distanceKm === '') return true;
+  const d = Number(distanceKm);
+  return !Number.isFinite(d) || d <= COD_MAX_DISTANCE_KM;
+}
+
 // ── Advance notice for large orders (MIRROR of the server's leadTimeError) ──
 // Above ₹5000: scheduled at least 2 hours ahead. Above ₹10000: the next day or
 // later, with a time. No "order now" / ASAP for either.
