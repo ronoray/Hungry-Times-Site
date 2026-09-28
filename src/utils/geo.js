@@ -45,6 +45,24 @@ export const LOCAL_STREET_ALIASES = [
   { pattern: /\bM\s*\.?\s*T\s*\.?\s*Road\b/gi, replacement: 'Maharaja Tagore Road' },
 ];
 
+// Buildings the owner placed by hand. MIRROR of KNOWN_PLACES in the server's
+// whatsapp/geocoder.js: keep the two in step. "Shibnath Bhawan" is the one on
+// Panchanantala Road, Dhakuria; Google also has one in Ballygunge Gardens.
+export const KNOWN_PLACES = [
+  {
+    pattern: /\bsh?i[bv]a?\s*nath\s*bh?a[bvw]a?n\b/i,
+    lat: 22.5136234,
+    lng: 88.3671284,
+  },
+];
+
+/** { lat, lng } of an owner-placed building this address names, or null. */
+export function matchKnownPlace(address) {
+  const text = String(address || '');
+  const hit = KNOWN_PLACES.find((k) => k.pattern.test(text));
+  return hit ? { lat: hit.lat, lng: hit.lng } : null;
+}
+
 export function expandLocalAliases(address) {
   let out = String(address || '');
   for (const { pattern, replacement } of LOCAL_STREET_ALIASES) {
@@ -128,6 +146,8 @@ async function geocodeOnce(query) {
 // itself fails. Walks the same candidate ladder as the server.
 export async function geocodeFreeAddress(fullAddress) {
   if (!fullAddress) return null;
+  const known = matchKnownPlace(fullAddress);
+  if (known) return known;
   for (const query of buildGeocodeCandidates(fullAddress)) {
     const hit = await geocodeOnce(query);
     if (hit) return hit;

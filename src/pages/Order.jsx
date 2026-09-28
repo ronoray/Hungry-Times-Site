@@ -40,6 +40,7 @@ import { gstIncludedNote } from '../lib/billTotals.js';
 import { useOfferFloor } from '../hooks/useOfferFloor';
 import { istNow, slotDateRange, buildSlots, label12, isSlotInPast } from '../lib/scheduleSlots.js';
 import { codAllowed, COD_MAX_TOTAL, RESTAURANT_PHONE, RESTAURANT_PHONE_DISPLAY, leadTimeFor, leadTimeNote, slotAllowedForTier, codAllowedForDistance, COD_MAX_DISTANCE_KM } from "../utils/paymentPolicy";
+import { matchKnownPlace } from '../utils/geo';
 
 // Offers & loyalty points require an order subtotal ≥ the server's
 // `min_order_for_offer` floor. Item-restricted combos are exempt (deliberate
@@ -122,6 +123,9 @@ async function geocodeOnce(query) {
 // address as typed, then a simplified form (flat/floor lines dropped).
 async function geocodeFreeAddress(fullAddress) {
   if (!fullAddress) return null;
+  // A building the owner placed by hand wins (utils/geo.js KNOWN_PLACES).
+  const known = matchKnownPlace(fullAddress);
+  if (known) return known;
   const asTyped = String(fullAddress).replace(/\s+/g, ' ').trim();
   const full = await geocodeOnce(asTyped);
   if (full) return full;
