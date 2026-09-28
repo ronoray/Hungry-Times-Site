@@ -10,6 +10,7 @@ import MenuSkeleton from "./components/skeletons/MenuSkeleton";
 import OrderSkeleton from "./components/skeletons/OrderSkeleton";
 import OrdersSkeleton from "./components/skeletons/OrdersSkeleton";
 import DefaultSkeleton from "./components/skeletons/DefaultSkeleton";
+import { startPresence, presenceBeat } from "./utils/siteActivity";
 
 // Self-heal stale-cache clients. After a deploy, a browser holding an old index.html
 // requests chunk hashes that no longer exist (404) → React.lazy import rejects with
@@ -183,6 +184,15 @@ const router = createBrowserRouter(
 // ============================================================================
 // React Rendering
 // ============================================================================
+// "On the site now" in the ops panel: heartbeat while visible, and a beat
+// straight away when the route changes so the page shown there is current.
+startPresence();
+let presencePath = window.location.pathname;
+router.subscribe((state) => {
+  const path = state.location?.pathname;
+  if (path && path !== presencePath) { presencePath = path; presenceBeat(); }
+});
+
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <RouterProvider router={router} />

@@ -108,3 +108,74 @@ export function syncCartSnapshot(lines) {
     body: JSON.stringify({ session_id: sessionId, lines: payload }),
   }).catch(() => {});
 }
+
+// ── Presence heartbeat ─────────────────────────────────────────────────────
+// Tells the ops panel "this visitor is still on the site" (owner, 28 Sep
+// 2026). Every 30s while the page is visible; nothing while the tab is hidden;
+// one final beat on pagehide that marks the visit left. The server keeps ONE
+// row per session and updates it, so this never adds a row per beat.
+//
+// Who the visitor is comes from the customer token, as with cart adds. The
+// final beat goes by sendBeacon, which cannot carry the token; the server
+// keeps the identity it already has for the session.
+//
+// The rider's delivery page is not a customer visit and never beats.
+
+const PRESENCE_BEAT_MS = 30000;
+let presenceTimer = null;
+let presenceStarted = false;
+
+function presenceBody(extra = {}) {
+  return JSON.stringify({
+    session_id: getVisitorSessionId(),
+    page: window.location.pathname,
+    ...extra,
+  });
+}
+
+const isRiderPage = () => window.location.pathname.startsWith('/delivery/');
+
+/** Send one beat now (fire-and-forget). Also used when the route changes. */
+export function presenceBeat() {
+  if (isRiderPage() || !getVisitorSessionId()) return;
+  if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+  fetch(`${API_BASE}/site-activity/heartbeat`, {
+    method: 'POST',
+    headers: authHeaders(),
+    keepalive: true,
+    body: presenceBody(),
+  }).catch(() => {});
+}
+
+function presenceLeave() {
+  if (isRiderPage() || !getVisitorSessionId()) return;
+  try {
+    const blob = new Blob([presenceBody({ leaving: true })], { type: 'text/plain' });
+    if (navigator.sendBeacon?.(`${API_BASE}/site-activity/heartbeat`, blob)) return;
+  } catch { /* fall through */ }
+  fetch(`${API_BASE}/site-activity/heartbeat`, {
+    method: 'POST', headers: { 'Content-Type': 'text/plain' }, keepalive: true,
+    body: presenceBody({ leaving: true }),
+  }).catch(() => {});
+}
+
+function presenceRun() {
+  clearInterval(presenceTimer);
+  presenceTimer = null;
+  if (document.visibilityState !== 'visible') return; // hidden: stay silent
+  presenceBeat();
+  presenceTimer = setInterval(presenceBeat, PRESENCE_BEAT_MS);
+}
+
+/** Start the heartbeat once for the whole app. Safe to call more than once. */
+export function startPresence() {
+  if (presenceStarted || typeof window === 'undefined') return;
+  presenceStarted = true;
+  try {
+    document.addEventListener('visibilitychange', presenceRun);
+    window.addEventListener('pagehide', presenceLeave);
+    // A page restored from the back/forward cache is a visit resuming.
+    window.addEventListener('pageshow', (e) => { if (e.persisted) presenceRun(); });
+    presenceRun();
+  } catch { /* presence is best-effort */ }
+}
