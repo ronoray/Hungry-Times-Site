@@ -114,7 +114,7 @@ export async function reorderIntoCart(order, { cartLines, clearCart, addLine, sh
   }
 
   clearCart();
-  lines.forEach(addLine);
+  lines.forEach((l) => addLine(l, { source: 'reorder' }));
 
   if (skipped.length > 0) {
     showToast?.(`Added ${lines.length} item(s) at current prices. Unavailable: ${skipped.join(', ')}`, 'info');

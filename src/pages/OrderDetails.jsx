@@ -367,7 +367,7 @@ export default function OrderDetails() {
                           id: a.id, name: a.name, priceDelta: a.priceDelta || a.price || 0,
                         })),
                         qty: item.quantity || 1,
-                      });
+                      }, { silent: true }); // the order being edited, not new adds
                     });
                     navigate(`/order?editOrderId=${order.id}`);
                   }}

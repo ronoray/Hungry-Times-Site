@@ -105,7 +105,7 @@ export default function FeaturedComboCard({ className = '', surface = 'home' }) 
       variants: [],
       addons: pkg ? [{ id: pkg.id, name: pkg.name, priceDelta: Number(pkg.priceDelta) || 0 }] : [],
       qty: 1,
-    });
+    }, { source: 'featured_combo' });
     try { fbAddToCart({ name: combo.name, id: combo.id, price: combo.price }); } catch { /* pixel blocked */ }
     navigate('/order');
   };

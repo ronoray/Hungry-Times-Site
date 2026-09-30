@@ -24,7 +24,7 @@ import { useBackableOverlay } from '../hooks/useBackableOverlay';
 import { hasRealOptions } from '../utils/menuItems';
 
 import API_BASE from "../config/api";
-import { logCartAdd, getVisitorSessionId } from "../utils/siteActivity";
+import { getVisitorSessionId } from "../utils/siteActivity";
 import { trackAddToCart, trackSearch, trackPhoneClick, trackWhatsAppClick, trackCtaClick, trackViewItem, trackFavoriteToggle, trackViewItemList } from "../utils/analytics";
 
 // Description length limits
@@ -1148,9 +1148,8 @@ export default function Menu() {
               <button
                 onClick={() => {
                   if (!isDisabled) {
-                    incrementSimpleItem(it);
+                    incrementSimpleItem(it, { source: 'menu' });
                     trackAddToCart(it, 1);
-                    logCartAdd(it, { price: it.basePrice, source: 'menu' });
                   }
                 }}
                 className="add-to-cart-btn"
@@ -1728,8 +1727,8 @@ export default function Menu() {
             setSelectedItem(null);
             setModalFromHighlight(false);
           }}
-          onAdd={(lineItem) => {
-            addLine(lineItem);
+          onAdd={(lineItem, opts) => {
+            addLine(lineItem, opts);
             setShowAddToCartModal(false);
             
             // Show success

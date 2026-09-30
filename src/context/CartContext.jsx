@@ -2,7 +2,7 @@ import { createContext, useContext, useMemo, useState, useEffect, useCallback, u
 import API_BASE from "../config/api.js";
 import { useAuth } from "./AuthContext.jsx";
 import { isPackagingAddon, packagingAddonOf } from "../utils/cartLine";
-import { syncCartSnapshot } from "../utils/siteActivity";
+import { syncCartSnapshot, logCartAdd } from "../utils/siteActivity";
 
 const CartCtx = createContext(null);
 export const useCart = () => useContext(CartCtx);
@@ -248,7 +248,22 @@ export function CartProvider({ children }) {
   // Every mutation below marks the cart dirty before touching state, so the next
   // reconcile pushes ours instead of pulling. Marking on a no-op edit is harmless
   // — the push just re-sends the same cart and costs a rev.
-  const addLine = (line) => { setDirty(true); setLines(prev => {
+  // Every add is logged HERE, once, for the ops panel's Cart Activity page.
+  // It used to be logged by hand in three call sites (menu button, item modal,
+  // home), so a reorder, Make-your-meal, the checkout's own modal, the combo
+  // card and every + tap put dishes in the cart unseen: 21 of 40 carts in a
+  // week had no adds at all (1 Oct 2026). `source` says which path it was;
+  // `silent` is for loading an EXISTING order back into the cart to edit it,
+  // which is not a new add. Logged outside the state updater, which React may
+  // run twice.
+  const addLine = (line, { source = 'other', silent = false } = {}) => {
+    if (!silent) {
+      logCartAdd(
+        { id: line.itemId, name: line.itemName || line.name },
+        { price: calcUnit(line), qty: line.qty || 1, source }
+      );
+    }
+    setDirty(true); setLines(prev => {
     // Merge same config
     const same = (l) => {
       // Compare item IDs
@@ -301,8 +316,16 @@ export function CartProvider({ children }) {
   };
 
   // ✅ UPDATED: Remove item if quantity becomes 0
-  const updateQty = (key, qty) => {
+  const updateQty = (key, qty, { source = 'qty_plus' } = {}) => {
     const newQty = Math.max(0, Number(qty) || 0);
+    // A + tap is an add too; a - tap or a removal is not.
+    const cur = (linesRef.current || []).find(l => l.key === key);
+    if (cur && newQty > (Number(cur.qty) || 0)) {
+      logCartAdd(
+        { id: cur.itemId, name: cur.itemName || cur.name },
+        { price: calcUnit(cur), qty: newQty - (Number(cur.qty) || 0), source }
+      );
+    }
     setDirty(true);
     if (newQty === 0) {
       // Remove item when quantity is 0
@@ -469,12 +492,12 @@ export function CartProvider({ children }) {
    * Increment quantity for a simple item
    * Adds to cart if not present
    */
-  const incrementSimpleItem = (item) => {
+  const incrementSimpleItem = (item, { source = 'qty_plus' } = {}) => {
     const existingLine = findSimpleItem(item.id);
     
     if (existingLine) {
       // Item exists, increment quantity
-      updateQty(existingLine.key, existingLine.qty + 1);
+      updateQty(existingLine.key, existingLine.qty + 1, { source });
     } else {
       // Packaging has to ride along. AddToCartModal locks it onto every line it
       // builds and the server adds it at order time regardless, so a line
@@ -490,7 +513,7 @@ export function CartProvider({ children }) {
         variants: [],
         addons: pkg ? [pkg] : [],
         qty: 1
-      });
+      }, { source });
     }
   };
 

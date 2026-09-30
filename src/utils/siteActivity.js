@@ -42,7 +42,7 @@ function authHeaders() {
 /**
  * Log one add-to-cart.
  * @param {{id?: number, name: string}} item
- * @param {{price?: number, qty?: number, source: 'menu'|'item_modal'|'home_popular'}} opts
+ * @param {{price?: number, qty?: number, source: string}} opts  one of the server's CART_SOURCES
  */
 export function logCartAdd(item, { price, qty = 1, source } = {}) {
   if (!item?.name) return;

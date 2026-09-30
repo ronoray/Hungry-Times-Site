@@ -315,7 +315,7 @@ export default function MakeYourMealModal({ isOpen, onClose, recommendedItems, c
   }
 
   function handleAddToCart(lines) {
-    lines.forEach(line => addLine(line));
+    lines.forEach(line => addLine(line, { source: 'make_meal' }));
     setAddedAll(true);
     // Backable closer, not onClose — otherwise the pushed history entry is left
     // orphaned and the next back press does nothing visible.

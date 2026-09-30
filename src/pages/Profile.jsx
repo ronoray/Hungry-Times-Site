@@ -1163,7 +1163,7 @@ export default function Profile() {
                       </button>
                     ) : (
                       <button
-                        onClick={() => incrementSimpleItem(item)}
+                        onClick={() => incrementSimpleItem(item, { source: 'other' })}
                         className="flex-shrink-0 px-3 py-2 text-xs font-semibold rounded-lg bg-orange-600 hover:bg-orange-700 text-white transition-colors"
                       >
                         {inCart > 0 ? `Add (${inCart})` : 'Add'}

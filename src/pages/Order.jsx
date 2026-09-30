@@ -2900,8 +2900,8 @@ export default function Order() {
           isOpen={true}
           isDineIn={isDineIn}
           onClose={() => setSelectedItemForModal(null)}
-          onAdd={(lineItem) => {
-            addLine(lineItem);
+          onAdd={(lineItem, opts) => {
+            addLine(lineItem, opts);
             setSelectedItemForModal(null);
           }}
         />

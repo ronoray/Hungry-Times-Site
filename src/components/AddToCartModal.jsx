@@ -9,7 +9,6 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { trackAddToCart } from "../utils/analytics";
-import { logCartAdd } from "../utils/siteActivity";
 import { X, Plus, Minus, ShoppingCart, AlertCircle } from "lucide-react";
 import { useBackableOverlay } from "../hooks/useBackableOverlay";
 
@@ -366,10 +365,8 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
 
     trackAddToCart(item, quantity);
 
-    // Fire-and-forget: log cart add to our DB for ops panel visibility
-    logCartAdd(item, { price: basePrice, qty: quantity, source: 'item_modal' });
-
-    onAdd(lineItem);
+    // Logged by CartContext.addLine; callers pass this through as the source.
+    onAdd(lineItem, { source: 'item_modal' });
     // Route the success close through the backable closer too, so the history
     // entry this modal pushed is consumed instead of left orphaned.
     closeModal();
