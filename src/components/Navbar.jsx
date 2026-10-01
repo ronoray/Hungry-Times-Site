@@ -197,6 +197,29 @@ export default function Navbar() {
         </nav>
       </header>
 
+      {/* FLOATING "MENU" PILL — /menu, below lg (same reach as the top ☰).
+          Owner, 1 Oct 2026: visitors didn't read the top-right ☰ as "the menu
+          listing", so the same toggle sits under the thumb with the word on it.
+          Takes the WhatsApp button's slot just above FloatingCartBar;
+          WhatsAppFloat steps up one slot on /menu to make room. Hidden while
+          the category sidebar is open — the sidebar closes itself. */}
+      {location.pathname === '/menu' && !sidebarOpen && (
+        <button
+          type="button"
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Open menu categories"
+          className="lg:hidden fixed z-50 right-4 bottom-[calc(144px+env(safe-area-inset-bottom,0px))] md:right-6 md:bottom-24
+                     h-12 flex items-center gap-2 rounded-full
+                     bg-black/45 backdrop-blur-md border border-orange-500/60
+                     text-orange-400 font-semibold text-sm
+                     shadow-[0_4px_16px_rgba(0,0,0,0.45)] active:scale-95 transition-transform"
+          style={{ paddingLeft: 16, paddingRight: 18 }}
+        >
+          <MenuIcon className="w-5 h-5" strokeWidth={2.5} />
+          <span>Menu</span>
+        </button>
+      )}
+
       {/* MOBILE BOTTOM NAVIGATION — 4 tabs */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-neutral-950 border-t border-neutral-800 pb-safe">
         <div className="flex">
