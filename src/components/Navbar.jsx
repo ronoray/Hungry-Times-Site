@@ -197,26 +197,27 @@ export default function Navbar() {
         </nav>
       </header>
 
-      {/* FLOATING "MENU" PILL — /menu, below lg (same reach as the top ☰).
+      {/* FLOATING "MENU" BUTTON — /menu, below lg (same reach as the top ☰).
           Owner, 1 Oct 2026: visitors didn't read the top-right ☰ as "the menu
           listing", so the same toggle sits under the thumb with the word on it.
+          DNA floating action: 64px circle, translucent, hops (docs/DESIGN_DNA.md).
           Takes the WhatsApp button's slot just above FloatingCartBar;
-          WhatsAppFloat steps up one slot on /menu to make room. Hidden while
-          the category sidebar is open — the sidebar closes itself. */}
+          WhatsAppFloat steps up on /menu to make room. Hidden while the
+          category sidebar is open — the sidebar closes itself. */}
       {location.pathname === '/menu' && !sidebarOpen && (
         <button
           type="button"
           onClick={() => setSidebarOpen(true)}
           aria-label="Open menu categories"
           className="lg:hidden fixed z-50 right-4 bottom-[calc(144px+env(safe-area-inset-bottom,0px))] md:right-6 md:bottom-24
-                     h-12 flex items-center gap-2 rounded-full
+                     w-16 h-16 rounded-full flex flex-col items-center justify-center gap-0.5
                      bg-black/45 backdrop-blur-md border border-orange-500/60
-                     text-orange-400 font-semibold text-sm
-                     shadow-[0_4px_16px_rgba(0,0,0,0.45)] active:scale-95 transition-transform"
-          style={{ paddingLeft: 16, paddingRight: 18 }}
+                     text-orange-400 shadow-[0_4px_18px_rgba(249,115,22,0.35)]
+                     motion-safe:animate-hop active:scale-90 transition-transform"
+          style={{ padding: 0 }}
         >
           <MenuIcon className="w-5 h-5" strokeWidth={2.5} />
-          <span>Menu</span>
+          <span className="text-[11px] font-bold leading-none tracking-wide">Menu</span>
         </button>
       )}
 

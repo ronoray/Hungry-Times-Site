@@ -9,7 +9,7 @@ export default function WhatsAppFloat() {
   // Only below lg — that is where the pill exists.
   const onMenu = useLocation().pathname === '/menu'
   const pos = onMenu
-    ? 'bottom-[calc(204px+env(safe-area-inset-bottom,0px))] md:bottom-40 lg:bottom-6'
+    ? 'bottom-[calc(220px+env(safe-area-inset-bottom,0px))] md:bottom-44 lg:bottom-6'
     : 'bottom-[calc(144px+env(safe-area-inset-bottom,0px))] md:bottom-6'
 
   return (
