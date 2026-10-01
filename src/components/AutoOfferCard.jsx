@@ -48,10 +48,13 @@ export default function AutoOfferCard({ className = '' }) {
         const data = await res.json();
         if (cancelled) return;
 
+        // No cap. A `.slice(0, 4)` here hid October's fifth dish (Prawn Mixed
+        // Fried Rice) — the discount still applied at checkout, but nobody
+        // browsing was told. Every live dish offer is a dish the owner chose to
+        // push; the list is short by construction and wraps on mobile.
         setOffers(
           (data.offers || [])
             .filter((o) => o.apply_automatically && !o.promo_code && offerDeepLink(o))
-            .slice(0, 4)
         );
       } catch { /* card stays hidden */ }
     })();
