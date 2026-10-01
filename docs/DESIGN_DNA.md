@@ -38,9 +38,9 @@ them apart so a customer can tell "a deal" from "a button".
   (WhatsApp, Menu, future quick actions) is `rounded-full`, 56–64px.
 - Cards `rounded-2xl`; buttons and inputs `rounded-xl`; chips/badges `rounded-lg`
   or `rounded-full`.
-- Floating actions are **light** so they stand out on the dark page: warm cream
-  glass `bg-[#FFF4E6]/90 backdrop-blur-md`, `border-orange-400`, icon and label
-  in `#EA580C` (WhatsApp keeps its own green).
+- Floating actions are **light orange** so they stand out on the dark page:
+  `bg-[#FDBA74]/95 backdrop-blur-md`, `border-[#FB923C]`, icon and label in
+  `#7C2D12` (dark orange, readable on the light fill). WhatsApp keeps its green.
 - Soft shadow, tinted by the element's colour (`rgba(249,115,22,0.35)` for
   orange, `rgba(37,211,102,0.5)` for WhatsApp).
 
@@ -92,5 +92,5 @@ them apart so a customer can tell "a deal" from "a button".
   the /menu "Menu" button (opens the category list) after visitors missed the
   top-right ☰.
 - **1 Oct 2026** — The top-row ☰ on /menu is removed; the floating Menu circle is
-  the only category opener on phones/tablets. Floating actions use a lighter
-  (cream) background, not dark glass.
+  the only category opener on phones/tablets. Floating actions use a light
+  background, not dark glass — light orange/yellow, **not cream** (owner).

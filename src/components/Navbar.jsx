@@ -174,7 +174,7 @@ export default function Navbar() {
       {/* FLOATING "MENU" BUTTON — /menu, below lg (desktop shows categories as
           a permanent column). Owner, 1 Oct 2026: visitors didn't read the old
           top-right ☰ as "the menu listing"; this replaced it. DNA floating
-          action: 64px light circle, hops (docs/DESIGN_DNA.md).
+          action: 64px light-orange circle, hops (docs/DESIGN_DNA.md).
           Takes the WhatsApp button's slot just above FloatingCartBar;
           WhatsAppFloat steps up on /menu to make room. Hidden while the
           category sidebar is open — the sidebar closes itself. */}
@@ -185,8 +185,8 @@ export default function Navbar() {
           aria-label="Open menu categories"
           className="lg:hidden fixed z-50 right-4 bottom-[calc(144px+env(safe-area-inset-bottom,0px))] md:right-6 md:bottom-24
                      w-16 h-16 rounded-full flex flex-col items-center justify-center gap-0.5
-                     bg-[#FFF4E6]/90 backdrop-blur-md border border-orange-400
-                     text-[#EA580C] shadow-[0_4px_18px_rgba(249,115,22,0.45)]
+                     bg-[#FDBA74]/95 backdrop-blur-md border border-[#FB923C]
+                     text-[#7C2D12] shadow-[0_4px_18px_rgba(249,115,22,0.55)]
                      motion-safe:animate-hop active:scale-90 transition-transform"
           style={{ padding: 0 }}
         >
