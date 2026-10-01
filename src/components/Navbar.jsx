@@ -131,35 +131,9 @@ export default function Navbar() {
                 </Link>
               )}
 
-              {/* HAMBURGER MENU - Mobile only, when on /menu page */}
-              {location.pathname === '/menu' && (
-                <button
-                  onClick={() => setSidebarOpen(!sidebarOpen)}  
-                  className="lg:hidden w-12 h-12 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 rounded-lg transition-colors"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 0,
-                    margin: 0
-                  }}
-                >
-                  <div 
-                    className="flex flex-col w-5"
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '4px'
-                    }}
-                  >
-                    <span className="block h-0.5 w-full bg-orange-500" style={{display: 'block', width: '100%', height: '2px', backgroundColor: '#f97316'}}></span>
-                    <span className="block h-0.5 w-full bg-orange-500" style={{display: 'block', width: '100%', height: '2px', backgroundColor: '#f97316'}}></span>
-                    <span className="block h-0.5 w-full bg-orange-500" style={{display: 'block', width: '100%', height: '2px', backgroundColor: '#f97316'}}></span>
-                  </div>
-                </button>
-              )}
+              {/* The top-row ☰ was removed 1 Oct 2026 (owner): the floating
+                  "Menu" circle below is the one way to open categories. The
+                  sidebar closes itself — overlay tap, back button, or a pick. */}
 
               {/* Login Button OR User Menu */}
               {isAuthenticated ? (
@@ -197,10 +171,10 @@ export default function Navbar() {
         </nav>
       </header>
 
-      {/* FLOATING "MENU" BUTTON — /menu, below lg (same reach as the top ☰).
-          Owner, 1 Oct 2026: visitors didn't read the top-right ☰ as "the menu
-          listing", so the same toggle sits under the thumb with the word on it.
-          DNA floating action: 64px circle, translucent, hops (docs/DESIGN_DNA.md).
+      {/* FLOATING "MENU" BUTTON — /menu, below lg (desktop shows categories as
+          a permanent column). Owner, 1 Oct 2026: visitors didn't read the old
+          top-right ☰ as "the menu listing"; this replaced it. DNA floating
+          action: 64px light circle, hops (docs/DESIGN_DNA.md).
           Takes the WhatsApp button's slot just above FloatingCartBar;
           WhatsAppFloat steps up on /menu to make room. Hidden while the
           category sidebar is open — the sidebar closes itself. */}
@@ -211,8 +185,8 @@ export default function Navbar() {
           aria-label="Open menu categories"
           className="lg:hidden fixed z-50 right-4 bottom-[calc(144px+env(safe-area-inset-bottom,0px))] md:right-6 md:bottom-24
                      w-16 h-16 rounded-full flex flex-col items-center justify-center gap-0.5
-                     bg-black/45 backdrop-blur-md border border-orange-500/60
-                     text-orange-400 shadow-[0_4px_18px_rgba(249,115,22,0.35)]
+                     bg-[#FFF4E6]/90 backdrop-blur-md border border-orange-400
+                     text-[#EA580C] shadow-[0_4px_18px_rgba(249,115,22,0.45)]
                      motion-safe:animate-hop active:scale-90 transition-transform"
           style={{ padding: 0 }}
         >
