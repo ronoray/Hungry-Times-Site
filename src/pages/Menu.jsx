@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Fuse from "fuse.js";
 import "./Menu.css";
 import { useCart } from "../context/CartContext";
-import { Plus, Minus, Sparkles, Search, X, Heart, ChevronRight, UtensilsCrossed, Camera } from "lucide-react";
+import { Plus, Minus, Sparkles, Search, X, Heart, ChevronRight, UtensilsCrossed } from "lucide-react";
 import AddToCartModal from "../components/AddToCartModal";
 import FloatingCartBar from "../components/FloatingCartBar";
 import VegDot from "../components/VegDot";
@@ -993,9 +993,30 @@ export default function Menu() {
         // would find that copy pinned near the top instead of the row in the
         // category the customer was sent to.
         data-item={isRecommendedCard ? undefined : it.id}
-        className={`menu-row border-b border-ht-ink/15 py-3.5 ${isDisabled ? 'item-disabled' : ''}`}
+        className={`flex items-start gap-3 border-b border-ht-ink/15 py-3.5 ${isDisabled ? 'item-disabled' : ''}`}
         style={{ opacity: isDisabled ? 0.6 : 1 }}
       >
+        {/* Round plate thumbnail (DNA §4.3), tap to enlarge. Only for dishes
+            that have a photo — the rest keep the full row width. */}
+        {imageUrl && (
+          <button
+            type="button"
+            onClick={() => setImgModal({ open: true, urls: [imageUrl], name: it.name })}
+            className="mt-0.5 shrink-0 rounded-full transition active:scale-95"
+            aria-label={`Photo of ${it.name}`}
+          >
+            <img
+              src={imageUrl}
+              alt=""
+              width={64}
+              height={64}
+              loading="lazy"
+              className="plate aspect-square h-16 w-16 md:h-20 md:w-20"
+              onError={(e) => { e.currentTarget.parentElement.style.display = 'none'; }}
+            />
+          </button>
+        )}
+        <div className="menu-row min-w-0 flex-1">
         <div className={`flex min-w-0 items-baseline gap-2 ${twoSize ? 'col-span-4' : ''}`}>
           <span className="translate-y-px"><VegDot isVeg={it.isVeg} /></span>
           <h3 className="min-w-0 text-[16px] font-semibold leading-tight">
@@ -1054,7 +1075,7 @@ export default function Menu() {
         {/* Tags line — its own line under the name, never inside it. The offer
             LABEL comes from the server and the price above stays the list
             price; the saving lands at checkout (one money authority). */}
-        {(it.autoOffer || (isCustomisable && !twoSize) || imageUrl) && (
+        {(it.autoOffer || (isCustomisable && !twoSize)) && (
         <div className="row-tags mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1">
           {it.autoOffer ? (
             <span
@@ -1066,15 +1087,6 @@ export default function Menu() {
           ) : null}
           {isCustomisable && !twoSize && (
             <span className="font-mono text-[10px] font-semibold uppercase tracking-[.05em] text-ht-mute">Your way</span>
-          )}
-          {imageUrl && (
-            <button
-              type="button"
-              onClick={() => setImgModal({ open: true, urls: [imageUrl], name: it.name })}
-              className="inline-flex min-h-8 items-center gap-1 font-mono text-[10px] font-semibold uppercase tracking-[.05em] text-ht-mute hover:text-ht-red"
-            >
-              <Camera className="h-3.5 w-3.5" /> Photo
-            </button>
           )}
         </div>
         )}
@@ -1122,6 +1134,7 @@ export default function Menu() {
         {isDisabled && simpleQty > 0 && (
           <p className="col-span-4 mt-1 text-sm font-semibold text-ht-red">In your bag, but currently unavailable</p>
         )}
+        </div>
       </article>
     );
   };
