@@ -68,17 +68,15 @@ export default function AutoOfferCard({ className = '' }) {
     ? `${o.discount_value}% OFF`
     : `₹${Math.round(Number(o.discount_value) || 0)} OFF`);
 
-  // Every margin/padding utility carries `!`. Menu.css resets
-  // `.menu-page * { margin: 0; padding: 0 }` at equal specificity and loads
-  // later, so unprefixed p-/px-/mt- utilities are silently dropped and this
-  // collapses into an unreadable sliver on the one page it matters most.
+  // The `!` on spacing utilities dates from Menu.css's old `.menu-page *`
+  // reset (removed 2 Oct 2026); harmless now. Gold ground = value (DNA v2).
   return (
     <div
-      className={`overflow-hidden rounded-2xl border border-[#dc5f1e]/40 bg-[#161616] !p-3 shadow-lg ${className}`}
+      className={`overflow-hidden rounded-[14px] bg-ht-gold2 !p-3 ${className}`}
     >
       <div className="flex items-center gap-2 !mb-2">
-        <Tag className="h-3.5 w-3.5 flex-shrink-0 text-[#f5b944]" />
-        <h2 className="text-[11px] font-bold uppercase tracking-wide text-[#f5b944]">
+        <Tag className="h-3.5 w-3.5 flex-shrink-0 text-ht-red2" />
+        <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[.08em] text-ht-red2">
           On the menu now
         </h2>
       </div>
@@ -88,9 +86,9 @@ export default function AutoOfferCard({ className = '' }) {
           <li key={o.id}>
             <Link
               to={offerDeepLink(o)}
-              className="group flex items-center gap-2.5 rounded-xl border border-white/5 bg-black/25 !px-2.5 !py-2 transition-colors hover:border-[#dc5f1e]/40"
+              className="group flex items-center gap-2.5 min-h-11 rounded-[10px] bg-ht-ivory/80 !px-2.5 !py-2 transition-colors hover:bg-ht-ivory hover:no-underline"
             >
-              <span className="flex-shrink-0 rounded-lg bg-[#dc5f1e]/15 !px-2 !py-0.5 text-[11px] font-extrabold text-[#f5b944]">
+              <span className="flex-shrink-0 whitespace-nowrap rounded bg-ht-red !px-2 !py-0.5 font-mono text-[11px] font-semibold text-white">
                 {discountText(o)}
               </span>
               {/* Wraps rather than truncates. At 390px "September — 20% off any
@@ -98,10 +96,10 @@ export default function AutoOfferCard({ className = '' }) {
                   which dish the offer is for — the exact complaint that started
                   this. Two lines cost a few pixels; a cut dish name costs the
                   offer. */}
-              <span className="min-w-0 flex-1 text-sm leading-snug text-white/85">
+              <span className="min-w-0 flex-1 text-sm leading-snug text-ht-ink">
                 {o.title}
               </span>
-              <ChevronRight className="h-4 w-4 flex-shrink-0 text-white/35 transition-colors group-hover:text-[#f5b944]" />
+              <ChevronRight className="h-4 w-4 flex-shrink-0 text-ht-mute transition-colors group-hover:text-ht-red" />
             </Link>
           </li>
         ))}
@@ -110,7 +108,7 @@ export default function AutoOfferCard({ className = '' }) {
       {/* The GST line belongs here rather than on the menu tile: a tile has no
           room to litigate tax, but a customer reading the offer list is deciding
           whether to order on it. Checkout still shows GST as its own line. */}
-      <p className="!mt-2 text-[11px] leading-snug text-white/45">
+      <p className="!mt-2 text-[11px] leading-snug text-ht-red2/80">
         Taken off automatically at checkout — no code needed. Discounted orders are
         charged 5% GST on top.
       </p>

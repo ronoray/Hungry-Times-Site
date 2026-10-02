@@ -9,7 +9,7 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { trackAddToCart } from "../utils/analytics";
-import { X, Plus, Minus, ShoppingCart, AlertCircle } from "lucide-react";
+import { X, Plus, Minus, AlertCircle } from "lucide-react";
 import { useBackableOverlay } from "../hooks/useBackableOverlay";
 
 const CDN_BASE = import.meta.env.VITE_CDN_BASE || "http://localhost:5000";
@@ -444,17 +444,55 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
   }, [closeModal]);
 
   // ============================================================================
-  // RENDER: MAIN MODAL
+  // RENDER: MAIN MODAL — DNA v2 bottom sheet (centred dialog from md)
   // ============================================================================
+
+  // Numbered steps in the order they appear: "1 · SIZE", "2 · STYLE", …
+  let stepNo = 0;
+  const stepTitle = (label, note) => (
+    <h3 className="mb-2.5 mt-5 flex items-baseline justify-between gap-3 font-mono text-xs font-semibold uppercase tracking-[.12em] text-ht-gold3">
+      <span>{++stepNo} · {label}</span>
+      {note && <em className="not-italic normal-case tracking-[.04em] text-ht-mute">{note}</em>}
+    </h3>
+  );
+
+  // One option chip. Same handler the radio / checkbox used to call.
+  const chip = ({ key, selected, error = false, locked = false, onSelect, name, price }) => (
+    <button
+      key={key}
+      type="button"
+      aria-pressed={selected}
+      disabled={locked}
+      onClick={onSelect}
+      className={`flex h-11 items-center gap-1.5 whitespace-nowrap rounded-[10px] border-[1.5px] px-3.5 text-sm font-semibold transition active:scale-95 disabled:cursor-not-allowed ${
+        selected
+          ? locked
+            ? 'border-ht-ink/15 bg-ht-paper text-ht-mute'
+            : 'border-ht-red bg-ht-red text-white'
+          : error
+            ? 'border-ht-red bg-white text-ht-ink'
+            : 'border-ht-ink/15 bg-white text-ht-ink hover:border-ht-ink/40'
+      }`}
+    >
+      <span>{name}</span>
+      {price}
+    </button>
+  );
+  const delta = (v, selected) => (Number(v) > 0
+    ? <span className={`text-xs font-bold ${selected ? 'text-ht-gold2' : 'text-ht-red'}`}>+₹{v}</span>
+    : null);
+  const lockedNote = (opt) => (isDineIn
+    ? <span className="text-xs font-semibold text-ht-veg">free · dine-in</span>
+    : <span className="text-xs">{Number(opt.priceDelta) > 0 ? `₹${opt.priceDelta} · ` : ''}always</span>);
 
   return (
     <div
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center z-[60] p-0 md:p-4 pb-16 md:pb-0"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-ht-ink/55 p-0 pb-16 md:items-center md:p-4 md:pb-0"
       onClick={closeModal}
     >
       <div
         ref={sheetRef}
-        className="bg-neutral-900 w-full md:max-w-2xl rounded-t-2xl md:rounded-2xl relative flex flex-col overflow-hidden h-[calc(85vh-64px)] md:h-auto md:max-h-[85vh]"
+        className="relative flex h-[calc(85vh-64px)] w-full flex-col overflow-hidden rounded-t-[22px] bg-ht-ivory text-ht-ink md:h-auto md:max-h-[85vh] md:max-w-xl md:rounded-[14px]"
         style={{
           transform: `translateY(${sheetTranslateY}px)`,
           transition: sheetAnimating ? 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)' : 'none',
@@ -465,489 +503,242 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
         onTouchEnd={handleTouchEnd}
       >
         {/* DRAG INDICATOR (mobile) */}
-        <div className="md:hidden flex justify-center pt-2 pb-1 cursor-grab active:cursor-grabbing">
-          <div className="w-10 h-1 bg-neutral-600 rounded-full" />
+        <div className="flex cursor-grab justify-center pb-1 pt-2.5 active:cursor-grabbing md:hidden">
+          <div className="h-[5px] w-11 rounded-full bg-ht-ink/20" />
         </div>
 
         {/* CLOSE BUTTON - ALWAYS VISIBLE */}
         <button
           onClick={closeModal}
-          className="absolute top-4 right-4 bg-black/60 hover:bg-black/80 p-2 md:p-3 rounded-full text-white transition-colors z-10"
+          className="absolute left-3 top-3 z-10 grid h-11 w-11 place-items-center rounded-full bg-ht-ivory/90 text-ht-ink shadow-sm md:left-auto md:right-3"
           aria-label="Close modal"
         >
-          <X className="w-5 h-5 md:w-6 md:h-6" />
+          <X className="h-5 w-5" />
         </button>
 
         {/* SCROLL AREA */}
-        <div className="flex-1 min-h-0 overflow-y-auto [-webkit-overflow-scrolling:touch] overscroll-contain touch-pan-y">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] touch-pan-y">
+          <div className="relative px-5 pb-5 pt-12 md:px-6 md:pt-6">
 
-          {/* HEADER IMAGE */}
-          {item.imageUrl && (
-            <div className="w-full h-48 md:h-64 bg-neutral-800 rounded-t-2xl overflow-hidden">
+            {/* Plate — bleeds off the sheet's right edge */}
+            {item.imageUrl && (
               <img
                 src={imageUrl}
                 alt={item.name}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.target.src = "/images/placeholder-dish.jpg";
-                }}
+                width="150"
+                height="150"
+                className="plate absolute -right-7 top-2 h-[120px] w-[120px] min-[390px]:h-[150px] min-[390px]:w-[150px] md:right-12 md:top-5 md:h-[120px] md:w-[120px]"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
-            </div>
-          )}
-
-          {/* ALL MODAL CONTENT STARTS HERE */}
-          <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-4">
+            )}
 
             {/* TITLE & DESCRIPTION */}
-            <div className="pr-12">
-              <h2 className="text-xl md:text-2xl font-bold text-white">
-                {item.name}
-              </h2>
+            <div className={item.imageUrl ? 'pr-24 min-[390px]:pr-32 md:pr-40' : 'pr-2 md:pr-12'}>
+              <h2 className="font-display text-[28px] leading-none">{item.name}</h2>
               {item.description && (
-                <p className="text-neutral-400 text-sm mt-2">
+                <p className="mt-2 font-serif text-[17px] italic leading-snug text-ht-mute">
                   {item.description}
                 </p>
               )}
-              <p className="text-orange-400 text-lg md:text-xl mt-2 font-semibold">
+              <p className="mt-2 text-lg font-bold text-ht-red">
                 ₹{basePrice.toFixed(0)}
-                <span className="text-neutral-500 text-xs ml-2">base price</span>
+                <span className="ml-2 text-xs font-medium text-ht-mute">base price</span>
               </p>
             </div>
 
-          {/* SIZE and STYLE — two independent optional groups.
-              One pick each, and they combine (Large + Szechwan). Rendering them
-              as one radio pool is what made "Large Szechwan Egg Chowmein"
-              impossible to order online. */}
-          {sizeVariants.length > 0 && (
-            <div className="space-y-4">
-              <h3 className="text-base md:text-lg font-semibold text-white mb-3">
-                Size
-              </h3>
-              <div className="space-y-2">
-                <label
-                  className={`flex items-center justify-between p-3 md:p-4 rounded-lg border-2 cursor-pointer transition ${
-                    selectedSize === null
-                      ? "border-orange-500 bg-orange-500/10"
-                      : "border-neutral-700 hover:border-neutral-600"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="variant-size"
-                      checked={selectedSize === null}
-                      onClick={() => setSelectedSize(null)}
-                      onChange={() => {}}
-                      className="w-5 h-5 text-orange-500 cursor-pointer"
-                    />
-                    <span className="text-white text-sm md:text-base">Regular</span>
-                  </div>
-                  <span className="text-neutral-400 text-sm">base price</span>
-                </label>
-
-                {sizeVariants.map((variant) => (
-                  <label
-                    key={variant.id}
-                    className={`flex items-center justify-between p-3 md:p-4 rounded-lg border-2 cursor-pointer transition ${
-                      selectedSize?.id === variant.id
-                        ? "border-orange-500 bg-orange-500/10"
-                        : "border-neutral-700 hover:border-neutral-600"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="variant-size"
-                        checked={selectedSize?.id === variant.id}
-                        onClick={() => selectSize(variant)}
-                        onChange={() => {}}
-                        className="w-5 h-5 text-orange-500 cursor-pointer"
-                      />
-                      <span className="text-white text-sm md:text-base">
-                        {variant.name}
-                      </span>
-                    </div>
-                    {variant.priceDelta > 0 && (
-                      <span className="text-orange-400 font-semibold text-sm md:text-base">
-                        +₹{variant.priceDelta}
-                      </span>
-                    )}
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {styleVariants.length > 0 && (
-            <div className="space-y-4">
-              <h3 className="text-base md:text-lg font-semibold text-white mb-3">
-                Style
-                <span className="text-neutral-500 text-xs font-normal ml-2">optional</span>
-              </h3>
-              <div className="space-y-2">
-                <label
-                  className={`flex items-center justify-between p-3 md:p-4 rounded-lg border-2 cursor-pointer transition ${
-                    selectedStyle === null
-                      ? "border-orange-500 bg-orange-500/10"
-                      : "border-neutral-700 hover:border-neutral-600"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="variant-style"
-                      checked={selectedStyle === null}
-                      onClick={() => setSelectedStyle(null)}
-                      onChange={() => {}}
-                      className="w-5 h-5 text-orange-500 cursor-pointer"
-                    />
-                    <span className="text-white text-sm md:text-base">No style</span>
-                  </div>
-                  <span className="text-neutral-400 text-sm">as listed</span>
-                </label>
-
-                {styleVariants.map((variant) => (
-                  <label
-                    key={variant.id}
-                    className={`flex items-center justify-between p-3 md:p-4 rounded-lg border-2 cursor-pointer transition ${
-                      selectedStyle?.id === variant.id
-                        ? "border-orange-500 bg-orange-500/10"
-                        : "border-neutral-700 hover:border-neutral-600"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="variant-style"
-                        checked={selectedStyle?.id === variant.id}
-                        onClick={() => selectStyle(variant)}
-                        onChange={() => {}}
-                        className="w-5 h-5 text-orange-500 cursor-pointer"
-                      />
-                      <span className="text-white text-sm md:text-base">
-                        {variant.name}
-                      </span>
-                    </div>
-                    {variant.priceDelta > 0 && (
-                      <span className="text-orange-400 font-semibold text-sm md:text-base">
-                        +₹{variant.priceDelta}
-                      </span>
-                    )}
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* VARIANT FAMILIES (REQUIRED) */}
-          {variantFamilies.length > 0 && (
-            <div className="space-y-4">
-              {variantFamilies.map((family) => (
-                <div key={family.id}>
-                  <h3 className="text-base md:text-lg font-semibold text-white mb-3">
-                    {family.name}{" "}
-                    {familyIsRequired(family) ? (
-                      <span className="text-red-400">*</span>
-                    ) : (
-                      <span className="text-neutral-500 text-xs font-normal">optional</span>
-                    )}
-                  </h3>
-
-                  <div className="space-y-2">
-                    {family.options.map((opt) => (
-                      <label
-                        key={opt.id}
-                        className={`flex items-center justify-between p-3 md:p-4 rounded-lg border-2 cursor-pointer transition ${
-                          selectedFamilyVariants[family.id]?.id === opt.id
-                            ? "border-orange-500 bg-orange-500/10"
-                            : hasFamilyError(family.id)
-                            ? "border-red-500 hover:border-red-400"
-                            : "border-neutral-700 hover:border-neutral-600"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="radio"
-                            name={`family-variant-${family.id}`}
-                            checked={selectedFamilyVariants[family.id]?.id === opt.id}
-                            onClick={() => selectFamilyVariant(family.id, opt)}
-                            onChange={() => {}}
-                            className="w-5 h-5 text-orange-500 cursor-pointer"
-                          />
-                          <span className="text-white text-sm md:text-base">
-                            {opt.name}
-                          </span>
-                        </div>
-                        {opt.priceDelta > 0 && (
-                          <span className="text-orange-400 font-semibold text-sm md:text-base">
-                            +₹{opt.priceDelta}
-                          </span>
-                        )}
-                      </label>
-                    ))}
-                  </div>
+            {/* SIZE and STYLE — two independent optional groups.
+                One pick each, and they combine (Large + Szechwan). Rendering them
+                as one radio pool is what made "Large Szechwan Egg Chowmein"
+                impossible to order online. */}
+            {sizeVariants.length > 0 && (
+              <div>
+                {stepTitle('Size')}
+                <div className="flex flex-wrap gap-2">
+                  {chip({ key: 'regular', selected: selectedSize === null, onSelect: () => setSelectedSize(null), name: 'Regular' })}
+                  {sizeVariants.map((variant) => chip({
+                    key: variant.id,
+                    selected: selectedSize?.id === variant.id,
+                    onSelect: () => selectSize(variant),
+                    name: variant.name,
+                    price: delta(variant.priceDelta, selectedSize?.id === variant.id),
+                  }))}
                 </div>
-              ))}
-            </div>
-          )}
-
-          {/* ADDONS FROM ADDONS TABLE (Optional) */}
-          {addonGroups.length > 0 && (
-            <div className="space-y-4">
-              {addonGroups.map((group) => (
-                <div key={group.id}>
-                  <h3 className="text-base md:text-lg font-semibold text-white mb-3">
-                    {group.name || "Add-ons"}
-                  </h3>
-
-                  <div className="space-y-2">
-                    {(group.options || []).map((opt) => {
-                      const selected = selectedAddons[group.id]?.[opt.id] !== undefined;
-                      const locked = isLocked(opt);
-
-                      return (
-                        <label
-                          key={opt.id}
-                          className={`flex items-center justify-between p-3 md:p-4 rounded-lg border-2 ${
-                            locked 
-                              ? "cursor-not-allowed bg-neutral-800/50 border-neutral-600" 
-                              : "cursor-pointer"
-                          } transition ${
-                            selected
-                              ? "border-orange-500 bg-orange-500/10"
-                              : "border-neutral-700 hover:border-neutral-600"
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="checkbox"
-                              checked={selected}
-                              onChange={() => toggleAddon(group.id, opt)}
-                              disabled={locked}
-                              className={`w-5 h-5 text-orange-500 ${
-                                locked ? "cursor-not-allowed" : "cursor-pointer"
-                              }`}
-                            />
-                            <span className={`text-sm md:text-base ${
-                              locked ? "text-neutral-400" : "text-white"
-                            }`}>
-                              {opt.name}
-                              {locked && (
-                                <span className="ml-2 text-xs text-neutral-500">(Required)</span>
-                              )}
-                            </span>
-                          </div>
-                          {isDineIn && locked ? (
-                            <span className="text-green-400 text-xs font-medium">Free · Dine-in</span>
-                          ) : opt.priceDelta > 0 ? (
-                            <span className="text-orange-400 font-semibold text-sm md:text-base">
-                              +₹{opt.priceDelta}
-                            </span>
-                          ) : null}
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* ADDON FAMILIES (REQUIRED - except packaging) */}
-          {addonFamilies.length > 0 && (
-            <div className="space-y-4">
-              {addonFamilies.map((family) => {
-                const allPackaging = family.options.every(opt => isLocked(opt));
-                
-                return (
-                  <div key={family.id}>
-                    <h3 className="text-base md:text-lg font-semibold text-white mb-3">
-                      {family.name}
-                      {!allPackaging && familyIsRequired(family) && (
-                        <span className="text-red-400"> *</span>
-                      )}
-                      {!allPackaging && !familyIsRequired(family) && (
-                        <span className="text-neutral-500 text-xs font-normal"> optional</span>
-                      )}
-                    </h3>
-
-                    <div className="space-y-2">
-                      {family.options.map((opt) => {
-                        const selected = selectedFamilyAddons[family.id]?.[opt.id] !== undefined;
-                        const locked = isLocked(opt);
-                        // A maxSelect of 1 is a pick-one group, so it must look
-                        // like one. Showing checkboxes for a group that only
-                        // ever holds a single answer invites the customer to
-                        // tick "Two Parathas" and "Three Parathas" together.
-                        const singleChoice = Number(family?.maxSelect) === 1;
-
-                        return (
-                          <label
-                            key={opt.id}
-                            className={`flex items-center justify-between p-3 md:p-4 rounded-lg border-2 ${
-                              locked 
-                                ? "cursor-not-allowed bg-neutral-800/50 border-neutral-600" 
-                                : "cursor-pointer"
-                            } transition ${
-                              selected
-                                ? "border-orange-500 bg-orange-500/10"
-                                : hasFamilyError(family.id) && !locked
-                                ? "border-red-500 hover:border-red-400"
-                                : "border-neutral-700 hover:border-neutral-600"
-                            }`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <input
-                                type={singleChoice && !locked ? "radio" : "checkbox"}
-                                name={singleChoice ? `family-addon-${family.id}` : undefined}
-                                checked={selected}
-                                onChange={() => toggleFamilyAddon(family.id, opt)}
-                                disabled={locked}
-                                className={`w-5 h-5 text-orange-500 ${
-                                  locked ? "cursor-not-allowed" : "cursor-pointer"
-                                }`}
-                              />
-                              <span className={`text-sm md:text-base ${
-                                locked ? "text-neutral-400" : "text-white"
-                              }`}>
-                                {opt.name}
-                                {locked && (
-                                  <span className="ml-2 text-xs text-neutral-500">(Required)</span>
-                                )}
-                              </span>
-                            </div>
-                            {isDineIn && locked ? (
-                              <span className="text-green-400 text-xs font-medium">Free · Dine-in</span>
-                            ) : opt.priceDelta > 0 ? (
-                              <span className="text-orange-400 font-semibold text-sm md:text-base">
-                                +₹{opt.priceDelta}
-                              </span>
-                            ) : null}
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* QUANTITY SELECTOR */}
-          <div>
-            <h3 className="text-base md:text-lg font-semibold text-white mb-3">
-              Quantity
-            </h3>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="w-12 h-12 md:w-10 md:h-10 bg-neutral-800 hover:bg-neutral-700 rounded-lg flex items-center justify-center text-white transition-colors"
-                aria-label="Decrease quantity"
-              >
-                <Minus className="w-5 h-5" />
-              </button>
-              <span className="text-2xl md:text-xl text-white font-bold flex-1 text-center">
-                {quantity}
-              </span>
-              <button
-                onClick={() => setQuantity(quantity + 1)}
-                className="w-12 h-12 md:w-10 md:h-10 bg-neutral-800 hover:bg-neutral-700 rounded-lg flex items-center justify-center text-white transition-colors"
-                aria-label="Increase quantity"
-              >
-                <Plus className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-          {/* PRICE BREAKDOWN */}
-          <div className="p-3 md:p-4 bg-neutral-800 rounded-lg space-y-2 text-sm">
-            <div className="flex justify-between text-neutral-400">
-              <span>Base Price</span>
-              <span>₹{basePrice.toFixed(0)}</span>
-            </div>
-
-            {selectedSize && (
-              <div className="flex justify-between text-neutral-400">
-                <span>{selectedSize.name}</span>
-                <span>+₹{selectedSize.priceDelta}</span>
               </div>
             )}
 
-            {selectedStyle && (
-              <div className="flex justify-between text-neutral-400">
-                <span>{selectedStyle.name}</span>
-                <span>+₹{selectedStyle.priceDelta}</span>
+            {styleVariants.length > 0 && (
+              <div>
+                {stepTitle('Style', 'optional')}
+                <div className="flex flex-wrap gap-2">
+                  {chip({ key: 'none', selected: selectedStyle === null, onSelect: () => setSelectedStyle(null), name: 'As listed' })}
+                  {styleVariants.map((variant) => chip({
+                    key: variant.id,
+                    selected: selectedStyle?.id === variant.id,
+                    onSelect: () => selectStyle(variant),
+                    name: variant.name,
+                    price: delta(variant.priceDelta, selectedStyle?.id === variant.id),
+                  }))}
+                </div>
               </div>
             )}
 
-            {Object.values(selectedFamilyVariants).map((v) => (
-              <div key={v.id} className="flex justify-between text-neutral-400">
-                <span>{v.name}</span>
-                <span>+₹{v.priceDelta}</span>
+            {/* VARIANT FAMILIES (REQUIRED) */}
+            {variantFamilies.map((family) => (
+              <div key={family.id}>
+                {stepTitle(family.name, familyIsRequired(family) ? 'pick one' : 'optional')}
+                <div className="flex flex-wrap gap-2">
+                  {family.options.map((opt) => chip({
+                    key: opt.id,
+                    selected: selectedFamilyVariants[family.id]?.id === opt.id,
+                    error: hasFamilyError(family.id),
+                    onSelect: () => selectFamilyVariant(family.id, opt),
+                    name: opt.name,
+                    price: delta(opt.priceDelta, selectedFamilyVariants[family.id]?.id === opt.id),
+                  }))}
+                </div>
               </div>
             ))}
 
-            {Object.values(selectedAddons)
-              .flatMap((g) => Object.values(g))
-              .map((a) => (
-                <div key={a.id} className="flex justify-between text-neutral-400">
-                  <span>{a.name}</span>
-                  <span>+₹{a.priceDelta}</span>
+            {/* ADDONS FROM ADDONS TABLE (Optional) */}
+            {addonGroups.map((group) => (
+              <div key={group.id}>
+                {stepTitle(group.name || 'Add-ons', 'optional')}
+                <div className="flex flex-wrap gap-2">
+                  {(group.options || []).map((opt) => {
+                    const selected = selectedAddons[group.id]?.[opt.id] !== undefined;
+                    const locked = isLocked(opt);
+                    return chip({
+                      key: opt.id,
+                      selected: selected || locked,
+                      locked,
+                      onSelect: () => toggleAddon(group.id, opt),
+                      name: opt.name,
+                      price: locked ? lockedNote(opt) : delta(opt.priceDelta, selected),
+                    });
+                  })}
                 </div>
-              ))}
-
-            {Object.values(selectedFamilyAddons)
-              .flatMap((g) => Object.values(g))
-              .map((a) => (
-                <div key={a.id} className="flex justify-between text-neutral-400">
-                  <span>{a.name}</span>
-                  <span>+₹{a.priceDelta}</span>
-                </div>
-              ))}
-
-            <div className="border-t border-neutral-700 my-2" />
-
-            <div className="flex justify-between text-lg md:text-base font-bold text-white">
-              <span>Price per item</span>
-              <span className="text-orange-500">₹{unitPrice.toFixed(0)}</span>
-            </div>
-
-            {quantity > 1 && (
-              <div className="flex justify-between text-sm text-neutral-400">
-                <span>×{quantity}</span>
-                <span>= ₹{finalTotal.toFixed(0)}</span>
               </div>
-            )}
+            ))}
+
+            {/* ADDON FAMILIES (REQUIRED - except packaging) */}
+            {addonFamilies.map((family) => {
+              const allPackaging = family.options.every(opt => isLocked(opt));
+              // maxSelect 1 is a pick-one group; the chip handler already
+              // enforces that, the note just says so.
+              const singleChoice = Number(family?.maxSelect) === 1;
+              const note = allPackaging ? null
+                : familyIsRequired(family) ? (singleChoice ? 'pick one' : 'required')
+                : 'optional';
+              return (
+                <div key={family.id}>
+                  {stepTitle(family.name, note)}
+                  <div className="flex flex-wrap gap-2">
+                    {family.options.map((opt) => {
+                      const selected = selectedFamilyAddons[family.id]?.[opt.id] !== undefined;
+                      const locked = isLocked(opt);
+                      return chip({
+                        key: opt.id,
+                        selected: selected || locked,
+                        locked,
+                        error: hasFamilyError(family.id) && !locked,
+                        onSelect: () => toggleFamilyAddon(family.id, opt),
+                        name: opt.name,
+                        price: locked ? lockedNote(opt) : delta(opt.priceDelta, selected),
+                      });
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* PRICE BREAKDOWN */}
+            <div className="mt-6 space-y-1.5 border-t border-ht-ink/15 pt-3 text-sm tabular-nums text-ht-mute">
+              <div className="flex justify-between">
+                <span>Base price</span>
+                <span>₹{basePrice.toFixed(0)}</span>
+              </div>
+              {selectedSize && (
+                <div className="flex justify-between">
+                  <span>{selectedSize.name}</span>
+                  <span>+₹{selectedSize.priceDelta}</span>
+                </div>
+              )}
+              {selectedStyle && (
+                <div className="flex justify-between">
+                  <span>{selectedStyle.name}</span>
+                  <span>+₹{selectedStyle.priceDelta}</span>
+                </div>
+              )}
+              {Object.values(selectedFamilyVariants).map((v) => (
+                <div key={v.id} className="flex justify-between">
+                  <span>{v.name}</span>
+                  <span>+₹{v.priceDelta}</span>
+                </div>
+              ))}
+              {Object.values(selectedAddons)
+                .flatMap((g) => Object.values(g))
+                .map((a) => (
+                  <div key={a.id} className="flex justify-between">
+                    <span>{a.name}</span>
+                    <span>+₹{a.priceDelta}</span>
+                  </div>
+                ))}
+              {Object.values(selectedFamilyAddons)
+                .flatMap((g) => Object.values(g))
+                .map((a) => (
+                  <div key={a.id} className="flex justify-between">
+                    <span>{a.name}</span>
+                    <span>+₹{a.priceDelta}</span>
+                  </div>
+                ))}
+              <div className="flex justify-between border-t-[1.5px] border-ht-ink pt-2 text-base font-extrabold text-ht-ink">
+                <span>Price per item</span>
+                <span>₹{unitPrice.toFixed(0)}</span>
+              </div>
+            </div>
           </div>
-
         </div>
-      </div>
 
-        {/* STICKY FOOTER — outside scroll area */}
-        <div className="shrink-0 border-t border-neutral-700 bg-neutral-900 p-4 md:p-4 space-y-3">
-          {/* VALIDATION ERROR MESSAGE */}
+        {/* STICKY FOOTER — qty stepper + add */}
+        <div className="shrink-0 space-y-3 border-t border-ht-ink/10 bg-ht-ivory px-5 pb-4 pt-3">
           {validationError && (
-            <div className="bg-red-500/10 border-2 border-red-500 rounded-lg p-3 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-              <p className="text-red-500 font-semibold text-sm whitespace-pre-line">
+            <div className="flex items-start gap-2.5 rounded-[10px] border-[1.5px] border-ht-red bg-ht-red/5 p-3">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-ht-red" />
+              <p className="whitespace-pre-line text-sm font-semibold text-ht-red">
                 {validationError.message}
               </p>
             </div>
           )}
 
-          {/* ADD TO CART BUTTON */}
-          <button
-            onClick={handleAdd}
-            className="w-full py-4 md:py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all text-base flex items-center justify-center gap-2"
-            aria-label="Add item to cart"
-          >
-            <ShoppingCart className="w-5 h-5" />
-            <span>
-              Add {quantity} to Cart — ₹{finalTotal.toFixed(0)}
-            </span>
-          </button>
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2.5">
+            <div className="flex h-11 items-center rounded-full border-[1.5px] border-ht-red">
+              <button
+                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                className="grid h-11 w-10 place-items-center text-ht-red"
+                aria-label="Decrease quantity"
+              >
+                <Minus className="h-4 w-4" />
+              </button>
+              <span className="w-6 text-center text-base font-bold tabular-nums">{quantity}</span>
+              <button
+                onClick={() => setQuantity(quantity + 1)}
+                className="grid h-11 w-10 place-items-center text-ht-red"
+                aria-label="Increase quantity"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+            <button
+              onClick={handleAdd}
+              className="flex h-[52px] min-w-0 items-center justify-center whitespace-nowrap rounded-full bg-ht-red px-4 text-base font-bold text-white transition hover:bg-ht-red2 active:scale-[.98]"
+              aria-label="Add item to cart"
+            >
+              Add to bag · ₹{finalTotal.toFixed(0)}
+            </button>
+          </div>
         </div>
+      </div>
     </div>
-  </div>
   );
+
 }

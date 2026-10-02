@@ -198,6 +198,9 @@ async function main() {
         deviceScaleFactor: 2,
         isMobile: vp.width < 768,
         hasTouch: vp.width < 768,
+        // sw.js would answer API calls itself, out of reach of the --api
+        // proxy (and serve a stale cached menu). The check measures layout.
+        serviceWorkers: 'block',
       });
       for (const mode of cartModes) {
       const page = await context.newPage();
@@ -225,11 +228,16 @@ async function main() {
               body,
               headers: { 'content-type': res.headers.get('content-type') || 'application/json', 'access-control-allow-origin': '*' },
             });
-          } catch {
-            return route.fulfill({ status: 502, body: '' });
+          } catch (e) {
+            process.stdout.write(`        api proxy: ${upstream} — ${e?.cause?.code || e?.message}
+`);
+            return route.fulfill({ status: 502, body: '', headers: { 'access-control-allow-origin': '*' } });
           }
         });
       }
+      // Never let a layout check count as a visit: GTM / GA / Meta Pixel
+      // would log a real page_view from localhost.
+      await page.route(/googletagmanager\.com|google-analytics\.com|connect\.facebook\.net|facebook\.com\/tr/, (r) => r.abort());
       await page.addInitScript(seedStorage, {
         cart: mode === 'cart3' ? SEED_CART : null,
         overlays: showOverlays,

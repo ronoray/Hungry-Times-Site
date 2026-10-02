@@ -163,7 +163,8 @@ function WelcomeTicket({ offer }) {
   );
 }
 
-export default function OfferTicket({ surface = 'home', className = '' }) {
+// allowWelcome=false: bundles only (the menu keeps codes for Home and the bag).
+export default function OfferTicket({ surface = 'home', className = '', allowWelcome = true }) {
   const { combo, loading } = useFeaturedCombo();
   const { isAuthenticated } = useAuth();
   const welcome = useOffer(WELCOME_CODE);
@@ -171,7 +172,7 @@ export default function OfferTicket({ surface = 'home', className = '' }) {
   if (loading) return null;
   let ticket = null;
   if (combo) ticket = <ComboTicket combo={combo} surface={surface} />;
-  else if (welcome && !isAuthenticated) ticket = <WelcomeTicket offer={welcome} />;
+  else if (allowWelcome && welcome && !isAuthenticated) ticket = <WelcomeTicket offer={welcome} />;
   if (!ticket) return null;
   return <div className={className}>{ticket}</div>;
 }

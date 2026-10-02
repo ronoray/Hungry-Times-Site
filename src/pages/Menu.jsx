@@ -5,27 +5,32 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Fuse from "fuse.js";
 import "./Menu.css";
 import { useCart } from "../context/CartContext";
-import { ShoppingCart, Plus, Check, Tag, Sparkles, Search, X, Heart, ChevronRight, UtensilsCrossed } from "lucide-react";
+import { Plus, Minus, Sparkles, Search, X, Heart, ChevronRight, UtensilsCrossed, Camera } from "lucide-react";
 import AddToCartModal from "../components/AddToCartModal";
 import FloatingCartBar from "../components/FloatingCartBar";
 import VegDot from "../components/VegDot";
-import ComboPromoCard from "../components/ComboPromoCard";
-import FeaturedComboCard from "../components/FeaturedComboCard";
-import OffersStrip from "../components/OffersStrip";
+import OfferTicket from "../components/OfferTicket";
 import AutoOfferCard from "../components/AutoOfferCard";
 import { useMenuCategory } from '../context/MenuCategoryContext';
 import { useFavorites } from '../context/FavoritesContext';
 import SEOHead from '../components/SEOHead';
-import KitchenStatus from '../components/KitchenStatus';
 import MakeYourMealModal from '../components/MakeYourMealModal';
 import '../components/MakeYourMealModal.css';
 import { useAuth } from '../context/AuthContext';
 import { useBackableOverlay } from '../hooks/useBackableOverlay';
 import { hasRealOptions } from '../utils/menuItems';
+import { packagingAddonOf } from '../utils/cartLine';
 
 import API_BASE from "../config/api";
 import { getVisitorSessionId } from "../utils/siteActivity";
-import { trackAddToCart, trackSearch, trackPhoneClick, trackWhatsAppClick, trackCtaClick, trackViewItem, trackFavoriteToggle, trackViewItemList } from "../utils/analytics";
+import { trackAddToCart, trackSearch, trackCtaClick, trackViewItem, trackFavoriteToggle, trackViewItemList } from "../utils/analytics";
+
+// "Under ₹250" filter chip (DNA v2 menu). List price, before any offer.
+const PRICE_CHIP_CAP = 250;
+
+// AddToCartModal's size rule: "Large" is the only size variant and the base
+// price is the regular (server/utils/menuOptions.js SIZE_VARIANT_NAMES).
+const isLargeVariant = (v) => String(v?.name || "").trim().toLowerCase() === "large";
 
 // Description length limits
 const DESC_MAX_RECOMMENDED = 40;  // compact cards - carousel
@@ -261,6 +266,9 @@ export default function Menu() {
     try { return localStorage.getItem('ht_veg_filter') === '1'; }
     catch { return false; }
   });
+
+  // "Under ₹250" chip — session-only, unlike the veg filter.
+  const [underCap, setUnderCap] = useState(false);
 
   // Active Offers State
 
@@ -717,16 +725,19 @@ export default function Menu() {
       base = itemsBySub;
     }
 
-    if (!vegOnly) return base;
+    if (!vegOnly && !underCap) return base;
 
-    // Apply veg filter
+    // Apply veg / price filters
     const filtered = new Map();
     base.forEach((items, subId) => {
-      const vegItems = items.filter(it => it.isVeg === true || it.isVeg === 1 || it.is_veg === 1);
-      if (vegItems.length > 0) filtered.set(subId, vegItems);
+      const kept = items.filter(it =>
+        (!vegOnly || it.isVeg === true || it.isVeg === 1 || it.is_veg === 1) &&
+        (!underCap || Number(it.basePrice || 0) < PRICE_CHIP_CAP)
+      );
+      if (kept.length > 0) filtered.set(subId, kept);
     });
     return filtered;
-  }, [itemsBySub, searchQuery, globalSearchResults, vegOnly]);
+  }, [itemsBySub, searchQuery, globalSearchResults, vegOnly, underCap]);
 
   // Filtered subcategories (also filtered by veg if active)
   const filteredSubs = useMemo(() => {
@@ -736,12 +747,12 @@ export default function Menu() {
     } else {
       result = subs;
     }
-    // When veg filter is active, only show subcategories that have veg items
-    if (vegOnly) {
+    // With a filter on, only show subcategories that still have items
+    if (vegOnly || underCap) {
       return result.filter(sc => filteredItemsBySub.has(sc.id));
     }
     return result;
-  }, [subs, searchQuery, globalSearchResults, vegOnly, filteredItemsBySub]);
+  }, [subs, searchQuery, globalSearchResults, vegOnly, underCap, filteredItemsBySub]);
 
   // Auto-scroll to search results when search query changes
   useEffect(() => {
@@ -789,11 +800,13 @@ export default function Menu() {
     setActiveSub(subId);
     const el = rightPaneRef.current?.querySelector(`[data-sub="${subId}"]`);
     if (el) {
-      // Calculate offset for sticky subcategory bar + search bar (+ offer banner if shown)
-      const subcategoryBarHeight = 60; // Approximate height of subcategory bar
-      const searchBarHeight = 80; // Approximate height of search bar
-      const bannerH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--banner-h')) || 0;
-      const totalOffset = bannerH + subcategoryBarHeight + searchBarHeight + 10; // 10px extra padding
+      // Offset = everything stuck above the section: offer banner, fixed
+      // header (--nav-h), search + chips, category tabs (Menu.css vars).
+      const px = (node, name) => parseInt(getComputedStyle(node).getPropertyValue(name)) || 0;
+      const root = document.documentElement;
+      const wrap = rightPaneRef.current?.closest('.menu-page-wrapper') || root;
+      const totalOffset = px(root, '--banner-h') + px(root, '--nav-h')
+        + px(wrap, '--menu-sticky-h') + px(wrap, '--menu-tabs-h') + 8;
       
       const elementPosition = el.getBoundingClientRect().top + window.scrollY;
       const offsetPosition = elementPosition - totalOffset;
@@ -860,9 +873,7 @@ export default function Menu() {
     // customisable, and labelling it so promises a choice that isn't there.
     const isCustomisable = hasRealOptions(it);
 
-    const DESC_MAX = isRecommendedCard
-      ? DESC_MAX_RECOMMENDED
-      : DESC_MAX_REGULAR;
+    const DESC_MAX = DESC_MAX_REGULAR;
 
     const fullDescription = String(it.description || "");
     const isTruncated = fullDescription.length > DESC_MAX;
@@ -887,122 +898,190 @@ export default function Menu() {
       return `From ₹${base.toFixed(0)}`;
     })();
 
+    // Two sizes (Regular / Large): the row shows two price chips instead of
+    // a leader and a single price. A dish whose only choice is the size adds
+    // straight from the chip; anything with more to choose opens the sheet.
+    const largeVariant = (it.variants || []).find(isLargeVariant) || null;
+    const twoSize = Boolean(largeVariant);
+    const sizeOnly = twoSize && (it.variants || []).length === 1
+      && !hasRealOptions({ ...it, variants: [] });
+    const base = Number(it.basePrice || 0);
+    const largePrice = largeVariant ? base + Number(largeVariant.priceDelta || 0) : null;
+    const simpleQty = getSimpleItemQty(it.id);
+
+    const addSize = (variant) => {
+      if (isDisabled) return;
+      if (!sizeOnly) { openAddToCart(it); trackViewItem(it); return; }
+      // Same line shape AddToCartModal builds — packaging rides along.
+      const pkg = packagingAddonOf(it);
+      addLine({
+        itemId: it.id,
+        itemName: it.name,
+        name: it.name,
+        basePrice: base,
+        variants: variant ? [{ id: variant.id, name: variant.name, priceDelta: Number(variant.priceDelta) || 0 }] : [],
+        addons: pkg ? [pkg] : [],
+        qty: 1,
+      }, { source: 'menu' });
+      trackAddToCart(it, 1);
+    };
+
+    const circle = 'grid h-11 w-11 shrink-0 place-items-center rounded-full border-[1.5px] border-ht-red transition active:scale-90 disabled:cursor-not-allowed disabled:opacity-40';
+
+    // The action cell: + / stepper / sheet opener. Packaging alone is not a
+    // customisation — those dishes get +/- (incrementSimpleItem attaches the
+    // packaging line), only dishes with real choices open the sheet.
+    const action = (() => {
+      if (isCustomisable) {
+        return (
+          <button
+            type="button"
+            onClick={() => { openAddToCart(it); trackViewItem(it); }}
+            className={`${circle} bg-ht-ivory text-ht-red`}
+            disabled={isDisabled}
+            aria-label={isDisabled ? `${it.name} unavailable` : `Choose options for ${it.name}`}
+          >
+            <Plus className="h-5 w-5" />
+          </button>
+        );
+      }
+      if (simpleQty > 0 && !isDisabled) {
+        return (
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); decrementSimpleItem(it.id); }}
+              className={`${circle} bg-ht-ivory text-ht-red`}
+              aria-label={simpleQty === 1 ? `Remove ${it.name}` : `One less ${it.name}`}
+            >
+              <Minus className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); incrementSimpleItem(it); }}
+              className={`${circle} bg-ht-red text-[15px] font-bold text-white`}
+              aria-label={`${simpleQty} in bag — add one more ${it.name}`}
+            >
+              {simpleQty}
+            </button>
+          </div>
+        );
+      }
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            if (!isDisabled) {
+              incrementSimpleItem(it, { source: 'menu' });
+              trackAddToCart(it, 1);
+            }
+          }}
+          className={`${circle} bg-ht-ivory text-ht-red`}
+          disabled={isDisabled}
+          aria-label={isDisabled ? `${it.name} unavailable` : `Add ${it.name}`}
+        >
+          <Plus className="h-5 w-5" />
+        </button>
+      );
+    })();
+
     return (
       <article
         key={it.id}
         // Scroll anchor for ?highlight=<id>. Only on the main list: the
-        // favourites strip and the recommended carousel render the same dish
-        // again, and querySelector would find one of those pinned near the top
-        // instead of the card in the category the customer was sent to.
+        // favourites strip renders the same dish again, and querySelector
+        // would find that copy pinned near the top instead of the row in the
+        // category the customer was sent to.
         data-item={isRecommendedCard ? undefined : it.id}
-        className={`${isRecommendedCard ? "recommended-item-card" : "menu-item-card"} ${isDisabled ? "item-disabled" : ""}`}
-        style={{
-          opacity: isDisabled ? 0.6 : 1,
-          filter: isDisabled ? 'grayscale(0.5)' : 'none',
-          pointerEvents: isDisabled ? 'none' : 'auto'
-        }}
+        className={`menu-row border-b border-ht-ink/15 py-3.5 ${isDisabled ? 'item-disabled' : ''}`}
+        style={{ opacity: isDisabled ? 0.6 : 1 }}
       >
-        {/* Offer badge + Bestseller badge + Favorite heart */}
-        <div className="flex items-center justify-between mb-1">
-          <span className="flex items-center gap-1.5">
-            {/* Automatic item offer (e.g. September: any Meifoon 20% off).
-                The LABEL comes from the server — never computed here. The price
-                below deliberately stays the list price; the saving lands at
-                checkout. Any attempt to render a discounted price here would be
-                a second money authority and would drift from the bill. */}
-            {it.autoOffer ? (
-              <span
-                // Title carries the full terms on hover/long-press. The badge
-                // itself stays two words — a tile is not the place to litigate
-                // tax, and the checkout shows GST as its own line before anyone
-                // pays. Subtle, but not hidden.
-                title={`${it.autoOffer.title} — applied automatically at checkout. Discounted orders are charged 5% GST on top.`}
-                className="inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded"
-              >
-                {it.autoOffer.label}
-              </span>
-            ) : null}
-            {it.isBestseller ? (
-              <span className="inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-amber-500/20 text-amber-500 border border-amber-500/30 rounded">
-                Bestseller
-              </span>
-            ) : null}
-          </span>
-          <button
-            onClick={(e) => { e.stopPropagation(); toggleFavorite(it.id); }}
-            className="p-1 -mr-1 transition-colors"
-            aria-label={isFavorite(it.id) ? 'Remove from favorites' : 'Add to favorites'}
-          >
-            <Heart
-              size={18}
-              className={isFavorite(it.id) ? 'text-red-500 fill-red-500' : 'text-neutral-500 hover:text-red-400'}
-            />
-          </button>
+        <div className={`flex min-w-0 items-baseline gap-2 ${twoSize ? 'col-span-4' : ''}`}>
+          <span className="translate-y-px"><VegDot isVeg={it.isVeg} /></span>
+          <h3 className="min-w-0 text-[16px] font-semibold leading-tight">
+            {it.name}
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); toggleFavorite(it.id); }}
+              className="-my-2 ml-0.5 inline-grid h-8 w-8 place-items-center align-middle"
+              aria-label={isFavorite(it.id) ? 'Remove from favorites' : 'Add to favorites'}
+            >
+              <Heart
+                size={14}
+                className={isFavorite(it.id) ? 'fill-ht-red text-ht-red' : 'text-ht-mute/50 hover:text-ht-red'}
+              />
+            </button>
+          </h3>
         </div>
 
-        {/* Inline thumbnail + content row */}
-        {!isRecommendedCard && imageUrl && (
-          <div className="flex gap-3 mb-2">
-            <img
-              src={imageUrl}
-              alt={it.name}
-              width={80}
-              height={80}
-              loading="lazy"
-              className="w-20 h-20 rounded-xl object-cover flex-shrink-0 cursor-pointer"
-              onClick={() => setImgModal({ open: true, urls: [imageUrl], name: it.name })}
-              onError={(e) => { e.target.style.display = 'none'; }}
-            />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <VegDot isVeg={it.isVeg} />
-                <h3 className="item-name">{it.name}</h3>
-              </div>
-              <span
-                className={`item-price ${isRecommendedCard ? "item-price-large" : ""}`}
-                style={{
-                  textDecoration: isDisabled ? 'line-through' : 'none',
-                  color: isDisabled ? '#999' : '',
-                  fontSize: hasVariants ? '0.875rem' : undefined
-                }}
-              >
-                {priceDisplay}
-              </span>
-              {isCustomisable && (
-                <span className="block text-xs text-neutral-400 mt-0.5">Customisable</span>
-              )}
-            </div>
+        {!twoSize && (
+          <>
+            <span className="leader" aria-hidden="true" />
+            <span className={`whitespace-nowrap text-[16px] font-bold tabular-nums ${isDisabled ? 'line-through' : ''}`}>
+              {priceDisplay}
+            </span>
+            <div className="flex justify-end">{action}</div>
+          </>
+        )}
+
+        {twoSize && (
+          <div className="col-span-4 mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => addSize(null)}
+              disabled={isDisabled}
+              className={`price-chip ${sizeOnly && simpleQty > 0 ? 'is-on' : ''}`}
+              aria-label={`${it.name}, regular, ₹${base}`}
+            >
+              <small>REGULAR</small>
+              <b className={isDisabled ? 'line-through' : ''}>₹{base.toFixed(0)}</b>
+              {sizeOnly && simpleQty > 0 ? <span className="text-xs font-bold">× {simpleQty}</span> : <Plus className="h-4 w-4 text-ht-red" />}
+            </button>
+            <button
+              type="button"
+              onClick={() => addSize(largeVariant)}
+              disabled={isDisabled}
+              className="price-chip"
+              aria-label={`${it.name}, ${largeVariant.name}, ₹${largePrice}`}
+            >
+              <small>{String(largeVariant.name).toUpperCase()}</small>
+              <b className={isDisabled ? 'line-through' : ''}>₹{Number(largePrice).toFixed(0)}</b>
+              <Plus className="h-4 w-4 text-ht-red" />
+            </button>
           </div>
         )}
 
-        {/* Original header for cards without thumbnail or recommended cards */}
-        {(isRecommendedCard || !imageUrl) && (
-          <div className="item-header">
-            <div className="item-name-wrapper">
-              <div className="flex items-center gap-1.5">
-                <VegDot isVeg={it.isVeg} />
-                <h3 className="item-name">{it.name}</h3>
-              </div>
-            </div>
+        {/* Tags line — its own line under the name, never inside it. The offer
+            LABEL comes from the server and the price above stays the list
+            price; the saving lands at checkout (one money authority). */}
+        {(it.autoOffer || (isCustomisable && !twoSize) || imageUrl) && (
+        <div className="row-tags mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+          {it.autoOffer ? (
             <span
-              className={`item-price ${isRecommendedCard ? "item-price-large" : ""}`}
-              style={{
-                textDecoration: isDisabled ? 'line-through' : 'none',
-                color: isDisabled ? '#999' : '',
-                fontSize: hasVariants ? '0.875rem' : undefined
-              }}
+              title={`${it.autoOffer.title} — applied automatically at checkout. Discounted orders are charged 5% GST on top.`}
+              className="whitespace-nowrap rounded bg-ht-gold2 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[.05em] text-ht-red2"
             >
-              {priceDisplay}
+              {it.autoOffer.label}
             </span>
-          </div>
-        )}
-        {(isRecommendedCard || !imageUrl) && isCustomisable && (
-          <span className="block text-xs text-neutral-400 mb-1">Customisable</span>
+          ) : null}
+          {isCustomisable && !twoSize && (
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-[.05em] text-ht-mute">Your way</span>
+          )}
+          {imageUrl && (
+            <button
+              type="button"
+              onClick={() => setImgModal({ open: true, urls: [imageUrl], name: it.name })}
+              className="inline-flex min-h-8 items-center gap-1 font-mono text-[10px] font-semibold uppercase tracking-[.05em] text-ht-mute hover:text-ht-red"
+            >
+              <Camera className="h-3.5 w-3.5" /> Photo
+            </button>
+          )}
+        </div>
         )}
 
         {it.description && (
           <p
-            className="item-description"
+            className="row-desc mt-1"
             onClick={
               isTruncated
                 ? () =>
@@ -1017,159 +1096,31 @@ export default function Menu() {
           >
             {fullDescription.slice(0, DESC_MAX)}
             {isTruncated && (
-              <span className="read-more-inline">… Read more</span>
+              <span className="not-italic font-sans text-sm font-semibold text-ht-red">… more</span>
             )}
           </p>
         )}
 
         {/* Dine-in only — explain WHY it can't be added, so it reads as an
-            invitation rather than a broken button. Its own message, because
-            the item is otherwise perfectly available. */}
+            invitation rather than a broken button. */}
         {dineInOnlyBlocked && !it.effectiveDisabled && (
-          <div style={{ marginTop: '8px', color: '#d4af37', fontSize: '0.8125rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span>&#9749;</span>
-            <span>Available at the restaurant only</span>
-          </div>
+          <p className="col-span-4 mt-1 text-[13px] font-semibold text-ht-gold3">
+            Available at the restaurant only
+          </p>
         )}
 
-        {/* Disabled Message */}
         {isDisabled && it.disabledMessage && (
-          <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <div style={{ color: '#ef4444', fontSize: '0.875rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span>⚠️</span>
-              <span>{it.disabledMessage}</span>
-            </div>
+          <div className="col-span-4 mt-1 flex flex-col gap-0.5">
+            <span className="text-sm font-semibold text-ht-red">{it.disabledMessage}</span>
             {it.outOfStock && it.backInStockAt && (
-              <span style={{ color: '#9ca3af', fontSize: '0.75rem', paddingLeft: '4px' }}>
+              <span className="text-xs text-ht-mute">
                 Back in stock: {new Date(it.backInStockAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
               </span>
             )}
           </div>
         )}
-
-        <div className="item-actions">
-          {imageUrl && isRecommendedCard && (
-            <button
-              className="view-image-btn"
-              onClick={() =>
-                setImgModal({
-                  open: true,
-                  urls: [imageUrl],
-                  name: it.name,
-                })
-              }
-            >
-              🖼️ View Image
-            </button>
-          )}
-
-          {/* ✅ NEW: Quantity Controls or Add to Cart Button */}
-          {(() => {
-            // Packaging alone is not a customisation. It is on every dish and
-            // locked, so ~130 items were showing "Customize & Add" for a sheet
-            // whose only row was a charge the customer cannot decline. Those get
-            // the +/- controls instead; incrementSimpleItem attaches packaging
-            // to the line, which is what makes skipping the modal safe.
-            const hasOptions = hasRealOptions(it);
-
-            // If item has real choices to make, always show "Customize" button
-            if (hasOptions) {
-              return (
-                <button
-                  onClick={() => {
-                    openAddToCart(it);
-                    trackViewItem(it);
-                  }}
-                  className="add-to-cart-btn"
-                  disabled={isDisabled}
-                  style={{ opacity: isDisabled ? 0.5 : 1, cursor: isDisabled ? 'not-allowed' : 'pointer' }}
-                >
-                  <Plus className="btn-icon" /> {isDisabled ? 'Unavailable' : 'Customize & Add'}
-                </button>
-              );
-            }
-            
-            // For simple items (no variants/addons), check if already in cart
-            const currentQty = getSimpleItemQty(it.id);
-            
-            if (currentQty > 0 && !isDisabled) {
-              // Item is in cart - show quantity controls (only if not disabled)
-              return (
-                <div className="quantity-control">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      decrementSimpleItem(it.id);
-                    }}
-                    className={`quantity-btn ${currentQty === 1 ? 'remove-indicator' : ''}`}
-                    aria-label={currentQty === 1 ? 'Remove from cart' : 'Decrease quantity'}
-                  >
-                    −
-                  </button>
-                  
-                  <div className="quantity-display">
-                    <ShoppingCart className="cart-icon" />
-                    <span>{currentQty}</span>
-                  </div>
-                  
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      incrementSimpleItem(it);
-                    }}
-                    className="quantity-btn"
-                    aria-label="Increase quantity"
-                  >
-                    +
-                  </button>
-                </div>
-              );
-            }
-            
-            // If item is disabled but was in cart, show unavailable message
-            if (currentQty > 0 && isDisabled) {
-              return (
-                <div style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#fee2e2',
-                  color: '#dc2626',
-                  borderRadius: '8px',
-                  fontSize: '0.875rem',
-                  fontWeight: 600,
-                  textAlign: 'center'
-                }}>
-                  Currently Unavailable
-                </div>
-              );
-            }
-            
-            // Item not in cart - show Add to Cart button
-            return (
-              <button
-                onClick={() => {
-                  if (!isDisabled) {
-                    incrementSimpleItem(it, { source: 'menu' });
-                    trackAddToCart(it, 1);
-                  }
-                }}
-                className="add-to-cart-btn"
-                disabled={isDisabled}
-                style={{ 
-                  opacity: isDisabled ? 0.5 : 1, 
-                  cursor: isDisabled ? 'not-allowed' : 'pointer',
-                  backgroundColor: isDisabled ? '#9ca3af' : ''
-                }}
-              >
-                <ShoppingCart className="btn-icon" /> {isDisabled ? 'Unavailable' : 'Add to Cart'}
-              </button>
-            );
-          })()}
-        </div>
-
-        {isRecommendedCard && (
-          <div className="recommended-badge-bottom">
-            <span className="star-badge">⭐ RECOMMENDED</span>
-          </div>
+        {isDisabled && simpleQty > 0 && (
+          <p className="col-span-4 mt-1 text-sm font-semibold text-ht-red">In your bag, but currently unavailable</p>
         )}
       </article>
     );
@@ -1182,7 +1133,7 @@ export default function Menu() {
     return (
       <div className="menu-loading">
         <div className="spinner" />
-        <p>Loading our delicious menu...</p>
+        <p>Setting the table…</p>
       </div>
     );
   }
@@ -1190,7 +1141,7 @@ export default function Menu() {
   if (err) {
     return (
       <div className="menu-error">
-        <p>😔 Failed to load menu. {err}</p>
+        <p>Could not load the menu. {err}</p>
       </div>
     );
   }
@@ -1198,7 +1149,7 @@ export default function Menu() {
   if (!data || tops.length === 0) {
     return (
       <div className="menu-empty">
-        <p>🍽️ No menu available yet. Check back soon!</p>
+        <p>No menu available yet. Check back soon.</p>
       </div>
     );
   }
@@ -1213,261 +1164,152 @@ export default function Menu() {
         description="Browse our full menu. Veg & non-veg options. Starters, main course, Chinese, Continental, desserts & more. Order now!"
         canonicalPath="/menu"
       />
-      {/* ================================================ */}
-      {/* GLOBAL ORDERING DISABLED BANNER */}
-      {/* ================================================ */}
       {!acceptingOnlineOrders && (
-        <div style={{
-          background: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)',
-          borderBottom: '3px solid #7f1d1d',
-          padding: '20px',
-          textAlign: 'center',
-          position: 'sticky',
-          top: 0,
-          zIndex: 1000,
-          boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-        }}>
-          <div style={{
-            maxWidth: '800px',
-            margin: '0 auto',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '16px',
-            flexWrap: 'wrap'
-          }}>
-            <span style={{ fontSize: '32px' }}>🛑</span>
-            <div style={{ textAlign: 'left', flex: '1', minWidth: '250px' }}>
-              <h3 style={{ 
-                fontSize: '20px', 
-                fontWeight: 'bold', 
-                color: 'white',
-                marginBottom: '8px'
-              }}>
-                Online Ordering Currently Unavailable
-              </h3>
-              <p style={{ 
-                color: 'rgba(255,255,255,0.9)',
-                fontSize: '16px',
-                margin: 0
-              }}>
-                {orderingDisabledMessage}
-              </p>
-            </div>
-          </div>
+        <div className="sticky top-0 z-[1000] bg-ht-red px-5 py-4 text-center text-white">
+          <p className="font-display text-lg leading-tight">Online ordering is paused</p>
+          <p className="mt-1 text-sm text-ht-ivory/90">{orderingDisabledMessage}</p>
         </div>
       )}
       <div className="menu-page">
-        {/* Kitchen Status */}
-        <div className="flex justify-center py-2">
-          <KitchenStatus />
-        </div>
-
-        {/* Hero */}
-        <div className="menu-hero menu-hero-mobile-compact">
-          <div className="hero-grid">
-            <div className="hero-image-wrapper hero-black-bg">
-              <div className="hero-content-overlay">
-                <h1 className="hero-title">Our Menu</h1>
-                <p className="hero-subtitle">
-                  Crafted with passion, served with love
-                </p>
-              </div>
-            </div>
-            <div className="hero-image-wrapper">
-              <img
-                src="/images/menu/menu-hero-2.jpg"
-                alt="Hungry Times"
-                className="hero-image"
-                loading="eager"
-              />
-              <div className="hero-content-overlay">
-                <div className="hero-cta">
-                  <p className="cta-text">Order Online Now!</p>
-                  
-                  {/* Primary CTA - Start Order */}
-                  <button
-                    onClick={() => {
-                      // Scroll to first menu section
-                      const firstSection = rightPaneRef.current?.querySelector('[data-sub]');
-                      if (firstSection) {
-                        firstSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      }
-                    }}
-                    className="cta-button cta-button-primary"
-                  >
-                    🛒 Start Your Order
-                  </button>
-                  
-                  {/* Secondary CTAs - Call & WhatsApp */}
-                  <div className="cta-secondary-group">
-                    <a href="tel:+918420822919" className="cta-button cta-button-secondary" onClick={() => trackPhoneClick('hero_cta')}>
-                      📞 Call
-                    </a>
-                    <a
-                      href="https://wa.me/918420822919"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="cta-button cta-button-secondary cta-button-whatsapp-secondary"
-                      onClick={() => trackWhatsAppClick('hero_cta')}
-                    >
-                      💬 WhatsApp
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Live fixed-price bundle — pinned above the search bar. Mid-Week Combo
-            Mon–Thu, Weekend Special Fri–Sun; the server returns exactly one. */}
-        <div className="max-w-5xl mx-auto w-full px-4 mt-3">
-          <FeaturedComboCard surface="menu" />
-        </div>
-
-        {/* Combo offer — pinned, auto-hides when COMBO50 is off */}
-        <div className="max-w-5xl mx-auto w-full px-4 mt-3">
-          <ComboPromoCard />
-        </div>
-
-        {/* Codeless dish offers (September: Fish n Chips ₹255, any Meifoon 20%
-            off). Sits ABOVE the code strip because it is the only offer block a
-            customer can act on without leaving the page — each row deep-links to
-            the dish. Renders nothing once the campaign's date window closes. */}
-        <div className="max-w-5xl !mx-auto w-full !px-4 !mt-3">
+        {/* Offers on this page: the codeless dish offers (each row deep-links
+            to its dish) and the live fixed-price bundle. Codes stay on Home
+            and in the bag. Both render nothing when nothing is live. */}
+        <div className="mx-auto w-full max-w-5xl px-4 empty:hidden">
           <AutoOfferCard />
         </div>
+        <OfferTicket surface="menu" allowWelcome={false} className="mx-auto mt-3 w-full max-w-5xl px-4" />
 
-        {/* Live promo codes → /offers; renders nothing when none are live.
-            `!` on the spacing utilities: Menu.css resets margin/padding on every
-            descendant of .menu-page at equal specificity and wins on source
-            order, so plain px-4/mt-3 are dropped and the strip goes full-bleed. */}
-        <div className="max-w-5xl !mx-auto w-full !px-4 !mt-3">
-          <OffersStrip compact />
-        </div>
-
-        {/* 🔍 SEARCH BAR */}
-        <div className="search-bar-container" ref={searchBarRef}>
-          <div className="search-bar">
-            <div></div> {/* Empty spacer for sidebar column */}
-            <div className="search-bar-input-wrapper relative">
-              <Search className="search-icon" size={20} />
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Search menu items or categories..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && searchQuery.trim()) {
-                    saveRecentSearch(searchQuery);
-                    trackSearch(searchQuery.trim());
-                    e.target.blur();
-                  }
-                }}
-                className="search-input"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="search-clear"
-                  aria-label="Clear search"
-                >
-                  <X size={20} />
-                </button>
+        {/* Search + filter chips — sticky under the header */}
+        <div className="menu-sticky" ref={searchBarRef}>
+          <div className="mx-auto grid h-full max-w-6xl content-center gap-2.5 px-5 lg:px-8">
+            <div className="relative">
+              <div className="flex h-12 items-center gap-2.5 rounded-full border-[1.5px] border-ht-ink/15 bg-ht-ivory px-4 focus-within:border-ht-red">
+                <Search className="h-[18px] w-[18px] shrink-0 text-ht-mute" />
+                <input
+                  ref={searchInputRef}
+                  type="search"
+                  placeholder="Search the menu — try ‘meifoon’"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && searchQuery.trim()) {
+                      saveRecentSearch(searchQuery);
+                      trackSearch(searchQuery.trim());
+                      e.target.blur();
+                    }
+                  }}
+                  className="min-w-0 flex-1 border-0 bg-transparent p-0 text-[15px] text-ht-ink placeholder:text-ht-mute focus:outline-none focus:ring-0"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="-mr-2 grid h-11 w-11 shrink-0 place-items-center text-ht-mute"
+                    aria-label="Clear search"
+                  >
+                    <X size={18} />
+                  </button>
+                )}
+              </div>
+              {/* Recent searches dropdown */}
+              {searchFocused && !searchQuery && recentSearches.length > 0 && (
+                <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-[14px] border border-ht-ink/15 bg-ht-ivory p-3 shadow-plate">
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="kicker">Recent searches</span>
+                    <button
+                      onClick={() => {
+                        setRecentSearches([]);
+                        try { localStorage.removeItem('ht_recent_searches'); } catch {}
+                      }}
+                      className="min-h-9 px-2 text-xs font-semibold text-ht-red"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  {recentSearches.map((term, i) => (
+                    <button
+                      key={i}
+                      onMouseDown={(e) => { e.preventDefault(); setSearchQuery(term); }}
+                      className="block min-h-10 w-full rounded px-2 text-left text-sm hover:bg-ht-ink/5"
+                    >
+                      {term}
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
-            {/* Recent searches dropdown */}
-            {searchFocused && !searchQuery && recentSearches.length > 0 && (
-              <div className="absolute left-0 right-0 top-full mt-1 bg-neutral-900 border border-neutral-700 rounded-xl shadow-lg z-50 p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-neutral-400 font-medium">Recent Searches</span>
-                  <button
-                    onClick={() => {
-                      setRecentSearches([]);
-                      try { localStorage.removeItem('ht_recent_searches'); } catch {}
-                    }}
-                    className="text-xs text-neutral-500 hover:text-neutral-300"
-                  >
-                    Clear
-                  </button>
-                </div>
-                {recentSearches.map((term, i) => (
-                  <button
-                    key={i}
-                    onMouseDown={(e) => { e.preventDefault(); setSearchQuery(term); }}
-                    className="block w-full text-left px-2 py-1.5 text-sm text-neutral-300 hover:bg-neutral-800 rounded"
-                  >
-                    {term}
-                  </button>
-                ))}
-              </div>
-            )}
+
+            {/* Filter chips. "No pork" and "Mild" need a pork / heat flag on
+                the menu payload, which it does not carry yet — they appear
+                once Ops adds it. */}
+            <div className="-mx-5 flex gap-2 overflow-x-auto px-5 scrollbar-hide lg:mx-0 lg:px-0">
+              {[
+                {
+                  key: 'mode',
+                  on: orderMode === 'dine_in',
+                  label: orderMode === 'dine_in' ? 'Dine-in' : orderMode === 'pickup' ? 'Takeaway' : 'Delivery',
+                  title: 'Tap to switch: Delivery → Takeaway → Dine-in',
+                  onClick: () => updateOrderMode(orderMode === 'delivery' ? 'pickup' : orderMode === 'pickup' ? 'dine_in' : 'delivery'),
+                },
+                { key: 'veg', on: vegOnly, label: 'Veg only', veg: true, onClick: () => setVegOnly(v => !v) },
+                { key: 'cap', on: underCap, label: `Under ₹${PRICE_CHIP_CAP}`, onClick: () => setUnderCap(v => !v) },
+              ].map(c => (
+                <button
+                  key={c.key}
+                  type="button"
+                  aria-pressed={c.on}
+                  title={c.title}
+                  onClick={c.onClick}
+                  className={`flex h-9 flex-none items-center gap-1.5 whitespace-nowrap rounded-full border-[1.5px] px-3.5 text-[13px] font-semibold transition active:scale-95 ${
+                    c.on ? 'border-ht-ink bg-ht-ink text-ht-ivory' : 'border-ht-ink/15 bg-ht-ivory text-ht-ink'
+                  }`}
+                >
+                  {c.veg && <VegDot isVeg />}
+                  {c.key === 'mode' && orderMode === 'dine_in' && <UtensilsCrossed className="h-3.5 w-3.5" />}
+                  {c.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-
-        {/* 🍽️ DINE-IN MODE BANNER */}
-        {orderMode === 'dine_in' && (
-          <div className="mx-4 mb-3 flex items-center justify-between gap-3 bg-orange-500/10 border border-orange-500/30 rounded-xl px-4 py-2.5">
-            <div className="flex items-center gap-2 text-orange-400 text-sm font-medium min-w-0">
-              <UtensilsCrossed className="w-4 h-4 flex-shrink-0" />
-              <span className="truncate">
-                <span className="sm:hidden">Dine-in — no packaging</span>
-                <span className="hidden sm:inline">Dine-in mode — packaging charges removed at checkout</span>
-              </span>
-            </div>
-            <button
-              onClick={() => updateOrderMode('delivery')}
-              className="text-xs text-neutral-400 hover:text-white transition-colors flex-shrink-0"
-            >
-              Switch
-            </button>
-          </div>
-        )}
 
         {/* Overlay */}
         {sidebarOpen && (
-          <div className="mobile-overlay" onClick={closeSidebar} />
+          <div className="mobile-overlay lg:hidden" onClick={closeSidebar} />
         )}
 
         {/* Main layout */}
-        <div className="menu-container">
+        <div className="mx-auto max-w-6xl lg:px-8 lg:pt-6">
           <div className="menu-layout">
-            {/* Sidebar */}
+            {/* Category list — drawer below lg, column from lg */}
             <aside className={`categories-sidebar ${sidebarOpen ? "open" : ""}`}>
               <div className="sidebar-sticky">
-                {/* Jump to search. Mobile only (CSS): on desktop the sidebar is
-                    a permanent column sitting beside a search bar that is
-                    already on screen. */}
+                {/* Jump to search. Drawer only: from lg the search bar is
+                    already on screen beside the list. */}
                 <button
                   type="button"
-                  className="sidebar-search-btn"
+                  className="sidebar-search-btn mb-4 flex h-12 w-full items-center gap-2.5 rounded-full border-[1.5px] border-ht-ink/15 bg-ht-paper px-4 text-[15px] text-ht-mute"
                   onClick={focusSearchFromSidebar}
                 >
                   <Search size={16} />
                   <span>Search the menu</span>
                 </button>
 
-                <h3 className="sidebar-heading">Categories</h3>
-                <nav className="sidebar-category-list">
-                  {tops.map((tc) => (
+                <p className="kicker mb-2">The menu</p>
+                <nav className="flex flex-col">
+                  {tops.map((tc, i) => (
                     <button
                       key={tc.id}
-                      className={`sidebar-category-btn ${
-                        tc.id === activeTop ? "active" : ""
-                      } ${tc.isDisabled ? "disabled-category" : ""}`}
+                      className={`flex min-h-11 items-baseline gap-3 border-b border-ht-ink/10 py-2 text-left text-[15px] font-semibold transition ${
+                        tc.id === activeTop ? 'text-ht-red' : 'text-ht-ink hover:text-ht-red'
+                      } ${tc.isDisabled ? 'line-through opacity-50' : ''}`}
                       onClick={() =>
                         handleCategoryClick(tc.id, tc.subcategories?.[0]?.id)
                       }
-                      style={{
-                        opacity: tc.isDisabled ? 0.5 : 1,
-                        textDecoration: tc.isDisabled ? 'line-through' : 'none'
-                      }}
                     >
-                      {tc.isDisabled && '🚫 '}{tc.name}
+                      <span className="w-6 shrink-0 font-mono text-[11px] font-medium text-ht-gold3">{String(i + 1).padStart(2, '0')}</span>
+                      <span>{tc.name}</span>
                     </button>
                   ))}
                 </nav>
@@ -1475,84 +1317,19 @@ export default function Menu() {
             </aside>
 
             {/* Right Pane */}
-            <div className="menu-main" ref={rightPaneRef}>
+            <div className="min-w-0" ref={rightPaneRef}>
               <section>
-                {/* Favorites Section - Hidden during search */}
-                {!searchQuery && favoriteItems.length > 0 && (
-                  <div className="recommended-section" style={{ borderBottom: '1px solid #333', paddingBottom: '16px', marginBottom: '16px' }}>
-                    <div className="recommended-header">
-                      <Heart size={20} className="text-red-500 fill-red-500" />
-                      <h2 className="recommended-title">Your Favorites</h2>
-                      <Heart size={20} className="text-red-500 fill-red-500" />
-                    </div>
-                    <div className="recommended-items-grid-wrapper">
-                      <div className="recommended-items-grid">
-                        {favoriteItems.map((it) => (
-                          <MenuItemCard key={`fav-${it.id}`} it={it} isRecommendedCard={true} />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Make Your Meal button - replaces Chef's Recommendations */}
+                {/* Category tabs — the sections of the open category. Hidden
+                    during search, which spans every category. */}
                 {!searchQuery && (
-                  <button className="myom-entry-btn" onClick={() => setShowMealModal(true)}>
-                    <Sparkles size={22} className="myom-entry-icon" />
-                    <span className="myom-entry-text">
-                      <span className="myom-entry-title">Make Your Meal</span>
-                      <span className="myom-entry-sub">Tell us how many people — we'll suggest the perfect order</span>
-                    </span>
-                    <ChevronRight size={18} className="myom-entry-arrow" />
-                  </button>
-                )}
-
-                {/* Subcategory Navigation - Sticky after recommendations, hidden during search */}
-                {!searchQuery && (
-                  <nav className="subcategory-bar">
-                    <div className="subcategory-scroll">
-                      {/* Order mode pill */}
-                      <button
-                        className={`subcategory-btn flex items-center gap-1.5 ${orderMode === 'dine_in' ? 'active' : ''}`}
-                        onClick={() => updateOrderMode(
-                          orderMode === 'delivery' ? 'pickup' : orderMode === 'pickup' ? 'dine_in' : 'delivery'
-                        )}
-                        style={orderMode === 'dine_in' ? {
-                          background: 'linear-gradient(135deg, #f97316, #ea580c)',
-                          borderColor: '#f97316',
-                          boxShadow: '0 0 12px rgba(249,115,22,0.5)'
-                        } : {}}
-                        title="Tap to cycle: Delivery → Pickup → Dine-in"
-                      >
-                        {orderMode === 'dine_in' ? (
-                          <><UtensilsCrossed className="w-3.5 h-3.5" /> Dine-in</>
-                        ) : orderMode === 'pickup' ? (
-                          <>📦 Pickup</>
-                        ) : (
-                          <>🚚 Delivery</>
-                        )}
-                      </button>
-                      {/* Veg filter toggle */}
-                      <button
-                        className={`subcategory-btn flex items-center gap-1.5 ${vegOnly ? 'active' : ''}`}
-                        onClick={() => setVegOnly(v => !v)}
-                        style={vegOnly ? {
-                          background: 'linear-gradient(135deg, #22c55e, #16a34a)',
-                          borderColor: '#22c55e',
-                          boxShadow: '0 0 12px rgba(34,197,94,0.5)'
-                        } : {}}
-                      >
-                        <span className="inline-flex items-center justify-center w-3.5 h-3.5 border border-green-500 rounded-sm">
-                          <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                        </span>
-                        Veg
-                      </button>
+                  <nav className="menu-tabs" aria-label="Sections">
+                    <div className="flex h-full gap-6 overflow-x-auto px-5 scrollbar-hide lg:px-0">
                       {filteredSubs.map((sc) => (
                         <button
                           key={sc.id}
                           id={`pill-${sc.id}`}
-                          className={`subcategory-btn ${
-                            sc.id === activeSub ? "active" : ""
+                          className={`flex h-full flex-none items-center whitespace-nowrap border-b-[3px] font-mono text-xs font-semibold uppercase tracking-[.1em] transition ${
+                            sc.id === activeSub ? 'border-ht-red text-ht-red' : 'border-transparent text-ht-mute hover:text-ht-ink'
                           }`}
                           onClick={() => scrollToSub(sc.id)}
                         >
@@ -1563,123 +1340,113 @@ export default function Menu() {
                   </nav>
                 )}
 
-                {/* Regular sections */}
+                <div className="px-5 lg:px-0">
+                {/* Favorites — hidden during search */}
+                {!searchQuery && favoriteItems.length > 0 && (
+                  <div className="pt-5">
+                    <p className="kicker flex items-center gap-1.5"><Heart size={12} className="fill-ht-red text-ht-red" /> Your favourites</p>
+                    <div>
+                      {favoriteItems.map((it) => (
+                        <MenuItemCard key={`fav-${it.id}`} it={it} isRecommendedCard={true} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Make Your Meal */}
+                {!searchQuery && (
+                  <button className="myom-entry-btn mt-5" onClick={() => setShowMealModal(true)}>
+                    <Sparkles size={22} className="myom-entry-icon" />
+                    <span className="myom-entry-text">
+                      <span className="myom-entry-title">Make Your Meal</span>
+                      <span className="myom-entry-sub">Tell us how many people — we'll suggest the perfect order</span>
+                    </span>
+                    <ChevronRight size={18} className="myom-entry-arrow" />
+                  </button>
+                )}
+
+                {/* Dine-in mode note */}
+                {orderMode === 'dine_in' && (
+                  <div className="mt-4 flex items-center justify-between gap-3 rounded-[14px] bg-ht-gold2 px-4 py-2">
+                    <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-ht-red2">
+                      <UtensilsCrossed className="h-4 w-4 shrink-0" />
+                      <span className="truncate">Dine-in — no packaging charge</span>
+                    </span>
+                    <button
+                      onClick={() => updateOrderMode('delivery')}
+                      className="min-h-11 shrink-0 px-1 text-xs font-bold text-ht-red"
+                    >
+                      Switch
+                    </button>
+                  </div>
+                )}
+
+                {/* Sections */}
                 {filteredSubs.length > 0 ? (
                   <>
                     {searchQuery && (
-                      <div className="search-results-header" ref={searchResultsRef}>
-                        <p>
-                          Found {globalSearchResults?.reduce((sum, r) => sum + r.items.length, 0) || 0} item
-                          {(globalSearchResults?.reduce((sum, r) => sum + r.items.length, 0) || 0) !== 1 ? 's' : ''} across{' '}
-                          {filteredItemsBySub.size} {filteredItemsBySub.size === 1 ? 'category' : 'categories'}
-                        </p>
-                      </div>
+                      <p className="pt-5 font-mono text-xs font-semibold uppercase tracking-[.08em] text-ht-mute" ref={searchResultsRef}>
+                        {globalSearchResults?.reduce((sum, r) => sum + r.items.length, 0) || 0} dish
+                        {(globalSearchResults?.reduce((sum, r) => sum + r.items.length, 0) || 0) !== 1 ? 'es' : ''} in{' '}
+                        {filteredItemsBySub.size} {filteredItemsBySub.size === 1 ? 'section' : 'sections'}
+                      </p>
                     )}
-                    {searchQuery ? (
-                      // Search results with category context
-                      globalSearchResults?.map((result) => (
-                        <div key={result.subCategory.id} data-sub={result.subCategory.id} className="menu-section">
-                          <div className="section-title-with-breadcrumb">
-                            <span 
-                              className="category-breadcrumb"
-                              style={{
-                                opacity: result.topCategory.isDisabled ? 0.5 : 1,
-                                textDecoration: result.topCategory.isDisabled ? 'line-through' : 'none'
-                              }}
-                            >
-                              {result.topCategory.isDisabled && '🚫 '}{result.topCategory.name}
-                            </span>
-                            <h2 
-                              className="section-title"
-                              style={{
-                                opacity: result.subCategory.isDisabled ? 0.5 : 1,
-                                textDecoration: result.subCategory.isDisabled ? 'line-through' : 'none',
-                                color: result.subCategory.isDisabled ? '#999' : ''
-                              }}
-                            >
-                              {result.subCategory.isDisabled && '🚫 '}{result.subCategory.name}
-                            </h2>
-                          </div>
-                          <div className="items-grid">
-                            {result.items.map((it) => (
-                              <MenuItemCard
-                                key={it.id}
-                                it={it}
-                                isRecommendedCard={false}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      // Normal view - current category only
-                      filteredSubs.map((sc) => (
-                        <div key={sc.id} data-sub={sc.id} className="menu-section">
-                          <h2 
-                            className="section-title" 
-                            style={{
-                              opacity: sc.isDisabled ? 0.5 : 1,
-                              textDecoration: sc.isDisabled ? 'line-through' : 'none',
-                              color: sc.isDisabled ? '#999' : ''
-                            }}
-                          >
-                            {sc.isDisabled && '🚫 '}{sc.name}
-                            {sc.isDisabled && (
-                              <span style={{
-                                marginLeft: '12px',
-                                fontSize: '0.875rem',
-                                color: '#ef4444',
-                                fontWeight: 600
-                              }}>
-                                (Temporarily Unavailable)
-                              </span>
-                            )}
+                    {(searchQuery
+                      ? (globalSearchResults || []).map(r => ({ sc: r.subCategory, tc: r.topCategory }))
+                      : filteredSubs.map(sc => ({ sc, tc: tops.find(t => t.id === activeTop) }))
+                    ).map(({ sc, tc }, idx) => {
+                      const topIndex = tc ? tops.findIndex(t => t.id === tc.id) : -1;
+                      return (
+                        <div key={sc.id} data-sub={sc.id} className="menu-section pt-7">
+                          <p className="font-mono text-xs font-medium uppercase tracking-[.14em] text-ht-gold3">
+                            {String((searchQuery ? idx : topIndex) + 1).padStart(2, '0')}
+                            {tc ? ` · ${tc.name}` : ''}
+                          </p>
+                          <h2 className={`mb-1 mt-1.5 font-display text-[28px] leading-none ${sc.isDisabled ? 'line-through opacity-50' : ''}`}>
+                            {sc.name}
                           </h2>
-                          <div className="items-grid">
+                          {sc.isDisabled && (
+                            <p className="text-sm font-semibold text-ht-red">Temporarily unavailable</p>
+                          )}
+                          <div className="mt-2">
                             {(filteredItemsBySub.get(sc.id) || []).map((it) => (
-                              <MenuItemCard
-                                key={it.id}
-                                it={it}
-                                isRecommendedCard={false}
-                              />
+                              <MenuItemCard key={it.id} it={it} isRecommendedCard={false} />
                             ))}
                           </div>
                         </div>
-                      ))
-                    )}
+                      );
+                    })}
                   </>
                 ) : searchQuery ? (
-                  <div className="search-empty-state">
-                    <Search size={48} />
-                    <h3>No items found for "{searchQuery}"</h3>
-                    <p>Try browsing categories below</p>
-                    <div className="flex flex-wrap gap-2 mt-3 justify-center">
+                  <div className="py-12 text-center">
+                    <Search size={40} className="mx-auto text-ht-mute/60" />
+                    <h3 className="mt-3 font-display text-xl">Nothing called &ldquo;{searchQuery}&rdquo;</h3>
+                    <p className="mt-1 font-serif text-lg italic text-ht-mute">try a section instead</p>
+                    <div className="mt-4 flex flex-wrap justify-center gap-2">
                       {tops.slice(0, 5).map(t => (
                         <button
                           key={t.id}
                           onClick={() => handleCategoryClick(t.id, t.subcategories?.[0]?.id)}
-                          className="px-3 py-1.5 text-sm bg-neutral-800 hover:bg-neutral-700 rounded-full text-neutral-300 border border-neutral-700"
+                          className="h-10 whitespace-nowrap rounded-full border-[1.5px] border-ht-ink/15 bg-ht-ivory px-3.5 text-sm font-semibold"
                         >
                           {t.name}
                         </button>
                       ))}
                     </div>
                   </div>
-                ) : vegOnly ? (
-                  <div className="search-empty-state">
-                    <span className="inline-flex items-center justify-center w-12 h-12 border-2 border-green-500 rounded-lg mb-2">
-                      <span className="w-5 h-5 rounded-full bg-green-500" />
-                    </span>
-                    <h3>No veg items found in this category</h3>
-                    <p>Try another category or turn off the veg filter</p>
+                ) : (vegOnly || underCap) ? (
+                  <div className="py-12 text-center">
+                    <h3 className="font-display text-xl">Nothing here with those filters</h3>
+                    <p className="mt-1 font-serif text-lg italic text-ht-mute">try another section, or clear them</p>
                     <button
-                      onClick={() => setVegOnly(false)}
-                      className="mt-3 px-4 py-2 text-sm bg-neutral-800 hover:bg-neutral-700 rounded-full text-neutral-300 border border-neutral-700"
+                      onClick={() => { setVegOnly(false); setUnderCap(false); }}
+                      className="mt-4 h-11 rounded-full bg-ht-red px-5 text-sm font-bold text-white"
                     >
-                      Show all items
+                      Show every dish
                     </button>
                   </div>
                 ) : null}
+                </div>
               </section>
             </div>
           </div>

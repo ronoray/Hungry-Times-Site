@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { ShoppingBag, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 
 export default function FloatingCartBar() {
   const { lines, total, orderMode } = useCart();
@@ -16,38 +16,27 @@ export default function FloatingCartBar() {
 
   const itemCount = lines.reduce((sum, l) => sum + (l.qty || 1), 0);
 
+  // DNA v2: red pill, gold2 amount, gold2 "View bag" button. Sits in slot 1
+  // of the floating stack (80px, above the bottom nav).
   return (
-    <div className="fixed left-0 right-0 z-40 px-4 pointer-events-none bottom-[calc(80px+env(safe-area-inset-bottom,0px))] md:bottom-6">
+    <div className="pointer-events-none fixed left-0 right-0 z-40 px-3 bottom-[calc(80px+env(safe-area-inset-bottom,0px))] md:bottom-6">
       <button
         onClick={() => navigate('/order')}
-        className={`pointer-events-auto w-full max-w-lg mx-auto flex items-center justify-between
-                   bg-orange-500 hover:bg-orange-600 active:bg-orange-700
-                   text-white px-5 py-3.5
-                   rounded-2xl shadow-xl shadow-orange-900/40
-                   transition-all duration-200
+        className={`pointer-events-auto mx-auto flex h-[58px] w-full max-w-lg items-center justify-between gap-3
+                   rounded-full bg-ht-red pl-5 pr-2 text-white
+                   shadow-[0_12px_24px_-8px_rgba(90,7,13,.6)] transition active:scale-[.98]
                    ${visible ? 'animate-slideUp' : 'opacity-0'}`}
+        aria-label={`View bag, ${itemCount} item${itemCount > 1 ? 's' : ''}, ₹${total.toFixed(0)}`}
       >
-        <div className="flex items-center gap-2.5">
-          <div className="relative">
-            <ShoppingBag className="w-5 h-5" />
-            <span className="absolute -top-2 -right-2 bg-white text-orange-600 text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-              {Math.min(itemCount, 9)}
-            </span>
-          </div>
-          <span className="font-bold text-sm">
-            {itemCount} item{itemCount > 1 ? 's' : ''}
-          </span>
+        <span className="min-w-0 truncate text-sm font-semibold">
+          {itemCount} item{itemCount > 1 ? 's' : ''} · <b className="font-extrabold text-ht-gold2">₹{total.toFixed(0)}</b>
           {(orderMode === 'dine_in' || orderMode === 'pickup') && (
-            <span className="text-xs text-orange-200 opacity-80">
-              · {orderMode === 'dine_in' ? 'Dine-in' : 'Pickup'}
-            </span>
+            <span className="text-ht-ivory/75"> · {orderMode === 'dine_in' ? 'Dine-in' : 'Takeaway'}</span>
           )}
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="font-bold">₹{total.toFixed(0)}</span>
-          <span className="text-sm text-orange-100">View Cart</span>
-          <ChevronRight className="w-4 h-4 text-orange-200" />
-        </div>
+        </span>
+        <span className="flex h-[42px] shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-ht-gold2 px-4 text-sm font-bold text-ht-ink">
+          View bag <ChevronRight className="h-4 w-4" />
+        </span>
       </button>
     </div>
   );
