@@ -37,7 +37,7 @@ export default function JamaiBanner() {
   if (!active) return null;
 
   return (
-    <div ref={ref} className="fixed top-0 left-0 right-0 z-[60] bg-amber-600 text-white px-4 py-2">
+    <div ref={ref} className="fixed top-0 left-0 right-0 z-[60] bg-ht-gold3 text-ht-ink px-4 py-2">
       <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-center text-xs sm:text-sm">
         <span className="font-semibold">🍴 Jamai Sasthi Special —</span>
         <span>to customise your Jamai Sasthi feast, call</span>

@@ -43,13 +43,13 @@ export default function Testimonials() {
       />
 
       <div className="max-w-3xl mx-auto px-4 py-10 pb-24">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Customer Reviews</h1>
+        <h1 className="text-2xl sm:text-3xl font-display font-normal text-ht-ink mb-2">Customer Reviews</h1>
 
         {rating.count > 0 && rating.avg != null && (
           <div className="flex items-center gap-2 mb-8">
             <StarRating value={rating.avg} size="w-5 h-5" />
-            <span className="text-sm text-neutral-300">
-              <span className="font-semibold text-white">{rating.avg}</span>
+            <span className="text-sm text-ht-ink">
+              <span className="font-semibold text-ht-ink">{rating.avg}</span>
               {' '}from {rating.count} {rating.count === 1 ? 'review' : 'reviews'}
             </span>
           </div>
@@ -58,33 +58,33 @@ export default function Testimonials() {
         {loading ? (
           <div className="space-y-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 animate-pulse">
-                <div className="h-3 w-24 bg-neutral-800 rounded mb-3" />
-                <div className="h-3 w-full bg-neutral-800 rounded mb-2" />
-                <div className="h-3 w-2/3 bg-neutral-800 rounded" />
+              <div key={i} className="bg-ht-ivory border border-ht-ink/10 rounded-xl p-5 animate-pulse">
+                <div className="h-3 w-24 bg-ht-paper rounded mb-3" />
+                <div className="h-3 w-full bg-ht-paper rounded mb-2" />
+                <div className="h-3 w-2/3 bg-ht-paper rounded" />
               </div>
             ))}
           </div>
         ) : reviews.length === 0 ? (
-          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-10 text-center">
-            <p className="text-neutral-400 mb-4">No reviews published yet.</p>
-            <Link to="/feedback" className="text-orange-500 hover:text-orange-400 text-sm">
+          <div className="bg-ht-ivory border border-ht-ink/10 rounded-xl p-10 text-center">
+            <p className="text-ht-mute mb-4">No reviews published yet.</p>
+            <Link to="/feedback" className="text-ht-red hover:text-ht-red text-sm">
               Be the first to leave one &rarr;
             </Link>
           </div>
         ) : (
           <div className="space-y-4">
             {reviews.map((t, i) => (
-              <div key={t.id ?? i} className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
+              <div key={t.id ?? i} className="bg-ht-ivory border border-ht-ink/10 rounded-xl p-5">
                 <StarRating value={Number(t.rating) || 5} className="mb-3" />
                 {/* Wordless reviews are the common case, not an edge case — see
                     utils/reviewText.js. Stars and a name, no empty quote marks. */}
                 {quoteOf(t) && (
-                  <p className="text-sm sm:text-base text-neutral-300 leading-relaxed mb-3">
+                  <p className="text-sm sm:text-base text-ht-ink leading-relaxed mb-3">
                     &ldquo;{quoteOf(t)}&rdquo;
                   </p>
                 )}
-                <p className="text-xs text-neutral-500 font-medium">
+                <p className="text-xs text-ht-mute font-medium">
                   &mdash; {t.customer_name || t.name || 'Happy Customer'}
                 </p>
 
@@ -92,9 +92,9 @@ export default function Testimonials() {
                     published them (response_published), so anything here is
                     safe to show. */}
                 {t.admin_response && (
-                  <div className="mt-4 pl-4 border-l-2 border-orange-500/40">
-                    <p className="text-xs text-orange-400 font-medium mb-1">Hungry Times replied</p>
-                    <p className="text-sm text-neutral-400 leading-relaxed">{t.admin_response}</p>
+                  <div className="mt-4 pl-4 border-l-2 border-ht-red/40">
+                    <p className="text-xs text-ht-red font-medium mb-1">Hungry Times replied</p>
+                    <p className="text-sm text-ht-mute leading-relaxed">{t.admin_response}</p>
                   </div>
                 )}
               </div>
@@ -105,7 +105,7 @@ export default function Testimonials() {
         <div className="text-center mt-10">
           <Link
             to="/feedback"
-            className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-3 rounded-full transition-colors"
+            className="inline-flex items-center gap-2 bg-ht-red hover:bg-ht-red text-white font-semibold px-6 py-3 rounded-full transition-colors"
           >
             Leave a review
           </Link>

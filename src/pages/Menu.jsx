@@ -49,7 +49,7 @@ function DescriptionModal({ open, title, description, onClose }) {
   const backdrop = {
     position: "fixed",
     inset: 0,
-    background: "rgba(0,0,0,0.85)",
+    background: "rgba(21,10,10,0.55)",
     zIndex: 9999,
     display: "flex",
     alignItems: "center",
@@ -61,12 +61,12 @@ function DescriptionModal({ open, title, description, onClose }) {
     zIndex: 10000,
     maxWidth: "90vw",
     maxHeight: "90vh",
-    background: "#1e1e1e",
+    background: "#FBF2E1",
     borderRadius: 16,
     padding: 20,
     display: "flex",
     flexDirection: "column",
-    color: "#fff",
+    color: "#150A0A",
   };
 
   const head = {
@@ -75,12 +75,12 @@ function DescriptionModal({ open, title, description, onClose }) {
     alignItems: "center",
     marginBottom: 12,
     paddingBottom: 8,
-    borderBottom: "1px solid #333",
+    borderBottom: "1px solid rgba(21,10,10,.14)",
   };
 
   const closeBtn = {
-    background: "#f59e0b",
-    color: "#000",
+    background: "#7E0E15",
+    color: "#fff",
     border: 0,
     borderRadius: 8,
     padding: "6px 12px",
@@ -94,7 +94,7 @@ function DescriptionModal({ open, title, description, onClose }) {
     overflowY: "auto",
     fontSize: "0.95rem",
     lineHeight: "1.5",
-    color: "rgba(255,255,255,0.8)",
+    color: "#5E4B45",
     paddingRight: "8px",
   };
 
@@ -106,7 +106,7 @@ function DescriptionModal({ open, title, description, onClose }) {
             style={{
               fontWeight: 700,
               fontSize: "1.2rem",
-              color: "#f59e0b",
+              color: "#7E0E15",
             }}
           >
             {title}

@@ -102,21 +102,21 @@ export default function OrderDetails() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-900 flex items-center justify-center">
-        <div className="text-white text-lg">Loading order details...</div>
+      <div className="min-h-screen bg-ht-ivory flex items-center justify-center">
+        <div className="text-ht-ink text-lg">Loading order details...</div>
       </div>
     );
   }
 
   if (error || !order) {
     return (
-      <div className="min-h-screen bg-neutral-900 flex items-center justify-center p-4">
-        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-6 max-w-md">
-          <h2 className="text-red-500 text-xl font-bold mb-2">Error</h2>
-          <p className="text-red-400">{error || 'Order not found'}</p>
+      <div className="min-h-screen bg-ht-ivory flex items-center justify-center p-4">
+        <div className="bg-ht-red/10 border border-ht-red/30 rounded-lg p-6 max-w-md">
+          <h2 className="text-ht-red text-xl font-bold mb-2">Error</h2>
+          <p className="text-ht-red">{error || 'Order not found'}</p>
           <button
             onClick={() => navigate('/')}
-            className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+            className="mt-4 px-4 py-2 bg-ht-red text-white rounded-lg hover:bg-ht-red"
           >
             Back to Home
           </button>
@@ -131,20 +131,20 @@ export default function OrderDetails() {
   const isActive = !isCancelled && currentStepIdx >= 0;
 
   return (
-    <div className="min-h-screen bg-neutral-900 py-8 px-4">
+    <div className="min-h-screen bg-ht-ivory py-8 px-4">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <button
             onClick={() => navigate('/orders')}
-            className="text-orange-500 hover:text-orange-400 mb-4 flex items-center gap-1"
+            className="text-ht-red hover:text-ht-red mb-4 flex items-center gap-1"
           >
             <ArrowLeft className="w-4 h-4" /> My Orders
           </button>
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-white mb-1">Order #{order.id}</h1>
-              <p className="text-neutral-400 text-sm">
+              <h1 className="text-3xl font-display font-normal text-ht-ink mb-1">Order #{order.id}</h1>
+              <p className="text-ht-mute text-sm">
                 {new Date(
                   order.created_at?.includes('Z') || order.created_at?.includes('+')
                     ? order.created_at
@@ -159,7 +159,7 @@ export default function OrderDetails() {
             {(order.status === 'delivered' || isCancelled) && (
               <button
                 onClick={handleReorder}
-                className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg text-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-ht-red hover:bg-ht-red text-white font-semibold rounded-lg text-sm"
               >
                 <RefreshCw className="w-4 h-4" />
                 Order Again
@@ -172,25 +172,25 @@ export default function OrderDetails() {
         {/* PROGRESS BAR (Domino's-style)                                */}
         {/* ============================================================ */}
         {isActive && (
-          <div className="bg-neutral-800 rounded-xl p-6 mb-6">
+          <div className="bg-ht-paper rounded-xl p-6 mb-6">
             {/* ETA */}
-            {order.status !== 'delivered' && (
+            {/* Only the order's own estimate — no generic fallback time
+                (DNA §7: no delivery time until Ops supplies one). */}
+            {order.status !== 'delivered' && order.eta_min && order.eta_max && (
               <div className="text-center mb-6">
-                <p className="text-3xl font-bold text-white">
-                  {order.eta_min && order.eta_max
-                    ? `${order.eta_min}-${order.eta_max} min`
-                    : '30-45 min'}
+                <p className="font-display text-3xl text-ht-ink">
+                  {`${order.eta_min}-${order.eta_max} min`}
                 </p>
-                <p className="text-neutral-400 text-sm">Estimated delivery time</p>
+                <p className="text-ht-mute text-sm">Estimated delivery time</p>
               </div>
             )}
 
             {/* Steps */}
             <div className="flex items-center justify-between relative">
               {/* Connecting line (behind steps) */}
-              <div className="absolute top-5 left-8 right-8 h-0.5 bg-neutral-700" />
+              <div className="absolute top-5 left-8 right-8 h-0.5 bg-ht-ink/10" />
               <div
-                className="absolute top-5 left-8 h-0.5 bg-green-500 transition-all duration-500"
+                className="absolute top-5 left-8 h-0.5 bg-ht-veg transition-all duration-500"
                 style={{
                   width: `${Math.max(0, currentStepIdx / (STEPS.length - 1)) * (100 - 16)}%`
                 }}
@@ -206,16 +206,16 @@ export default function OrderDetails() {
                     <div
                       className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
                         isCompleted
-                          ? 'bg-green-500 border-green-500 text-white'
+                          ? 'bg-ht-veg border-ht-veg text-white'
                           : isCurrent
-                            ? 'bg-green-500 border-green-400 text-white animate-pulse'
-                            : 'bg-neutral-800 border-neutral-600 text-neutral-500'
+                            ? 'bg-ht-veg border-ht-veg text-white animate-pulse'
+                            : 'bg-ht-paper border-ht-ink/25 text-ht-mute'
                       }`}
                     >
                       <Icon className="w-5 h-5" />
                     </div>
                     <span className={`text-[11px] mt-1.5 font-medium ${
-                      isCompleted || isCurrent ? 'text-green-400' : 'text-neutral-500'
+                      isCompleted || isCurrent ? 'text-ht-veg' : 'text-ht-mute'
                     }`}>
                       {step.label}
                     </span>
@@ -228,13 +228,13 @@ export default function OrderDetails() {
 
         {/* Cancelled/Rejected banner */}
         {isCancelled && (
-          <div className="bg-red-500/10 border-2 border-red-500/30 rounded-xl p-6 mb-6 text-center">
-            <XCircle className="w-12 h-12 text-red-500 mx-auto mb-2" />
-            <h2 className="text-xl font-bold text-red-500">
+          <div className="bg-ht-red/10 border-2 border-ht-red/30 rounded-xl p-6 mb-6 text-center">
+            <XCircle className="w-12 h-12 text-ht-red mx-auto mb-2" />
+            <h2 className="text-xl font-bold text-ht-red">
               Order {order.status === 'cancelled' ? 'Cancelled' : 'Rejected'}
             </h2>
             {order.cancellation_reason && (
-              <p className="text-red-400 mt-1 text-sm">{order.cancellation_reason}</p>
+              <p className="text-ht-red mt-1 text-sm">{order.cancellation_reason}</p>
             )}
           </div>
         )}
@@ -243,14 +243,14 @@ export default function OrderDetails() {
         <div className="grid md:grid-cols-2 gap-4 mb-6">
           {/* Delivery Address */}
           {order.delivery_address && (
-            <div className="bg-neutral-800 rounded-lg p-5">
-              <h3 className="text-white font-bold mb-2 flex items-center gap-2 text-sm">
-                <MapPin className="w-4 h-4 text-orange-500" />
+            <div className="bg-ht-paper rounded-lg p-5">
+              <h3 className="text-ht-ink font-bold mb-2 flex items-center gap-2 text-sm">
+                <MapPin className="w-4 h-4 text-ht-red" />
                 Delivery Address
               </h3>
-              <p className="text-neutral-300 text-sm">{order.delivery_address}</p>
+              <p className="text-ht-ink text-sm">{order.delivery_address}</p>
               {order.delivery_instructions && (
-                <p className="text-neutral-500 text-xs mt-1 italic">
+                <p className="text-ht-mute text-xs mt-1 italic">
                   Note: {order.delivery_instructions}
                 </p>
               )}
@@ -258,14 +258,14 @@ export default function OrderDetails() {
           )}
 
           {/* Payment Info */}
-          <div className="bg-neutral-800 rounded-lg p-5">
-            <h3 className="text-white font-bold mb-2 flex items-center gap-2 text-sm">
-              <CreditCard className="w-4 h-4 text-orange-500" />
+          <div className="bg-ht-paper rounded-lg p-5">
+            <h3 className="text-ht-ink font-bold mb-2 flex items-center gap-2 text-sm">
+              <CreditCard className="w-4 h-4 text-ht-red" />
               Payment
             </h3>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-neutral-400 uppercase">{order.payment_mode}</span>
-              <span className={order.payment_status === 'paid' ? 'text-green-500 font-medium' : 'text-yellow-500'}>
+              <span className="text-ht-mute uppercase">{order.payment_mode}</span>
+              <span className={order.payment_status === 'paid' ? 'text-ht-veg font-medium' : 'text-ht-gold3'}>
                 {order.payment_status === 'paid' ? 'Paid' : 'Pending'}
               </span>
             </div>
@@ -273,34 +273,34 @@ export default function OrderDetails() {
         </div>
 
         {/* Order Items */}
-        <div className="bg-neutral-800 rounded-lg p-5 mb-6">
-          <h3 className="text-white font-bold mb-3 text-sm">Order Items</h3>
+        <div className="bg-ht-paper rounded-lg p-5 mb-6">
+          <h3 className="text-ht-ink font-bold mb-3 text-sm">Order Items</h3>
           <div className="space-y-3">
             {items.map((item, idx) => (
-              <div key={idx} className="flex justify-between items-start border-b border-neutral-700 pb-3 last:border-0">
+              <div key={idx} className="flex justify-between items-start border-b border-ht-ink/15 pb-3 last:border-0">
                 <div className="flex-1">
-                  <p className="text-white font-medium text-sm">{item.itemName}</p>
-                  <p className="text-neutral-500 text-xs">Qty: {item.quantity}</p>
+                  <p className="text-ht-ink font-medium text-sm">{item.itemName}</p>
+                  <p className="text-ht-mute text-xs">Qty: {item.quantity}</p>
                   {item.variants?.length > 0 && (
-                    <p className="text-neutral-500 text-xs">
+                    <p className="text-ht-mute text-xs">
                       {item.variants.map(v => v.name).join(', ')}
                     </p>
                   )}
                   {item.addons?.length > 0 && (
-                    <p className="text-neutral-500 text-xs">
+                    <p className="text-ht-mute text-xs">
                       + {item.addons.map(a => a.name).join(', ')}
                     </p>
                   )}
                 </div>
-                <span className="text-white font-medium text-sm">₹{item.total}</span>
+                <span className="text-ht-ink font-medium text-sm">₹{item.total}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Order Summary */}
-        <div className="bg-neutral-800 rounded-lg p-5 mb-6">
-          <h3 className="text-white font-bold mb-3 text-sm">Order Summary</h3>
+        <div className="bg-ht-paper rounded-lg p-5 mb-6">
+          <h3 className="text-ht-ink font-bold mb-3 text-sm">Order Summary</h3>
           {/* Totals from lib/billTotals.js, shared with OrderSuccess, the
               checkout and the cart drawer. This block used to print Delivery
               ABOVE the GST line (every other surface prints it below, because
@@ -311,28 +311,28 @@ export default function OrderDetails() {
             {buildTotalsLines(totalsArgsFromOrder(order)).map((ln) => {
               if (ln.kind === 'note') {
                 return (
-                  <p key={ln.key} className="text-neutral-500 text-xs text-right">
+                  <p key={ln.key} className="text-ht-mute text-xs text-right">
                     {ln.text}
                   </p>
                 );
               }
               if (ln.kind === 'total') {
                 return (
-                  <div key={ln.key} className="border-t border-neutral-700 pt-2 mt-2 flex justify-between text-white font-bold text-lg">
+                  <div key={ln.key} className="border-t border-ht-ink/15 pt-2 mt-2 flex justify-between text-ht-ink font-bold text-lg">
                     <span>{ln.label}</span>
-                    <span className="text-orange-500">₹{money(ln.value)}</span>
+                    <span className="text-ht-red">₹{money(ln.value)}</span>
                   </div>
                 );
               }
               const tone =
-                ln.tone === 'discount' ? 'text-green-500'
-                  : ln.tone === 'points' ? 'text-purple-400'
-                    : 'text-neutral-400';
+                ln.tone === 'discount' ? 'text-ht-veg'
+                  : ln.tone === 'points' ? 'text-ht-red2'
+                    : 'text-ht-mute';
               return (
                 <div key={ln.key} className={`flex justify-between ${tone}`}>
                   <span>{ln.label}</span>
                   {ln.free
-                    ? <span className="text-green-400">FREE</span>
+                    ? <span className="text-ht-veg">FREE</span>
                     : <span>{ln.value < 0 ? '-' : ''}₹{money(Math.abs(ln.value))}</span>}
                 </div>
               );
@@ -346,7 +346,7 @@ export default function OrderDetails() {
             {order.payment_mode === 'COD' && (
               <>
                 {order.status === 'preparing' && (
-                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-4 py-2 text-yellow-400 text-xs text-center">
+                  <div className="bg-ht-gold2/60 border border-ht-gold/30 rounded-lg px-4 py-2 text-ht-gold3 text-xs text-center">
                     Kitchen has started — changes may cause a slight delay.
                   </div>
                 )}
@@ -371,7 +371,7 @@ export default function OrderDetails() {
                     });
                     navigate(`/order?editOrderId=${order.id}`);
                   }}
-                  className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-ht-red hover:bg-ht-red text-white font-bold rounded-lg flex items-center justify-center gap-2"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -414,7 +414,7 @@ export default function OrderDetails() {
                     showToast('Error cancelling order', 'error');
                   }
                 }}
-                className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg"
+                className="w-full py-3 bg-ht-red hover:bg-ht-red2 text-white font-bold rounded-lg"
               >
                 Cancel Order
               </button>
@@ -423,8 +423,8 @@ export default function OrderDetails() {
             {/* Not cancellable from here — tell them what to do instead of
                 leaving a dead end or, worse, a button that fails. */}
             {!order.can_self_cancel && order.self_cancel_reason && (
-              <div className="bg-neutral-800/60 border border-neutral-700 rounded-lg px-4 py-3">
-                <p className="text-neutral-300 text-sm text-center">{order.self_cancel_reason}</p>
+              <div className="bg-ht-paper border border-ht-ink/15 rounded-lg px-4 py-3">
+                <p className="text-ht-ink text-sm text-center">{order.self_cancel_reason}</p>
               </div>
             )}
           </div>

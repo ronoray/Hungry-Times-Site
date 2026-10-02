@@ -11,10 +11,10 @@ const ICONS = {
 };
 
 const COLORS = {
-  success: 'bg-green-600 border-green-500',
-  error: 'bg-red-600 border-red-500',
-  info: 'bg-blue-600 border-blue-500',
-  warning: 'bg-amber-600 border-amber-500',
+  success: 'bg-ht-veg border-ht-veg',
+  error: 'bg-ht-red border-ht-red',
+  info: 'bg-ht-red border-ht-ink/15',
+  warning: 'bg-ht-gold3 border-ht-gold',
 };
 
 let toastId = 0;
@@ -47,13 +47,13 @@ export function ToastProvider({ children }) {
           return (
             <div
               key={toast.id}
-              className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg text-white text-sm font-medium max-w-md w-full animate-[slideUp_0.25s_ease-out] ${COLORS[toast.type] || COLORS.info}`}
+              className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg text-ht-ink text-sm font-medium max-w-md w-full animate-[slideUp_0.25s_ease-out] ${COLORS[toast.type] || COLORS.info}`}
             >
               <Icon className="w-5 h-5 flex-shrink-0" />
               <span className="flex-1">{toast.message}</span>
               <button
                 onClick={() => dismissToast(toast.id)}
-                className="p-0.5 hover:bg-white/20 rounded"
+                className="p-0.5 hover:bg-ht-ink/10 rounded"
               >
                 <X className="w-4 h-4" />
               </button>

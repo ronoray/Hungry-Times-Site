@@ -17,18 +17,18 @@ export default class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: '2rem', textAlign: 'center', color: '#f87171' }}>
+        <div style={{ padding: '2rem', textAlign: 'center', color: '#7E0E15' }}>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem' }}>
             Something went wrong
           </h2>
-          <p style={{ color: '#a3a3a3', fontSize: '0.875rem', marginBottom: '1rem' }}>
+          <p style={{ color: '#5E4B45', fontSize: '0.875rem', marginBottom: '1rem' }}>
             {this.state.error?.message || 'Unknown error'}
           </p>
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
             style={{
               padding: '0.5rem 1.5rem',
-              background: '#f97316',
+              background: '#7E0E15',
               color: 'white',
               border: 'none',
               borderRadius: '9999px',

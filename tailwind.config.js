@@ -13,15 +13,6 @@ export default {
           ivory: '#FBF2E1', paper: '#F7EEDC',
           veg: '#1F7A3A', nonveg: '#8A3B12', mute: '#5E4B45',
         },
-        // Legacy v1 tokens — removed once every page is on ht.* (Phase 5).
-        brand: {
-          red: '#E02424',
-          redDark: '#B81E1E',
-          orange: '#F97316',
-          orangeDark: '#EA580C',
-          white: '#FFFFFF',
-          gray: '#111316',
-        }
       },
       fontFamily: {
         sans: ['Archivo', 'system-ui', 'sans-serif'],

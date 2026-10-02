@@ -35,7 +35,7 @@ export default function Reservation() {
   };
 
   const inputCls =
-    'w-full px-4 py-2.5 bg-neutral-900 border border-neutral-700 rounded-md text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-orange-500';
+    'w-full px-4 py-2.5 bg-ht-ivory border border-ht-ink/15 rounded-md text-ht-ink placeholder-ht-mute/60 focus:outline-none focus:ring-2 focus:ring-ht-red';
 
   return (
     <>
@@ -46,53 +46,53 @@ export default function Reservation() {
     />
     <section className="container-section py-12 px-4">
       <div className="max-w-xl mx-auto">
-        <h2 className="text-2xl font-semibold mb-2 text-white">Reserve a Table</h2>
-        <p className="text-neutral-400 text-sm mb-6">
+        <h2 className="text-2xl font-semibold mb-2 text-ht-ink">Reserve a Table</h2>
+        <p className="text-ht-mute text-sm mb-6">
           Fill in the details — we'll confirm your booking on WhatsApp.
         </p>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/40 rounded-lg text-red-400 text-sm">
+          <div className="mb-4 p-3 bg-ht-red/10 border border-ht-red/40 rounded-lg text-ht-red text-sm">
             {error}
           </div>
         )}
 
-        <div className="card p-6 grid gap-4 bg-neutral-800 rounded-lg">
+        <div className="card p-6 grid gap-4 bg-ht-paper rounded-lg">
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-neutral-400 mb-1"><User className="w-3.5 h-3.5 inline mr-1" />Name</label>
+              <label className="block text-sm text-ht-mute mb-1"><User className="w-3.5 h-3.5 inline mr-1" />Name</label>
               <input value={form.name} onChange={set('name')} placeholder="Your name" className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm text-neutral-400 mb-1"><Phone className="w-3.5 h-3.5 inline mr-1" />Phone</label>
+              <label className="block text-sm text-ht-mute mb-1"><Phone className="w-3.5 h-3.5 inline mr-1" />Phone</label>
               <input type="tel" value={form.phone} onChange={set('phone')} placeholder="10-digit number" className={inputCls} />
             </div>
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-neutral-400 mb-1"><Calendar className="w-3.5 h-3.5 inline mr-1" />Date</label>
+              <label className="block text-sm text-ht-mute mb-1"><Calendar className="w-3.5 h-3.5 inline mr-1" />Date</label>
               <input type="date" value={form.date} onChange={set('date')} min={new Date().toISOString().slice(0, 10)} className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm text-neutral-400 mb-1"><Clock className="w-3.5 h-3.5 inline mr-1" />Time</label>
+              <label className="block text-sm text-ht-mute mb-1"><Clock className="w-3.5 h-3.5 inline mr-1" />Time</label>
               <input type="time" value={form.time} onChange={set('time')} className={inputCls} />
             </div>
           </div>
           <div>
-            <label className="block text-sm text-neutral-400 mb-1"><Users className="w-3.5 h-3.5 inline mr-1" />Guests</label>
+            <label className="block text-sm text-ht-mute mb-1"><Users className="w-3.5 h-3.5 inline mr-1" />Guests</label>
             <input type="number" min="1" max="30" value={form.guests} onChange={set('guests')} placeholder="Number of guests" className={inputCls} />
           </div>
           <button
             type="button"
             onClick={handleBook}
-            className="w-full sm:w-max flex items-center justify-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
+            className="w-full sm:w-max flex items-center justify-center gap-2 px-6 py-3 bg-ht-veg hover:bg-ht-veg text-white font-semibold rounded-lg transition-colors"
           >
             <MessageCircle className="w-5 h-5" />
             Book via WhatsApp
           </button>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-ht-mute">
             Or call us directly:{' '}
-            <a href={`tel:${BRAND.phone1}`} className="text-orange-400">{BRAND.phone1}</a>
+            <a href={`tel:${BRAND.phone1}`} className="text-ht-red">{BRAND.phone1}</a>
           </p>
         </div>
       </div>

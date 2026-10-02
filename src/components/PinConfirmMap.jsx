@@ -11,7 +11,7 @@ const pinIcon = L.divIcon({
   className: '',
   html: `<div style="position:relative;width:34px;height:44px;">
     <svg viewBox="0 0 24 24" width="34" height="44" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));">
-      <path fill="#f97316" stroke="#fff" stroke-width="1.2"
+      <path fill="#7E0E15" stroke="#fff" stroke-width="1.2"
         d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
       <circle cx="12" cy="9" r="2.8" fill="#fff"/>
     </svg>
@@ -57,7 +57,7 @@ export default function PinConfirmMap({ lat, lng, onChange, hint }) {
 
   return (
     <div className="space-y-1.5">
-      <div className="rounded-xl overflow-hidden border border-neutral-700" style={{ height: 220 }}>
+      <div className="rounded-xl overflow-hidden border border-ht-ink/15" style={{ height: 220 }}>
         <MapContainer
           center={center}
           zoom={hasPin ? 16 : 14}
@@ -83,7 +83,7 @@ export default function PinConfirmMap({ lat, lng, onChange, hint }) {
           )}
         </MapContainer>
       </div>
-      <p className="text-xs text-neutral-400">
+      <p className="text-xs text-ht-mute">
         {hint || (hasPin
           ? '📍 Drag the pin (or tap the map) to your exact building — helps our rider find you.'
           : '📍 Tap the map to drop your delivery pin.')}

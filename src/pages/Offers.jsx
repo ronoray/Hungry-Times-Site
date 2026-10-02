@@ -131,8 +131,8 @@ function OfferCard({ offer, floor }) {
           <button onClick={copyCode} className="offer-card-code-btn" type="button">
             <span className="offer-card-code-text">{offer.promo_code}</span>
             {copied
-              ? <Check className="w-4 h-4 text-green-400" />
-              : <Copy className="w-4 h-4 text-orange-400" />}
+              ? <Check className="w-4 h-4 text-ht-veg" />
+              : <Copy className="w-4 h-4 text-ht-red" />}
           </button>
           {copied && <span className="offer-card-copied">Copied!</span>}
         </div>
@@ -278,8 +278,8 @@ function FAQItem({ q, a }) {
       <div className="faq-q">
         <span>{q}</span>
         {open
-          ? <ChevronUp className="w-4 h-4 text-orange-400 flex-shrink-0" />
-          : <ChevronDown className="w-4 h-4 text-gray-500 flex-shrink-0" />}
+          ? <ChevronUp className="w-4 h-4 text-ht-red flex-shrink-0" />
+          : <ChevronDown className="w-4 h-4 text-ht-mute flex-shrink-0" />}
       </div>
       {open && <p className="faq-a">{a}</p>}
     </div>
@@ -447,7 +447,7 @@ export default function Offers() {
       {/* ── Live offers ── */}
       <div className="section">
         <div className="section-title-row">
-          <Tag className="w-5 h-5 text-orange-400" />
+          <Tag className="w-5 h-5 text-ht-red" />
           <h2 className="section-title">Running Right Now</h2>
         </div>
 
@@ -475,7 +475,7 @@ export default function Offers() {
       {/* ── Savings calculator ── */}
       <div className="section">
         <div className="section-title-row">
-          <Calculator className="w-5 h-5 text-orange-400" />
+          <Calculator className="w-5 h-5 text-ht-red" />
           <h2 className="section-title">What Would I Save?</h2>
         </div>
         <p className="section-description">
@@ -489,7 +489,7 @@ export default function Offers() {
       {/* ── Loyalty ── */}
       <div className="section">
         <div className="section-title-row">
-          <Gift className="w-5 h-5 text-orange-400" />
+          <Gift className="w-5 h-5 text-ht-red" />
           <h2 className="section-title">Loyalty Points</h2>
         </div>
         <p className="section-description">
@@ -523,7 +523,7 @@ export default function Offers() {
       {/* ── How discounts work ── */}
       <div className="section">
         <div className="section-title-row">
-          <Percent className="w-5 h-5 text-orange-400" />
+          <Percent className="w-5 h-5 text-ht-red" />
           <h2 className="section-title">How Discounts Work</h2>
         </div>
 
@@ -607,7 +607,7 @@ export default function Offers() {
       {/* ── Verify a code ── */}
       <div className="section">
         <div className="section-title-row">
-          <ShieldCheck className="w-5 h-5 text-orange-400" />
+          <ShieldCheck className="w-5 h-5 text-ht-red" />
           <h2 className="section-title">Check a Code</h2>
         </div>
         <p className="section-description">

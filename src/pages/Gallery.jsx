@@ -48,7 +48,7 @@ export default function Gallery() {
       <Section title="Gallery">
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="card aspect-square bg-neutral-800 animate-pulse" />
+            <div key={i} className="card aspect-square bg-ht-paper animate-pulse" />
           ))}
         </div>
       </Section>
@@ -59,13 +59,13 @@ export default function Gallery() {
     return (
       <Section title="Gallery">
         <div className="card p-8 text-center">
-          <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-16 h-16 bg-ht-red/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-ht-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <h3 className="font-semibold mb-2">Unable to Load Gallery</h3>
-          <p className="text-neutral-400 mb-4">{error}</p>
+          <p className="text-ht-mute mb-4">{error}</p>
           <button 
             onClick={fetchGalleryImages}
             className="btn btn-primary"
@@ -81,13 +81,13 @@ export default function Gallery() {
     return (
       <Section title="Gallery">
         <div className="card p-12 text-center">
-          <div className="w-20 h-20 bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="w-10 h-10 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-20 h-20 bg-ht-paper rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg className="w-10 h-10 text-ht-mute/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
           <h3 className="text-xl font-semibold mb-2">No Images Yet</h3>
-          <p className="text-neutral-400">Check back soon for photos of our restaurant and dishes!</p>
+          <p className="text-ht-mute">Check back soon for photos of our restaurant and dishes!</p>
         </div>
       </Section>
     )
@@ -101,7 +101,7 @@ export default function Gallery() {
         canonicalPath="/gallery"
       />
       <Section title="Gallery">
-        <p className="text-neutral-400 mb-8 text-center">
+        <p className="text-ht-mute mb-8 text-center">
           Explore our delicious dishes and restaurant ambiance
         </p>
 
@@ -127,10 +127,10 @@ export default function Gallery() {
                 
                 {/* Overlay on hover */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                  <div className="text-white">
+                  <div className="text-ht-ink">
                     <h3 className="font-bold text-lg mb-1">{image.dish_name}</h3>
                     {image.caption && (
-                      <p className="text-sm text-neutral-300 line-clamp-2">{image.caption}</p>
+                      <p className="text-sm text-ht-ink line-clamp-2">{image.caption}</p>
                     )}
                   </div>
                 </div>
@@ -138,11 +138,11 @@ export default function Gallery() {
 
               {/* Dish Name (Always Visible) */}
               <div className="px-2">
-                <h3 className="font-bold text-white text-lg mb-1 group-hover:text-orange-400 transition-colors">
+                <h3 className="font-bold text-ht-ink text-lg mb-1 group-hover:text-ht-red transition-colors">
                   {image.dish_name}
                 </h3>
                 {image.caption && (
-                  <p className="text-sm text-neutral-400 line-clamp-2">
+                  <p className="text-sm text-ht-mute line-clamp-2">
                     {image.caption}
                   </p>
                 )}
@@ -155,12 +155,12 @@ export default function Gallery() {
       {/* Lightbox Modal */}
       {selectedImage && (
         <div
-          className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-ht-ink/95 z-50 flex items-center justify-center p-4"
           onClick={closeLightbox}
         >
           {/* Close Button */}
           <button
-            className="absolute top-4 right-4 text-white hover:text-neutral-300 transition-colors z-10"
+            className="absolute top-4 right-4 text-ht-ink hover:text-ht-ink transition-colors z-10"
             onClick={closeLightbox}
             aria-label="Close"
           >
@@ -179,11 +179,11 @@ export default function Gallery() {
             
             {/* Image Info */}
             <div className="mt-6 text-center">
-              <h2 className="text-white text-3xl font-bold mb-3">
+              <h2 className="text-ht-ink text-3xl font-bold mb-3">
                 {selectedImage.dish_name}
               </h2>
               {selectedImage.caption && (
-                <p className="text-neutral-300 text-lg max-w-2xl mx-auto">
+                <p className="text-ht-ink text-lg max-w-2xl mx-auto">
                   {selectedImage.caption}
                 </p>
               )}

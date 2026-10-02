@@ -29,14 +29,14 @@ import { useFeaturedCombo } from '../hooks/useFeaturedCombo';
 const THEMES = {
   // Mid-Week Combo — the original burnt-orange/amber house palette.
   ember: {
-    shell: 'border-[#dc5f1e]/40 bg-[#161616]',
-    badge: 'bg-[#dc5f1e]/15 text-[#f5b944]',
-    title: 'text-white',
-    desc: 'text-white/60',
-    strike: 'text-white/40',
-    price: 'text-[#f5b944]',
-    save: 'text-[#f5b944]/80',
-    button: 'bg-[#dc5f1e] group-hover:bg-[#c5531a] text-white',
+    shell: 'border-ht-red/40 bg-ht-ivory',
+    badge: 'bg-ht-red/15 text-ht-gold3',
+    title: 'text-ht-ink',
+    desc: 'text-ht-ink',
+    strike: 'text-ht-mute',
+    price: 'text-ht-gold3',
+    save: 'text-ht-gold3/80',
+    button: 'bg-ht-red group-hover:bg-ht-red2 text-ht-ink',
   },
   // Weekend Special — Ink navy / Ocean / Azure / Sky / Ice.
   ocean: {
@@ -47,7 +47,7 @@ const THEMES = {
     strike: 'text-[#E8F1F7]/40',
     price: 'text-[#7FCFEF]',
     save: 'text-[#7FCFEF]/80',
-    button: 'bg-[#2E9BD6] group-hover:bg-[#155A8A] text-white',
+    button: 'bg-[#2E9BD6] group-hover:bg-ht-ivory text-ht-ink',
   },
 };
 

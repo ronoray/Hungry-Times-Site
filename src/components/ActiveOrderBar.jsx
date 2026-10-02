@@ -6,10 +6,10 @@ import API_BASE from '../config/api';
 import { ChevronRight, X, Star } from 'lucide-react';
 
 const STATUS_CONFIG = {
-  pending:          { label: 'Order placed',         color: 'border-l-amber-500',   dot: 'bg-amber-500' },
-  confirmed:        { label: 'Order confirmed',      color: 'border-l-blue-500',    dot: 'bg-blue-500' },
-  preparing:        { label: 'Preparing your order', color: 'border-l-violet-500',  dot: 'bg-violet-500' },
-  out_for_delivery: { label: 'Out for delivery',     color: 'border-l-emerald-500', dot: 'bg-emerald-500' },
+  pending:          { label: 'Order placed',         color: 'border-l-amber-500',   dot: 'bg-ht-gold' },
+  confirmed:        { label: 'Order confirmed',      color: 'border-l-blue-500',    dot: 'bg-ht-red' },
+  preparing:        { label: 'Preparing your order', color: 'border-l-violet-500',  dot: 'bg-ht-gold' },
+  out_for_delivery: { label: 'Out for delivery',     color: 'border-l-emerald-500', dot: 'bg-ht-veg' },
 };
 
 export default function ActiveOrderBar() {
@@ -140,12 +140,12 @@ export default function ActiveOrderBar() {
   if (deliveredOrder) {
     return (
       <div className={`fixed left-0 right-0 z-40 px-4 pointer-events-none ${bottomClass}`}>
-        <div className="pointer-events-auto w-full max-w-lg mx-auto bg-neutral-800/95 backdrop-blur-sm border border-neutral-700 rounded-2xl shadow-lg shadow-black/40 p-4">
+        <div className="pointer-events-auto w-full max-w-lg mx-auto bg-ht-paper backdrop-blur-sm border border-ht-ink/15 rounded-2xl shadow-lg shadow-ht-ink/20 p-4">
           <div className="flex items-start justify-between mb-2">
-            <p className="text-white font-semibold text-sm">
+            <p className="text-ht-ink font-semibold text-sm">
               Order delivered! Rate your experience
             </p>
-            <button onClick={handleDismiss} className="text-neutral-500 hover:text-white p-0.5">
+            <button onClick={handleDismiss} className="text-ht-mute hover:text-ht-red p-0.5">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -160,7 +160,7 @@ export default function ActiveOrderBar() {
               >
                 <Star
                   className={`w-7 h-7 transition-colors ${
-                    s <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-neutral-600'
+                    s <= rating ? 'text-ht-gold3 fill-yellow-400' : 'text-ht-mute/80'
                   }`}
                 />
               </button>
@@ -175,12 +175,12 @@ export default function ActiveOrderBar() {
                 value={reviewText}
                 onChange={e => setReviewText(e.target.value)}
                 placeholder="Tell us more (optional)"
-                className="flex-1 bg-neutral-700 border border-neutral-600 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-500"
+                className="flex-1 bg-ht-ink/10 border border-ht-ink/25 rounded-lg px-3 py-2 text-sm text-ht-ink placeholder-ht-mute/60 focus:outline-none focus:border-ht-ink/25"
               />
               <button
                 onClick={handleSubmitReview}
                 disabled={submitting}
-                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                className="px-4 py-2 bg-ht-red hover:bg-ht-red text-white rounded-lg text-sm font-medium disabled:opacity-50"
               >
                 {submitting ? '...' : 'Submit'}
               </button>
@@ -199,9 +199,9 @@ export default function ActiveOrderBar() {
       <button
         onClick={() => navigate(`/orders/${activeOrder.id}`)}
         className={`pointer-events-auto w-full max-w-lg mx-auto flex items-center justify-between
-                   bg-neutral-800/95 backdrop-blur-sm border border-neutral-700 border-l-4 ${config.color}
-                   text-white px-4 py-3
-                   rounded-2xl shadow-lg shadow-black/40
+                   bg-ht-paper backdrop-blur-sm border border-ht-ink/15 border-l-4 ${config.color}
+                   text-ht-ink px-4 py-3
+                   rounded-2xl shadow-lg shadow-ht-ink/20
                    transition-all duration-200`}
       >
         <div className="flex-1 min-w-0">
@@ -209,16 +209,16 @@ export default function ActiveOrderBar() {
             <span className={`w-2 h-2 rounded-full ${config.dot} animate-pulse`} />
             <span className="text-sm font-semibold truncate">{config.label}</span>
             {activeOrder.estimated_delivery_time && (
-              <span className="text-xs text-neutral-400 ml-auto shrink-0">
+              <span className="text-xs text-ht-mute ml-auto shrink-0">
                 ~{activeOrder.estimated_delivery_time}
               </span>
             )}
           </div>
-          <p className="text-xs text-neutral-400 mt-0.5 truncate">
+          <p className="text-xs text-ht-mute mt-0.5 truncate">
             Order #{activeOrder.id} &middot; ₹{activeOrder.total}
           </p>
         </div>
-        <ChevronRight className="w-4 h-4 text-neutral-400 ml-2 shrink-0" />
+        <ChevronRight className="w-4 h-4 text-ht-mute ml-2 shrink-0" />
       </button>
     </div>
   );

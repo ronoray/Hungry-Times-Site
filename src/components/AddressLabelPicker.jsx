@@ -22,7 +22,7 @@ export default function AddressLabelPicker({
   onChange,
   placeholder = 'e.g., Home, Office',
   className = '',
-  inputClassName = 'w-full bg-neutral-600 border border-neutral-500 rounded-lg px-4 py-2 text-white',
+  inputClassName = 'w-full bg-ht-ink/15 border border-ht-ink/25 rounded-lg px-4 py-2 text-ht-ink',
 }) {
   const inputRef = useRef(null);
   const current = (value || '').trim();
@@ -42,8 +42,8 @@ export default function AddressLabelPicker({
   const chip = (active) =>
     `px-3 py-1 text-xs rounded-full border transition-colors ${
       active
-        ? 'bg-orange-500 border-orange-400 text-white'
-        : 'bg-neutral-700 border-neutral-600 text-gray-300 hover:border-neutral-500'
+        ? 'bg-ht-red border-ht-red text-white'
+        : 'bg-ht-ink/10 border-ht-ink/25 text-ht-ink hover:border-ht-ink/25'
     }`;
 
   return (

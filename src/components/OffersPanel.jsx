@@ -83,7 +83,7 @@ export default function OffersPanel({ cartTotal, customerPhone, cartItemIds = []
 
   return (
     <div className="py-2">
-      <p className="text-neutral-300 text-sm font-medium mb-2">Your Offers</p>
+      <p className="text-ht-ink text-sm font-medium mb-2">Your Offers</p>
       <div className="space-y-2">
         {ranked.map((offer) => {
           const Icon = SOURCE_ICONS[offer.source] || Tag;
@@ -96,30 +96,30 @@ export default function OffersPanel({ cartTotal, customerPhone, cartItemIds = []
               key={`${offer.source}-${offer.code}`}
               className={`rounded-lg p-3 border transition-all ${
                 isApplied
-                  ? 'border-green-500 bg-green-500/10'
+                  ? 'border-ht-veg bg-ht-veg/10'
                   : isSuperseded
-                    ? 'border-neutral-700 bg-neutral-800/50 opacity-50'
+                    ? 'border-ht-ink/15 bg-ht-paper opacity-50'
                     : offer.meetsMin
-                      ? 'border-neutral-600 bg-neutral-700/50 hover:border-neutral-500'
-                      : 'border-neutral-700 bg-neutral-800/50 opacity-60'
+                      ? 'border-ht-ink/25 bg-ht-ink/10 hover:border-ht-ink/25'
+                      : 'border-ht-ink/15 bg-ht-paper opacity-60'
               }`}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-start gap-2 flex-1 min-w-0">
-                  <Icon className="w-4 h-4 text-neutral-400 mt-0.5 flex-shrink-0" />
+                  <Icon className="w-4 h-4 text-ht-mute mt-0.5 flex-shrink-0" />
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-white text-sm font-medium">{offer.title}</span>
+                      <span className="text-ht-ink text-sm font-medium">{offer.title}</span>
                       {isBest && !isApplied && offer.meetsMin && (
-                        <span className="bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                        <span className="bg-ht-red text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
                           Best Value
                         </span>
                       )}
                     </div>
-                    <p className="text-neutral-400 text-xs mt-0.5">
-                      Code: <span className="font-mono text-neutral-300">{offer.code}</span>
-                      {offer.meetsMin && <span className="text-green-400 ml-2">Save ₹{offer.savings}</span>}
-                      {!offer.meetsMin && <span className="text-orange-400 ml-2">Add ₹{offer.shortfall} more</span>}
+                    <p className="text-ht-mute text-xs mt-0.5">
+                      Code: <span className="font-mono text-ht-ink">{offer.code}</span>
+                      {offer.meetsMin && <span className="text-ht-veg ml-2">Save ₹{offer.savings}</span>}
+                      {!offer.meetsMin && <span className="text-ht-red ml-2">Add ₹{offer.shortfall} more</span>}
                     </p>
                   </div>
                 </div>
@@ -128,7 +128,7 @@ export default function OffersPanel({ cartTotal, customerPhone, cartItemIds = []
                   isApplied ? (
                     <button
                       onClick={onRemoveOffer}
-                      className="flex-shrink-0 px-3 py-1 bg-green-500/20 text-green-400 text-xs font-bold rounded transition-colors hover:bg-red-500/20 hover:text-red-400"
+                      className="flex-shrink-0 px-3 py-1 bg-ht-veg/10 text-ht-veg text-xs font-bold rounded transition-colors hover:bg-ht-red/10 hover:text-ht-red"
                     >
                       <Check className="w-3 h-3 inline mr-1" />
                       Applied
@@ -136,12 +136,12 @@ export default function OffersPanel({ cartTotal, customerPhone, cartItemIds = []
                   ) : isBest ? (
                     <button
                       onClick={() => onApplyOffer(offer)}
-                      className="flex-shrink-0 px-3 py-1 bg-orange-500/20 text-orange-400 text-xs font-bold rounded hover:bg-orange-500/30 transition-colors"
+                      className="flex-shrink-0 px-3 py-1 bg-ht-red/20 text-ht-red text-xs font-bold rounded hover:bg-ht-red/30 transition-colors"
                     >
                       Apply
                     </button>
                   ) : (
-                    <span className="flex-shrink-0 text-neutral-500 text-[10px]">Not best deal</span>
+                    <span className="flex-shrink-0 text-ht-mute text-[10px]">Not best deal</span>
                   )
                 )}
               </div>

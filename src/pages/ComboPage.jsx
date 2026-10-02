@@ -177,17 +177,17 @@ export default function ComboPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0b0b0b] text-[#f0ece6] px-4 py-8 flex flex-col items-center">
+    <div className="min-h-screen bg-ht-paper text-ht-ink px-4 py-8 flex flex-col items-center">
       <div className="w-full max-w-md">
         {/* Brand — tappable so it's not a dead-end */}
         <div className="text-center mb-5">
           <Link to="/menu" className="text-2xl font-extrabold tracking-tight inline-block">
-            Hungry <span className="text-[#dc5f1e]">Times</span>
+            Hungry <span className="text-ht-red">Times</span>
           </Link>
         </div>
 
         {/* Hero image */}
-        <div className="rounded-2xl overflow-hidden border border-white/10 shadow-lg">
+        <div className="rounded-2xl overflow-hidden border border-ht-ink/10 shadow-lg">
           <img
             src={COMBO.ogImage}
             alt="Chilli Pork Combo"
@@ -197,39 +197,39 @@ export default function ComboPage() {
         </div>
 
         {/* Card */}
-        <div className="mt-5 bg-[#161616] rounded-2xl border border-white/10 p-5">
-          <div className="inline-flex items-center gap-2 bg-[#dc5f1e]/15 text-[#f5b944] text-xs font-bold px-3 py-1 rounded-full">
+        <div className="mt-5 bg-ht-ivory rounded-2xl border border-ht-ink/10 p-5">
+          <div className="inline-flex items-center gap-2 bg-ht-red/15 text-ht-gold3 text-xs font-bold px-3 py-1 rounded-full">
             🔥 50% OFF — LIMITED TIME
           </div>
 
-          <h1 className="mt-3 text-2xl font-extrabold leading-tight">
+          <h1 className="mt-3 text-2xl font-display font-normal leading-tight">
             Chilli Pork Combo
           </h1>
-          <p className="mt-1 text-sm text-[#f0ece6]/70">
-            Veg Fried Rice <span className="text-[#f0ece6]/40">or</span> Veg
-            Chowmein <span className="text-[#dc5f1e] font-semibold">+ Chilli Pork</span>
+          <p className="mt-1 text-sm text-ht-ink/70">
+            Veg Fried Rice <span className="text-ht-ink/40">or</span> Veg
+            Chowmein <span className="text-ht-red font-semibold">+ Chilli Pork</span>
           </p>
 
           {/* Price */}
           <div className="mt-4 flex items-end gap-3">
-            <span className="text-[#f0ece6]/40 line-through text-lg">₹{COMBO.mrp}</span>
-            <span className="text-4xl font-extrabold text-[#f5b944]">₹{COMBO.price}</span>
-            <span className="mb-1 text-xs font-bold text-[#dc5f1e]">
+            <span className="text-ht-ink/40 line-through text-lg">₹{COMBO.mrp}</span>
+            <span className="text-4xl font-extrabold text-ht-gold3">₹{COMBO.price}</span>
+            <span className="mb-1 text-xs font-bold text-ht-red">
               SAVE ₹{COMBO.mrp - COMBO.price}
             </span>
           </div>
 
           {/* Code + copy */}
-          <div className="mt-4 flex items-center justify-between bg-[#0b0b0b] border border-dashed border-[#dc5f1e]/50 rounded-xl px-4 py-3">
+          <div className="mt-4 flex items-center justify-between bg-ht-paper border border-dashed border-ht-red/50 rounded-xl px-4 py-3">
             <div>
-              <div className="text-[10px] uppercase tracking-widest text-[#f0ece6]/50">
+              <div className="text-[10px] uppercase tracking-widest text-ht-ink/50">
                 Use code
               </div>
-              <div className="text-lg font-extrabold text-[#f5b944]">{COMBO.code}</div>
+              <div className="text-lg font-extrabold text-ht-gold3">{COMBO.code}</div>
             </div>
             <button
               onClick={copyCode}
-              className="text-sm font-semibold px-3 py-2 rounded-lg bg-[#dc5f1e]/15 text-[#f5b944] active:scale-95 transition"
+              className="text-sm font-semibold px-3 py-2 rounded-lg bg-ht-red/15 text-ht-gold3 active:scale-95 transition"
             >
               {copied ? 'Copied ✓' : 'Copy'}
             </button>
@@ -237,7 +237,7 @@ export default function ComboPage() {
 
           {/* Pick your combo — required before adding to cart */}
           <div className="mt-5">
-            <div className="text-xs font-semibold text-[#f0ece6]/70 mb-2">Choose your combo</div>
+            <div className="text-xs font-semibold text-ht-ink/70 mb-2">Choose your combo</div>
             <div className="grid grid-cols-1 gap-2">
               {VARIANTS.map(v => {
                 const on = selected === v.id;
@@ -247,12 +247,12 @@ export default function ComboPage() {
                     type="button"
                     onClick={() => { setSelected(v.id); setSelectedExtras({}); }}
                     className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left transition ${
-                      on ? 'border-[#dc5f1e] bg-[#dc5f1e]/10' : 'border-white/10 bg-[#0b0b0b]'
+                      on ? 'border-ht-red bg-ht-red/10' : 'border-ht-ink/10 bg-ht-paper'
                     }`}
                   >
                     <span className="font-semibold text-sm">{v.label}</span>
                     <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-[11px] ${
-                      on ? 'border-[#dc5f1e] bg-[#dc5f1e] text-white' : 'border-white/30'
+                      on ? 'border-ht-red bg-ht-red text-ht-ink' : 'border-ht-ink/10'
                     }`}>{on ? '✓' : ''}</span>
                   </button>
                 );
@@ -264,14 +264,14 @@ export default function ComboPage() {
           {chosen && (
             <div className="mt-4">
               {chosenAddons.packaging && (
-                <div className="flex items-center justify-between text-xs text-[#f0ece6]/60 mb-2">
+                <div className="flex items-center justify-between text-xs text-ht-ink/60 mb-2">
                   <span>{chosenAddons.packaging.name} — added for pickup/delivery</span>
                   <span>+₹{chosenAddons.packaging.priceDelta}</span>
                 </div>
               )}
               {chosenAddons.extras.length > 0 && (
                 <>
-                  <div className="text-xs font-semibold text-[#f0ece6]/70 mb-2">Add extras (optional)</div>
+                  <div className="text-xs font-semibold text-ht-ink/70 mb-2">Add extras (optional)</div>
                   <div className="flex flex-wrap gap-2">
                     {chosenAddons.extras.map(opt => {
                       const on = !!selectedExtras[opt.id];
@@ -281,7 +281,7 @@ export default function ComboPage() {
                           type="button"
                           onClick={() => toggleExtra(opt)}
                           className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                            on ? 'border-[#dc5f1e] bg-[#dc5f1e]/15 text-[#f5b944]' : 'border-white/15 bg-[#0b0b0b] text-[#f0ece6]/70'
+                            on ? 'border-ht-red bg-ht-red/15 text-ht-gold3' : 'border-ht-ink/10 bg-ht-paper text-ht-ink/70'
                           }`}
                         >
                           {opt.name} +₹{opt.priceDelta}{on ? ' ✓' : ''}
@@ -290,7 +290,7 @@ export default function ComboPage() {
                     })}
                   </div>
                   {extrasTotal > 0 && (
-                    <div className="mt-2 text-xs text-[#f0ece6]/50">Extras: +₹{extrasTotal} (added to your bill)</div>
+                    <div className="mt-2 text-xs text-ht-ink/50">Extras: +₹{extrasTotal} (added to your bill)</div>
                   )}
                 </>
               )}
@@ -301,7 +301,7 @@ export default function ComboPage() {
           <button
             onClick={handleAddToCart}
             disabled={!chosen}
-            className="mt-4 w-full bg-[#dc5f1e] hover:bg-[#c5531a] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-lg py-3.5 rounded-xl active:scale-[0.98] transition shadow-lg shadow-[#dc5f1e]/20"
+            className="mt-4 w-full bg-ht-red hover:bg-ht-red2 disabled:opacity-40 disabled:cursor-not-allowed text-ht-ink font-bold text-lg py-3.5 rounded-xl active:scale-[0.98] transition shadow-lg shadow-ht-red/20"
           >
             {chosen ? 'Add to Cart — Order Online' : 'Pick a combo above'}
           </button>
@@ -318,26 +318,26 @@ export default function ComboPage() {
         {/* Escape hatch — explore the rest of the menu (no dead-end) */}
         <Link
           to="/menu"
-          className="mt-4 block text-center text-sm text-[#f0ece6]/60 hover:text-[#f5b944] transition"
+          className="mt-4 block text-center text-sm text-ht-ink/60 hover:text-ht-gold3 transition"
         >
           View full menu →
         </Link>
 
         {/* Trust strip */}
-        <div className="mt-5 grid grid-cols-3 gap-2 text-center text-[11px] text-[#f0ece6]/70">
-          <div className="bg-[#161616] rounded-xl py-2.5 border border-white/5">
-            ⏱️ 30–45 min
+        <div className="mt-5 grid grid-cols-3 gap-2 text-center text-[11px] text-ht-ink/70">
+          <div className="bg-ht-ivory rounded-xl py-2.5 border border-ht-ink/10">
+            Dine-in
           </div>
-          <div className="bg-[#161616] rounded-xl py-2.5 border border-white/5">
-            📍 Dhakuria, Kolkata
+          <div className="bg-ht-ivory rounded-xl py-2.5 border border-ht-ink/10">
+            Takeaway
           </div>
-          <div className="bg-[#161616] rounded-xl py-2.5 border border-white/5">
-            🕛 12–11 PM
+          <div className="bg-ht-ivory rounded-xl py-2.5 border border-ht-ink/10">
+            Delivery
           </div>
         </div>
 
         {/* Fine print */}
-        <p className="mt-5 text-[11px] leading-relaxed text-[#f0ece6]/45 text-center">
+        <p className="mt-5 text-[11px] leading-relaxed text-ht-ink/45 text-center">
           Code {COMBO.code} · 50% off · Min order ₹200 · One use per customer ·
           Order online, at the counter or on WhatsApp · Valid till 31 July 2026
         </p>

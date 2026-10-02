@@ -58,7 +58,9 @@
          italic (descriptions), IBM Plex Mono (kickers, codes). -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800&family=Archivo+Black&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=IBM+Plex+Mono:wght@500;600&display=swap" />
+    <!-- Non-blocking: the page paints in system fonts and swaps (display=swap). -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800&family=Archivo+Black&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=IBM+Plex+Mono:wght@500;600&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800&family=Archivo+Black&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=IBM+Plex+Mono:wght@500;600&display=swap" /></noscript>
 
     <!-- Preconnect to third-party origins (hint only, no blocking) -->
     <link rel="preconnect" href="https://checkout.razorpay.com" crossorigin />

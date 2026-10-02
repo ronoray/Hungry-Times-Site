@@ -86,12 +86,12 @@ function OTPInput({ value, onChange }) {
           onPaste={handlePaste}
           onFocus={() => { setFocusedIdx(i); refs.current[i]?.select(); }}
           onBlur={() => setFocusedIdx(-1)}
-          className="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl font-bold rounded-xl outline-none transition-all duration-150 text-white"
+          className="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl font-bold rounded-xl outline-none transition-all duration-150 text-ht-ink"
           style={{
             fontFamily: 'monospace, monospace',
-            background: d ? 'rgba(245,158,11,0.12)' : '#161d2e',
-            border: `2px solid ${focusedIdx === i ? '#F59E0B' : d ? 'rgba(245,158,11,0.45)' : '#2a3352'}`,
-            boxShadow: focusedIdx === i ? '0 0 0 3px rgba(245,158,11,0.15)' : 'none',
+            background: d ? 'rgba(126,14,21,0.12)' : '#FFFFFF',
+            border: `2px solid ${focusedIdx === i ? '#7E0E15' : d ? 'rgba(126,14,21,0.45)' : 'rgba(21,10,10,.15)'}`,
+            boxShadow: focusedIdx === i ? '0 0 0 3px rgba(126,14,21,0.15)' : 'none',
           }}
         />
       ))}
@@ -254,10 +254,10 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
   // ============================================
   const getPasswordStrength = (pwd) => {
     if (!pwd) return { strength: 0, text: '' };
-    if (pwd.length < 6) return { strength: 1, text: 'Too short', color: 'text-red-400' };
-    if (pwd.length < 8) return { strength: 2, text: 'Weak', color: 'text-yellow-400' };
-    if (pwd.length < 12) return { strength: 3, text: 'Good', color: 'text-blue-400' };
-    return { strength: 4, text: 'Strong', color: 'text-green-400' };
+    if (pwd.length < 6) return { strength: 1, text: 'Too short', color: 'text-ht-red' };
+    if (pwd.length < 8) return { strength: 2, text: 'Weak', color: 'text-ht-gold3' };
+    if (pwd.length < 12) return { strength: 3, text: 'Good', color: 'text-ht-red' };
+    return { strength: 4, text: 'Strong', color: 'text-ht-veg' };
   };
 
   const passwordsMatch = password && confirmPassword && password === confirmPassword;
@@ -568,28 +568,28 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
   // ============================================
   // SHARED STYLE TOKENS
   // ============================================
-  const inputClass = "w-full pl-11 pr-4 py-3.5 rounded-xl text-white placeholder-white/25 outline-none transition-colors text-sm";
-  const inputStyle = { background: '#161d2e', border: '1.5px solid #2a3352' };
+  const inputClass = "w-full pl-11 pr-4 py-3.5 rounded-xl text-ht-ink placeholder-ht-mute/60 outline-none transition-colors text-sm";
+  const inputStyle = { background: '#FFFFFF', border: '1.5px solid rgba(21,10,10,.15)' };
   const inputFocusStyle = (e) => {
-    e.target.style.borderColor = '#F59E0B';
-    e.target.style.boxShadow = '0 0 0 3px rgba(245,158,11,0.12)';
+    e.target.style.borderColor = '#7E0E15';
+    e.target.style.boxShadow = '0 0 0 3px rgba(126,14,21,0.12)';
   };
   const inputBlurStyle = (e) => {
-    e.target.style.borderColor = '#2a3352';
+    e.target.style.borderColor = 'rgba(21,10,10,.15)';
     e.target.style.boxShadow = 'none';
   };
-  const inputWithRightPad = "w-full pl-11 pr-11 py-3.5 rounded-xl text-white placeholder-white/25 outline-none transition-colors text-sm";
-  const primaryBtn = "w-full py-4 text-white font-semibold rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed text-sm tracking-wide";
-  const primaryBtnStyle = { background: '#E02424' };
-  const secondaryBtn = "w-full py-3.5 text-white font-medium rounded-xl border transition-all text-sm";
-  const secondaryBtnStyle = { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' };
-  const labelClass = "block text-xs font-medium text-white/45 mb-1.5";
+  const inputWithRightPad = "w-full pl-11 pr-11 py-3.5 rounded-xl text-ht-ink placeholder-ht-mute/60 outline-none transition-colors text-sm";
+  const primaryBtn = "w-full py-4 text-ht-ink font-semibold rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed text-sm tracking-wide";
+  const primaryBtnStyle = { background: '#7E0E15' };
+  const secondaryBtn = "w-full py-3.5 text-ht-ink font-medium rounded-xl border transition-all text-sm";
+  const secondaryBtnStyle = { background: 'rgba(21,10,10,0.04)', border: '1px solid rgba(21,10,10,0.08)' };
+  const labelClass = "block text-xs font-medium text-ht-mute mb-1.5";
   const fieldCard = "rounded-2xl p-4 space-y-4";
-  const fieldCardStyle = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' };
-  const errorClass = "p-3 rounded-xl text-red-400 text-sm flex items-center gap-2";
+  const fieldCardStyle = { background: 'rgba(21,10,10,0.03)', border: '1px solid rgba(21,10,10,0.07)' };
+  const errorClass = "p-3 rounded-xl text-ht-red text-sm flex items-center gap-2";
   const errorStyle = { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' };
-  const cooldownClass = "p-3 rounded-xl text-amber-400 text-sm flex items-center gap-2";
-  const cooldownStyle = { background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' };
+  const cooldownClass = "p-3 rounded-xl text-ht-gold3 text-sm flex items-center gap-2";
+  const cooldownStyle = { background: 'rgba(126,14,21,0.08)', border: '1px solid rgba(126,14,21,0.2)' };
 
   // ============================================
   // STEP PROGRESS INDICATOR
@@ -605,7 +605,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
             className="h-1 rounded-full transition-all duration-300"
             style={{
               width: currentIdx >= i ? '2rem' : '1.25rem',
-              background: currentIdx >= i ? '#F59E0B' : 'rgba(255,255,255,0.1)',
+              background: currentIdx >= i ? '#7E0E15' : 'rgba(21,10,10,0.1)',
             }}
           />
         ))}
@@ -630,9 +630,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
 
     return (
       <div>
-        <label className={labelClass}>{label} <span className="text-red-400">*</span></label>
+        <label className={labelClass}>{label} <span className="text-ht-red">*</span></label>
         <div className="relative">
-          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ht-mute" />
           <input
             type={showPwd ? 'text' : 'password'}
             value={value}
@@ -648,7 +648,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
           <button
             type="button"
             onClick={toggleShowPwd}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ht-mute hover:text-ht-ink transition-colors"
           >
             {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
@@ -657,12 +657,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
         {/* Password Strength */}
         {showStrength && strength && strength.strength > 0 && (
           <div className="mt-2 flex items-center gap-2">
-            <div className="flex-1 h-0.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+            <div className="flex-1 h-0.5 rounded-full overflow-hidden" style={{ background: 'rgba(21,10,10,0.08)' }}>
               <div
                 className="h-full transition-all rounded-full"
                 style={{
                   width: `${strength.strength * 25}%`,
-                  background: strength.strength === 1 ? '#ef4444' : strength.strength === 2 ? '#eab308' : strength.strength === 3 ? '#3b82f6' : '#22c55e',
+                  background: strength.strength === 1 ? '#7E0E15' : strength.strength === 2 ? '#A87524' : strength.strength === 3 ? '#7E0E15' : '#1F7A3A',
                 }}
               />
             </div>
@@ -674,9 +674,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
         {matchStatus !== null && (
           <div className="mt-1.5 flex items-center gap-1.5">
             {matchStatus === 'match' ? (
-              <><Check className="w-3.5 h-3.5 text-green-500" /><span className="text-xs text-green-400">Passwords match</span></>
+              <><Check className="w-3.5 h-3.5 text-ht-veg" /><span className="text-xs text-ht-veg">Passwords match</span></>
             ) : matchStatus === 'mismatch' ? (
-              <><X className="w-3.5 h-3.5 text-red-500" /><span className="text-xs text-red-400">Passwords don&apos;t match</span></>
+              <><X className="w-3.5 h-3.5 text-ht-red" /><span className="text-xs text-ht-red">Passwords don&apos;t match</span></>
             ) : null}
           </div>
         )}
@@ -693,15 +693,15 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
       {/* Brand header */}
       <div className="text-center mb-8">
         <div className="text-4xl mb-3">🍛</div>
-        <h1 className="text-2xl font-bold text-white tracking-tight mb-1">Hungry Times</h1>
-        <p className="text-white/35 text-sm">Sign in to your account</p>
+        <h1 className="text-2xl font-bold text-ht-ink tracking-tight mb-1">Hungry Times</h1>
+        <p className="text-ht-mute text-sm">Sign in to your account</p>
       </div>
 
       <form onSubmit={handleLogin} className="space-y-3">
         <div>
           <label className={labelClass}>Username</label>
           <div className="relative">
-            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ht-mute" />
             <input
               type="text"
               value={username}
@@ -719,7 +719,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
         <div>
           <label className={labelClass}>Password</label>
           <div className="relative">
-            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ht-mute" />
             <input
               type="password"
               value={password}
@@ -752,9 +752,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
       </form>
 
       <div className="relative flex items-center gap-3">
-        <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
-        <span className="text-white/25 text-xs">or</span>
-        <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
+        <div className="flex-1 h-px" style={{ background: 'rgba(21,10,10,0.07)' }} />
+        <span className="text-ht-mute text-xs">or</span>
+        <div className="flex-1 h-px" style={{ background: 'rgba(21,10,10,0.07)' }} />
       </div>
 
       <button
@@ -767,7 +767,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
 
       <button
         onClick={() => { setStep(STEPS.FORGOT_PASSWORD); setError(''); }}
-        className="w-full py-2 text-white/30 hover:text-amber-400 transition-colors text-sm"
+        className="w-full py-2 text-ht-mute hover:text-ht-gold3 transition-colors text-sm"
       >
         Forgot Password?
       </button>
@@ -778,7 +778,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
     <div className="space-y-5">
       <button
         onClick={() => setStep(STEPS.LOGIN)}
-        className="flex items-center gap-1.5 text-white/35 hover:text-white transition-colors text-sm"
+        className="flex items-center gap-1.5 text-ht-mute hover:text-ht-red transition-colors text-sm"
       >
         <ArrowLeft className="w-4 h-4" />
         Back
@@ -787,18 +787,18 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
       {renderStepProgress()}
 
       <div className="text-center">
-        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
-          <Phone className="w-7 h-7 text-amber-400" />
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(126,14,21,0.1)', border: '1px solid rgba(126,14,21,0.2)' }}>
+          <Phone className="w-7 h-7 text-ht-gold3" />
         </div>
-        <h2 className="text-xl font-bold text-white mb-1">Create Account</h2>
-        <p className="text-white/35 text-sm">Enter your mobile number to get started</p>
+        <h2 className="text-xl font-bold text-ht-ink mb-1">Create Account</h2>
+        <p className="text-ht-mute text-sm">Enter your mobile number to get started</p>
       </div>
 
       <form onSubmit={handleSendOTP} className="space-y-3">
         <div>
           <label className={labelClass}>Phone Number</label>
           <div className="relative">
-            <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+            <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ht-mute" />
             <input
               type="tel"
               value={phone}
@@ -844,7 +844,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
     <div className="space-y-5">
       <button
         onClick={() => { setStep(STEPS.PHONE_ENTRY); setOtp(''); setError(''); }}
-        className="flex items-center gap-1.5 text-white/35 hover:text-white transition-colors text-sm"
+        className="flex items-center gap-1.5 text-ht-mute hover:text-ht-red transition-colors text-sm"
       >
         <ArrowLeft className="w-4 h-4" />
         Back
@@ -853,12 +853,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
       {renderStepProgress()}
 
       <div className="text-center">
-        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
-          <Lock className="w-7 h-7 text-amber-400" />
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(126,14,21,0.1)', border: '1px solid rgba(126,14,21,0.2)' }}>
+          <Lock className="w-7 h-7 text-ht-gold3" />
         </div>
-        <h2 className="text-xl font-bold text-white mb-1">Verify Code</h2>
-        <p className="text-white/35 text-sm">Enter the 6-digit code sent to</p>
-        <p className="text-amber-400 font-semibold text-sm mt-0.5">+91 {phone}</p>
+        <h2 className="text-xl font-bold text-ht-ink mb-1">Verify Code</h2>
+        <p className="text-ht-mute text-sm">Enter the 6-digit code sent to</p>
+        <p className="text-ht-gold3 font-semibold text-sm mt-0.5">+91 {phone}</p>
       </div>
 
       <form onSubmit={handleVerifyOTP} className="space-y-4">
@@ -886,7 +886,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
         <button
           type="button"
           onClick={handleSendOTP}
-          className="w-full py-2 text-white/30 hover:text-amber-400 transition-colors text-sm disabled:opacity-50"
+          className="w-full py-2 text-ht-mute hover:text-ht-gold3 transition-colors text-sm disabled:opacity-50"
           disabled={loading}
         >
           Didn&apos;t receive it? Resend
@@ -899,7 +899,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
     <div className="space-y-4">
       <button
         onClick={() => { setStep(STEPS.OTP_VERIFY); setError(''); }}
-        className="flex items-center gap-1.5 text-white/35 hover:text-white transition-colors text-sm"
+        className="flex items-center gap-1.5 text-ht-mute hover:text-ht-red transition-colors text-sm"
       >
         <ArrowLeft className="w-4 h-4" />
         Back
@@ -908,21 +908,21 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
       {renderStepProgress()}
 
       <div className="text-center mb-1">
-        <h2 className="text-xl font-bold text-white mb-1">Complete Profile</h2>
-        <p className="text-white/35 text-sm">A few details to finish setting up</p>
+        <h2 className="text-xl font-bold text-ht-ink mb-1">Complete Profile</h2>
+        <p className="text-ht-mute text-sm">A few details to finish setting up</p>
       </div>
 
       <form onSubmit={handleCompleteRegistration} className="space-y-3">
         {/* Login Credentials */}
         <div className={fieldCard} style={fieldCardStyle}>
-          <p className="text-xs font-semibold text-white/30 uppercase tracking-widest flex items-center gap-1.5">
+          <p className="text-xs font-semibold text-ht-mute uppercase tracking-widest flex items-center gap-1.5">
             <Lock className="w-3 h-3" /> Login Credentials
           </p>
 
           <div>
-            <label className={labelClass}>Username <span className="text-red-400">*</span></label>
+            <label className={labelClass}>Username <span className="text-ht-red">*</span></label>
             <div className="relative">
-              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ht-mute" />
               <input
                 type="text"
                 value={username}
@@ -963,14 +963,14 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
 
         {/* Personal Info */}
         <div className={fieldCard} style={fieldCardStyle}>
-          <p className="text-xs font-semibold text-white/30 uppercase tracking-widest flex items-center gap-1.5">
+          <p className="text-xs font-semibold text-ht-mute uppercase tracking-widest flex items-center gap-1.5">
             <User className="w-3 h-3" /> Personal Info
           </p>
 
           <div>
-            <label className={labelClass}>Full Name <span className="text-red-400">*</span></label>
+            <label className={labelClass}>Full Name <span className="text-ht-red">*</span></label>
             <div className="relative">
-              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ht-mute" />
               <input
                 type="text"
                 value={name}
@@ -986,9 +986,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
           </div>
 
           <div>
-            <label className={labelClass}>Email <span className="text-red-400">*</span></label>
+            <label className={labelClass}>Email <span className="text-ht-red">*</span></label>
             <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ht-mute" />
               <input
                 type="email"
                 value={email}
@@ -1006,12 +1006,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
 
         {/* Delivery Address */}
         <div className={fieldCard} style={fieldCardStyle}>
-          <p className="text-xs font-semibold text-white/30 uppercase tracking-widest flex items-center gap-1.5">
+          <p className="text-xs font-semibold text-ht-mute uppercase tracking-widest flex items-center gap-1.5">
             <MapPin className="w-3 h-3" /> Delivery Address
           </p>
 
           <div>
-            <label className={labelClass}>Address <span className="text-red-400">*</span></label>
+            <label className={labelClass}>Address <span className="text-ht-red">*</span></label>
             <GoogleMapsAutocomplete
               onSelect={(selectedAddress) => {
                 setAddress(selectedAddress);
@@ -1021,9 +1021,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
           </div>
 
           {address && (
-            <div className="p-3 rounded-xl flex items-start gap-2" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
-              <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-              <p className="text-green-400 text-sm break-words leading-snug">{address.address}</p>
+            <div className="p-3 rounded-xl flex items-start gap-2" style={{ background: 'rgba(31,122,58,0.08)', border: '1px solid rgba(31,122,58,0.2)' }}>
+              <Check className="w-4 h-4 text-ht-veg flex-shrink-0 mt-0.5" />
+              <p className="text-ht-veg text-sm break-words leading-snug">{address.address}</p>
             </div>
           )}
         </div>
@@ -1050,35 +1050,35 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
   const renderSuccess = () => (
     <div className="space-y-6 text-center py-4">
       <div className="relative inline-flex">
-        <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: 'rgba(34,197,94,0.12)', border: '2px solid rgba(34,197,94,0.3)' }}>
-          <Check className="w-10 h-10 text-green-400" />
+        <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: 'rgba(31,122,58,0.12)', border: '2px solid rgba(31,122,58,0.3)' }}>
+          <Check className="w-10 h-10 text-ht-veg" />
         </div>
       </div>
 
       <div>
-        <h2 className="text-2xl font-bold text-white mb-1">You&apos;re in!</h2>
-        <p className="text-white/35 text-sm">Account created successfully</p>
+        <h2 className="text-2xl font-bold text-ht-ink mb-1">You&apos;re in!</h2>
+        <p className="text-ht-mute text-sm">Account created successfully</p>
       </div>
 
       {serviceAreaData && (
         <div className={`p-4 rounded-2xl ${serviceAreaData.withinServiceArea ? '' : ''}`} style={{
-          background: serviceAreaData.withinServiceArea ? 'rgba(34,197,94,0.08)' : 'rgba(245,158,11,0.08)',
-          border: `1px solid ${serviceAreaData.withinServiceArea ? 'rgba(34,197,94,0.25)' : 'rgba(245,158,11,0.25)'}`,
+          background: serviceAreaData.withinServiceArea ? 'rgba(31,122,58,0.08)' : 'rgba(126,14,21,0.08)',
+          border: `1px solid ${serviceAreaData.withinServiceArea ? 'rgba(31,122,58,0.25)' : 'rgba(126,14,21,0.25)'}`,
         }}>
           <div className="flex items-start gap-3 text-left">
             {serviceAreaData.withinServiceArea ? (
-              <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+              <Check className="w-5 h-5 text-ht-veg flex-shrink-0 mt-0.5" />
             ) : (
-              <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-ht-gold3 flex-shrink-0 mt-0.5" />
             )}
             <div>
-              <h3 className={`font-semibold text-sm mb-1 ${serviceAreaData.withinServiceArea ? 'text-green-400' : 'text-amber-400'}`}>
+              <h3 className={`font-semibold text-sm mb-1 ${serviceAreaData.withinServiceArea ? 'text-ht-veg' : 'text-ht-gold3'}`}>
                 {serviceAreaData.withinServiceArea ? 'Within Delivery Area' : 'Outside Delivery Area'}
               </h3>
-              <p className="text-sm text-white/50">
+              <p className="text-sm text-ht-mute">
                 {serviceAreaData.withinServiceArea
                   ? `You can order online. ${serviceAreaData.distanceKm}km from our restaurant.`
-                  : <>Your address is {serviceAreaData.distanceKm}km away. Call <a href="tel:8420822919" className="text-amber-400 font-medium">8420822919</a> to order.</>
+                  : <>Your address is {serviceAreaData.distanceKm}km away. Call <a href="tel:8420822919" className="text-ht-gold3 font-medium">8420822919</a> to order.</>
                 }
               </p>
             </div>
@@ -1104,25 +1104,25 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
     <div className="space-y-5">
       <button
         onClick={() => setStep(STEPS.LOGIN)}
-        className="flex items-center gap-1.5 text-white/35 hover:text-white transition-colors text-sm"
+        className="flex items-center gap-1.5 text-ht-mute hover:text-ht-red transition-colors text-sm"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to Login
       </button>
 
       <div className="text-center">
-        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
-          <Lock className="w-7 h-7 text-amber-400" />
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(126,14,21,0.1)', border: '1px solid rgba(126,14,21,0.2)' }}>
+          <Lock className="w-7 h-7 text-ht-gold3" />
         </div>
-        <h2 className="text-xl font-bold text-white mb-1">Reset Password</h2>
-        <p className="text-white/35 text-sm">Enter your registered phone number</p>
+        <h2 className="text-xl font-bold text-ht-ink mb-1">Reset Password</h2>
+        <p className="text-ht-mute text-sm">Enter your registered phone number</p>
       </div>
 
       <form onSubmit={handleForgotPasswordSendOTP} className="space-y-3">
         <div>
           <label className={labelClass}>Phone Number</label>
           <div className="relative">
-            <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+            <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ht-mute" />
             <input
               type="tel"
               value={phone}
@@ -1169,26 +1169,26 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
     <div className="space-y-5">
       <button
         onClick={() => { setStep(STEPS.FORGOT_PASSWORD); setOtp(''); setError(''); }}
-        className="flex items-center gap-1.5 text-white/35 hover:text-white transition-colors text-sm"
+        className="flex items-center gap-1.5 text-ht-mute hover:text-ht-red transition-colors text-sm"
       >
         <ArrowLeft className="w-4 h-4" />
         Back
       </button>
 
       <div className="text-center">
-        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
-          <Lock className="w-7 h-7 text-amber-400" />
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(126,14,21,0.1)', border: '1px solid rgba(126,14,21,0.2)' }}>
+          <Lock className="w-7 h-7 text-ht-gold3" />
         </div>
-        <h2 className="text-xl font-bold text-white mb-1">Verify Code</h2>
-        <p className="text-white/35 text-sm">Code sent to</p>
-        <p className="text-amber-400 font-semibold text-sm mt-0.5">+91 {phone}</p>
+        <h2 className="text-xl font-bold text-ht-ink mb-1">Verify Code</h2>
+        <p className="text-ht-mute text-sm">Code sent to</p>
+        <p className="text-ht-gold3 font-semibold text-sm mt-0.5">+91 {phone}</p>
       </div>
 
       <form onSubmit={handleForgotPasswordVerifyOTP} className="space-y-4">
         <div>
           <label className={`${labelClass} text-center`}>One-Time Password</label>
           <OTPInput value={otp} onChange={setOtp} />
-          <p className="text-center text-xs text-white/25 mt-2">Enter the 6-digit code from SMS</p>
+          <p className="text-center text-xs text-ht-mute mt-2">Enter the 6-digit code from SMS</p>
         </div>
 
         {error && (
@@ -1210,7 +1210,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
         <button
           type="button"
           onClick={handleForgotPasswordSendOTP}
-          className="w-full py-2 text-white/30 hover:text-amber-400 transition-colors text-sm disabled:opacity-50"
+          className="w-full py-2 text-ht-mute hover:text-ht-gold3 transition-colors text-sm disabled:opacity-50"
           disabled={loading}
         >
           Didn&apos;t receive it? Resend
@@ -1223,22 +1223,22 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
     <div className="space-y-5">
       <button
         onClick={() => { setStep(STEPS.FORGOT_PASSWORD_VERIFY_OTP); setPassword(''); setConfirmPassword(''); setError(''); }}
-        className="flex items-center gap-1.5 text-white/35 hover:text-white transition-colors text-sm"
+        className="flex items-center gap-1.5 text-ht-mute hover:text-ht-red transition-colors text-sm"
       >
         <ArrowLeft className="w-4 h-4" />
         Back
       </button>
 
       <div className="text-center">
-        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)' }}>
-          <Check className="w-7 h-7 text-green-400" />
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(31,122,58,0.1)', border: '1px solid rgba(31,122,58,0.25)' }}>
+          <Check className="w-7 h-7 text-ht-veg" />
         </div>
-        <h2 className="text-xl font-bold text-white mb-1">New Password</h2>
-        <p className="text-white/35 text-sm mb-4">Identity verified</p>
+        <h2 className="text-xl font-bold text-ht-ink mb-1">New Password</h2>
+        <p className="text-ht-mute text-sm mb-4">Identity verified</p>
 
-        <div className="rounded-xl px-4 py-3 inline-block" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-          <p className="text-xs text-white/30 mb-0.5">Account</p>
-          <p className="text-amber-400 font-semibold">{forgotPasswordCustomer?.username || '…'}</p>
+        <div className="rounded-xl px-4 py-3 inline-block" style={{ background: 'rgba(21,10,10,0.04)', border: '1px solid rgba(21,10,10,0.07)' }}>
+          <p className="text-xs text-ht-mute mb-0.5">Account</p>
+          <p className="text-ht-gold3 font-semibold">{forgotPasswordCustomer?.username || '…'}</p>
         </div>
       </div>
 
@@ -1315,29 +1315,29 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
   return (
     <div
       className="fixed inset-0 flex items-end md:items-center justify-center z-50"
-      style={{ background: 'rgba(2,6,23,0.88)', backdropFilter: 'blur(12px)' }}
+      style={{ background: 'rgba(21,10,10,0.55)', backdropFilter: 'blur(12px)' }}
       onClick={step !== STEPS.SUCCESS ? handleClose : undefined}
     >
       <div
         className="w-full md:max-w-md relative flex flex-col h-[95vh] md:h-auto md:max-h-[88vh] rounded-t-3xl md:rounded-2xl"
         style={{
-          background: '#0D1117',
-          border: '1px solid rgba(245,158,11,0.1)',
-          boxShadow: '0 0 0 1px rgba(245,158,11,0.06), 0 32px 80px rgba(0,0,0,0.85)',
+          background: '#FBF2E1',
+          border: '1px solid rgba(126,14,21,0.1)',
+          boxShadow: '0 0 0 1px rgba(126,14,21,0.06), 0 32px 80px rgba(60,20,10,0.35)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drag handle (mobile) */}
         <div className="md:hidden flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.12)' }} />
+          <div className="w-10 h-1 rounded-full" style={{ background: 'rgba(21,10,10,0.12)' }} />
         </div>
 
         {/* Close Button */}
         {step !== STEPS.SUCCESS && (
           <button
             onClick={handleClose}
-            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg transition-colors z-10 text-white/30 hover:text-white"
-            style={{ background: 'rgba(255,255,255,0.05)' }}
+            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg transition-colors z-10 text-ht-mute hover:text-ht-red"
+            style={{ background: 'rgba(21,10,10,0.05)' }}
           >
             <X className="w-4 h-4" />
           </button>

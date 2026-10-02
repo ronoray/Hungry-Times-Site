@@ -260,27 +260,25 @@ export async function resubscribeOnLogin() {
 const BUSINESS_CLOSED = false;
 
 function ClosedPage() {
+  // DNA v2 light lockup: badge on paper, red headline (docs/DESIGN_DNA.md §4.5).
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      background: '#0B0B0B', color: '#fff', textAlign: 'center', padding: '2rem',
-      fontFamily: 'sans-serif'
+      background: '#F7EEDC', color: '#150A0A', textAlign: 'center', padding: '2rem',
+      fontFamily: 'Archivo, system-ui, sans-serif'
     }}>
-      <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🍽️</div>
-      <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem', color: '#f97316' }}>
-        Hungry Times
+      <img src="/ht_badge.png" alt="Hungry Times" width="96" height="96" style={{ marginBottom: '1.25rem' }} />
+      <h1 style={{ fontFamily: '"Archivo Black", Archivo, sans-serif', fontSize: '2rem', lineHeight: 1, marginBottom: '0.75rem', color: '#7E0E15' }}>
+        Temporarily closed
       </h1>
-      <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: '#fbbf24' }}>
-        Temporarily Closed
-      </h2>
-      <p style={{ color: '#9ca3af', maxWidth: '360px', lineHeight: 1.6, marginBottom: '2rem' }}>
-        We are currently closed for a short break. We will be back soon with fresh food and great service.
+      <p style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontStyle: 'italic', fontSize: '1.25rem', color: '#5E4B45', maxWidth: '360px', lineHeight: 1.35, marginBottom: '2rem' }}>
+        We are closed for a short break. We will be back soon.
       </p>
-      <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
+      <p style={{ color: '#5E4B45', fontSize: '0.9375rem' }}>
         For enquiries:{' '}
-        <a href="tel:+918420822919" style={{ color: '#f97316', textDecoration: 'none' }}>
-          +91 84208 22919
+        <a href="tel:+918420822919" style={{ color: '#7E0E15', fontWeight: 700, textDecoration: 'none' }}>
+          84208 22919
         </a>
       </p>
     </div>
@@ -369,7 +367,7 @@ export default function App() {
                   navbar only. The promo strip is the first thing INSIDE main,
                   in normal flow, so it scrolls away instead of permanently
                   eating viewport height on every screen. */}
-              <main className="flex-1" style={{ paddingTop: 'calc(var(--banner-h, 0px) + var(--nav-h))' }}>
+              <main className="min-h-[100dvh] flex-1" style={{ paddingTop: 'calc(var(--banner-h, 0px) + var(--nav-h))' }}>
                 {/* One promo strip: live discount, else WhatsApp cross-promo */}
                 <PromoBar />
                 <ErrorBoundary>

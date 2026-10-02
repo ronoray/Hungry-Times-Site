@@ -52,29 +52,29 @@ export default function OffersStrip({ compact = false }) {
       // sliver with the text jammed against the border.
       <Link
         to="/offers"
-        className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 !px-3 !py-2.5 text-sm transition-colors hover:bg-amber-500/15"
+        className="flex items-center gap-3 rounded-xl border border-ht-gold/30 bg-ht-gold2/60 !px-3 !py-2.5 text-sm transition-colors hover:bg-ht-gold2/60"
       >
-        <Tag className="h-4 w-4 flex-shrink-0 text-amber-400" />
-        <span className="min-w-0 flex-1 truncate text-neutral-200">
-          <span className="font-semibold text-amber-400">{discountText(offers[0])}</span>
+        <Tag className="h-4 w-4 flex-shrink-0 text-ht-gold3" />
+        <span className="min-w-0 flex-1 truncate text-ht-ink">
+          <span className="font-semibold text-ht-gold3">{discountText(offers[0])}</span>
           {' '}with <span className="font-mono font-semibold">{offers[0].promo_code}</span>
           {offers.length > 1 && ` · +${offers.length - 1} more`}
         </span>
-        <ArrowRight className="h-4 w-4 flex-shrink-0 text-amber-400" />
+        <ArrowRight className="h-4 w-4 flex-shrink-0 text-ht-gold3" />
       </Link>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-amber-500/25 bg-neutral-900/60 p-4 sm:p-5">
+    <div className="rounded-2xl border border-ht-gold/25 bg-ht-ivory p-4 sm:p-5">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="flex items-center gap-2 text-base font-bold text-white sm:text-lg">
-          <Tag className="h-4 w-4 text-amber-400" />
+        <h2 className="flex items-center gap-2 text-base font-bold text-ht-ink sm:text-lg">
+          <Tag className="h-4 w-4 text-ht-gold3" />
           Offers running now
         </h2>
         <Link
           to="/offers"
-          className="flex flex-shrink-0 items-center gap-1 text-xs font-semibold text-amber-400 hover:text-amber-300 sm:text-sm"
+          className="flex flex-shrink-0 items-center gap-1 text-xs font-semibold text-ht-gold3 hover:text-ht-gold3 sm:text-sm"
         >
           See all <ArrowRight className="h-3.5 w-3.5" />
         </Link>
@@ -85,21 +85,21 @@ export default function OffersStrip({ compact = false }) {
           <Link
             key={o.id}
             to="/offers"
-            className="flex items-center gap-3 rounded-xl border border-neutral-800 bg-neutral-950/60 px-3 py-2.5 transition-colors hover:border-amber-500/40"
+            className="flex items-center gap-3 rounded-xl border border-ht-ink/10 bg-ht-paper px-3 py-2.5 transition-colors hover:border-ht-gold/40"
           >
-            <span className="flex-shrink-0 rounded-lg bg-amber-500/15 px-2 py-1 text-xs font-bold text-amber-400">
+            <span className="flex-shrink-0 rounded-lg bg-ht-gold2/60 px-2 py-1 text-xs font-bold text-ht-gold3">
               {discountText(o)}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-medium text-neutral-200">{o.title}</span>
+              <span className="block truncate text-sm font-medium text-ht-ink">{o.title}</span>
               <span className="flex items-center gap-2">
-                <span className="font-mono text-xs text-neutral-500">{o.promo_code}</span>
+                <span className="font-mono text-xs text-ht-mute">{o.promo_code}</span>
                 {/* Urgency only on the full (Home) variant — the compact Menu
                     pill is a single line and has no room. Computed once per
                     render rather than on a timer: this is a days-scale label on
                     a page nobody sits on for an hour. */}
                 {expiryLabel(o.valid_till) && (
-                  <span className="flex-shrink-0 rounded bg-black/40 px-1.5 py-0.5 text-[10px] font-medium text-amber-400/90">
+                  <span className="flex-shrink-0 rounded bg-ht-ink/40 px-1.5 py-0.5 text-[10px] font-medium text-ht-gold3/90">
                     {expiryLabel(o.valid_till)}
                   </span>
                 )}
@@ -109,7 +109,7 @@ export default function OffersStrip({ compact = false }) {
         ))}
       </div>
 
-      <p className="mt-3 text-xs text-neutral-500">
+      <p className="mt-3 text-xs text-ht-mute">
         One discount per order — we apply whichever saves you more. Codes and points start at ₹{floor}.
       </p>
     </div>
