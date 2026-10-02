@@ -51,7 +51,7 @@ export default function CartDrawer({
       {/* BACKDROP - Mobile only */}
       {/* ====================================================================== */}
       <div
-        className="fixed inset-0 bg-black/60 z-40 md:hidden"
+        className="fixed inset-0 bg-ht-ink/60 z-40 md:hidden"
         onClick={closeDrawer}
         aria-label="Close cart"
       />
@@ -60,14 +60,14 @@ export default function CartDrawer({
       {/* DRAWER - Mobile only, slides from right */}
       {/* ✅ FIXED: Use flex column layout with proper scrolling */}
       {/* ====================================================================== */}
-      <div className="fixed right-0 top-0 h-screen w-full sm:w-96 bg-neutral-900 border-l border-neutral-800 z-50 md:hidden flex flex-col">
+      <div className="fixed right-0 top-0 h-screen w-full sm:w-96 bg-ht-ivory border-l border-ht-ink/10 z-50 md:hidden flex flex-col">
         
         {/* HEADER - Sticky at top */}
-        <div className="flex items-center justify-between p-4 border-b border-neutral-800 flex-shrink-0">
-          <h2 className="text-xl font-bold text-white">Your Cart</h2>
+        <div className="flex items-center justify-between p-4 border-b border-ht-ink/10 flex-shrink-0">
+          <h2 className="text-xl font-bold text-ht-ink">Your Cart</h2>
           <button
             onClick={closeDrawer}
-            className="p-2 hover:bg-neutral-800 rounded-lg transition-colors text-white"
+            className="p-2 hover:bg-ht-paper rounded-[14px] transition-colors text-ht-ink"
             aria-label="Close cart"
           >
             <X className="w-6 h-6" />
@@ -78,7 +78,7 @@ export default function CartDrawer({
         <div className="flex-1 overflow-y-auto">
           {lines.length === 0 ? (
             // Empty Cart
-            <div className="p-8 text-center text-neutral-400 mt-8">
+            <div className="p-8 text-center text-ht-mute mt-8">
               <p className="text-lg">Your cart is empty</p>
             </div>
           ) : (
@@ -95,19 +95,19 @@ export default function CartDrawer({
                 return (
                   <div
                     key={idx}
-                    className="bg-neutral-800 p-3 rounded-lg space-y-2"
+                    className="bg-ht-paper p-3 rounded-[14px] space-y-2"
                   >
                     {/* Item Header */}
                     <div className="flex justify-between items-start gap-2">
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-white text-sm">
+                        <p className="font-semibold text-ht-ink text-sm">
                           {line.name}
                         </p>
-                        <p className="text-xs text-neutral-400">
+                        <p className="text-xs text-ht-mute">
                           ₹{unitPrice} each
                         </p>
                         {line.variants && line.variants.length > 0 && (
-                          <p className="text-xs text-neutral-500 mt-1 truncate">
+                          <p className="text-xs text-ht-mute mt-1 truncate">
                             {line.variants.map((v) => v.name).join(", ")}
                           </p>
                         )}
@@ -120,7 +120,7 @@ export default function CartDrawer({
                           console.log('[CartDrawer] 🗑️ Removing line with key:', line.key);
                           removeLine(line.key);
                         }}
-                        className="text-red-400 hover:text-red-300 p-1 flex-shrink-0 relative z-10"
+                        className="text-ht-red hover:text-ht-red p-1 flex-shrink-0 relative z-10"
                         aria-label="Remove item"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -137,18 +137,18 @@ export default function CartDrawer({
                         className={`w-8 h-8 rounded flex items-center justify-center text-white transition-colors ${
                           line.qty === 1 
                             ? 'bg-red-600 hover:bg-red-700 active:bg-red-800' 
-                            : 'bg-neutral-700 hover:bg-neutral-600 active:bg-neutral-500'
+                            : 'bg-ht-ink/10 hover:bg-ht-ink/15 active:bg-ht-ink/20'
                         }`}
                         aria-label={line.qty === 1 ? 'Remove from cart' : 'Decrease quantity'}
                       >
                         {line.qty === 1 ? <Trash2 className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
                       </button>
-                      <span className="flex-1 text-center text-white font-semibold text-sm">
+                      <span className="flex-1 text-center text-ht-ink font-semibold text-sm">
                         {line.qty}
                       </span>
                       <button
                         onClick={() => updateQty(line.key, line.qty + 1)}
-                        className="w-8 h-8 bg-neutral-700 rounded hover:bg-neutral-600 active:bg-neutral-500 flex items-center justify-center text-white transition-colors"
+                        className="w-8 h-8 bg-ht-ink/10 rounded hover:bg-ht-ink/15 active:bg-ht-ink/20 flex items-center justify-center text-ht-ink transition-colors"
                         aria-label="Increase quantity"
                       >
                         <Plus className="w-3 h-3" />
@@ -156,7 +156,7 @@ export default function CartDrawer({
                     </div>
 
                     {/* Line Total */}
-                    <div className="text-right text-orange-400 font-semibold text-sm">
+                    <div className="text-right text-ht-red font-semibold text-sm">
                       ₹{lineTotal}
                     </div>
                   </div>
@@ -170,23 +170,23 @@ export default function CartDrawer({
         {/* FOOTER - Sticky at bottom (inside drawer, not fixed to viewport) */}
         {/* ====================================================================== */}
         {lines.length > 0 && (
-          <div className="border-t border-neutral-800 bg-neutral-900 p-4 space-y-3 flex-shrink-0">
+          <div className="border-t border-ht-ink/10 bg-ht-ivory p-4 space-y-3 flex-shrink-0">
             
             {/* Order Summary — every line that moves the total must be shown, else
                 the total reads as broken maths (delivery was silently omitted). */}
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between text-neutral-400">
+              <div className="flex justify-between text-ht-mute">
                 <span>Subtotal</span>
                 <span>₹{money(cartTotal)}</span>
               </div>
               {discountAmount > 0 && (
-                <div className="flex justify-between text-green-500">
+                <div className="flex justify-between text-ht-veg">
                   <span>Discount</span>
                   <span>-₹{money(discountAmount)}</span>
                 </div>
               )}
               {pointsDiscount > 0 && (
-                <div className="flex justify-between text-purple-400">
+                <div className="flex justify-between text-ht-red2">
                   <span>Points Discount</span>
                   <span>-₹{money(pointsDiscount)}</span>
                 </div>
@@ -198,31 +198,31 @@ export default function CartDrawer({
                   and same wording as lib/billTotals.js, which drives the
                   confirmation and order-details pages. */}
               {gstOnTop && (
-                <div className="flex justify-between text-neutral-400">
+                <div className="flex justify-between text-ht-mute">
                   <span>GST (5%)</span>
                   <span>₹{money(gstAmount)}</span>
                 </div>
               )}
               {orderType !== 'pickup' && orderType !== 'dine_in' && (
-                <div className="flex justify-between text-neutral-400">
+                <div className="flex justify-between text-ht-mute">
                   <span>Delivery</span>
                   {deliveryCharge > 0
                     ? <span>₹{money(deliveryCharge)}</span>
-                    : <span className="text-green-400 font-medium">FREE</span>}
+                    : <span className="text-ht-veg font-medium">FREE</span>}
                 </div>
               )}
-              <div className="flex justify-between font-bold text-white text-base border-t border-neutral-700 pt-2">
+              <div className="flex justify-between font-bold text-ht-ink text-base border-t border-ht-ink/15 pt-2">
                 <span>Total</span>
-                <span className="text-orange-500">₹{money(finalTotal)}</span>
+                <span className="text-ht-red">₹{money(finalTotal)}</span>
               </div>
               {!gstOnTop && (
-                <p className="text-neutral-500 text-xs text-right">{gstIncludedNote(gstAmount)}</p>
+                <p className="text-ht-mute text-xs text-right">{gstIncludedNote(gstAmount)}</p>
               )}
             </div>
 
             {/* Delivery Address */}
             <div className="space-y-2">
-              <label className="block text-white text-sm font-semibold">
+              <label className="block text-ht-ink text-sm font-semibold">
                 <MapPin className="w-4 h-4 inline mr-1" />
                 Delivery Address
               </label>
@@ -234,7 +234,7 @@ export default function CartDrawer({
 
             {/* Special Notes */}
             <div className="space-y-2">
-              <label className="block text-white text-sm font-semibold">
+              <label className="block text-ht-ink text-sm font-semibold">
                 <MessageSquare className="w-4 h-4 inline mr-1" />
                 Special Notes
               </label>
@@ -242,14 +242,14 @@ export default function CartDrawer({
                 value={specialNotes}
                 onChange={(e) => setSpecialNotes(e.target.value)}
                 placeholder="Any special requests? (optional)"
-                className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                className="w-full px-3 py-2 bg-ht-paper border border-ht-ink/15 rounded-[14px] text-ht-ink text-sm focus:outline-none focus:ring-2 focus:ring-ht-red resize-none"
                 rows="2"
               />
             </div>
 
             {/* Error Message */}
             {paymentError && (
-              <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-2 text-red-400 text-xs">
+              <div className="bg-ht-red/10 border border-red-500/50 rounded-[14px] p-2 text-ht-red text-xs">
                 {paymentError}
               </div>
             )}
@@ -259,27 +259,27 @@ export default function CartDrawer({
               <button
                 onClick={onRazorpayPayment}
                 disabled={paymentProcessing || lines.length === 0}
-                className="w-full py-3 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 disabled:bg-neutral-600 text-white font-bold rounded-lg transition-colors text-sm"
+                className="w-full py-3 bg-ht-red hover:bg-ht-red2 active:bg-ht-red2 disabled:bg-ht-ink/15 text-white font-bold rounded-[14px] transition-colors text-sm"
               >
                 {paymentProcessing ? "Processing..." : "💳 Pay Online"}
               </button>
 
               {orderType === 'delivery' ? (
-                <div className="w-full py-3 px-3 bg-neutral-800 border border-neutral-700 rounded-lg text-neutral-400 text-xs text-center leading-relaxed">
+                <div className="w-full py-3 px-3 bg-ht-paper border border-ht-ink/15 rounded-[14px] text-ht-mute text-xs text-center leading-relaxed">
                   💵 Want to pay cash?{' '}
-                  <a href="tel:+918420822919" className="text-orange-400 font-medium underline">Call +91 84208 22919</a>
+                  <a href="tel:+918420822919" className="text-ht-red font-medium underline">Call +91 84208 22919</a>
                   {' '}and we'll try to arrange our own delivery.
                 </div>
               ) : !codAllowed(finalTotal) ? (
-                <div className="w-full py-3 px-3 bg-neutral-800 border border-neutral-700 rounded-lg text-neutral-400 text-xs text-center leading-relaxed">
+                <div className="w-full py-3 px-3 bg-ht-paper border border-ht-ink/15 rounded-[14px] text-ht-mute text-xs text-center leading-relaxed">
                   Orders above ₹{COD_MAX_TOTAL} must be paid online. To arrange it differently, call{' '}
-                  <a href={`tel:${RESTAURANT_PHONE}`} className="text-orange-400 font-medium underline">{RESTAURANT_PHONE_DISPLAY}</a>.
+                  <a href={`tel:${RESTAURANT_PHONE}`} className="text-ht-red font-medium underline">{RESTAURANT_PHONE_DISPLAY}</a>.
                 </div>
               ) : (
                 <button
                   onClick={onCODPayment}
                   disabled={paymentProcessing || lines.length === 0}
-                  className="w-full py-3 bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-neutral-600 text-white font-bold rounded-lg transition-colors text-sm"
+                  className="w-full py-3 bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-ht-ink/15 text-white font-bold rounded-[14px] transition-colors text-sm"
                 >
                   {paymentProcessing ? "Processing..." : "💵 Pay on Delivery"}
                 </button>

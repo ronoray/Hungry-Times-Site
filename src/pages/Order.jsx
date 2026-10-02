@@ -1716,19 +1716,19 @@ export default function Order() {
   // RENDER
   // ============================================================================
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-gray-900">
+    <div className="min-h-screen min-h-[100dvh] bg-ht-ivory">
       <div className="max-w-7xl mx-auto px-4 py-4 md:py-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-4 md:mb-6">
+        <h1 className="mb-4 font-display text-[28px] leading-none text-ht-ink md:mb-6 md:text-4xl">
           {isEditMode ? `Update Order #${editOrderId}` : 'Place Your Order'}
         </h1>
         {isEditMode && (
-          <div className="bg-yellow-600/20 border border-yellow-500/40 rounded-lg px-4 py-3 mb-6 flex items-center justify-between">
-            <span className="text-yellow-300 text-sm font-medium">
+          <div className="bg-ht-gold2 border border-ht-gold/40 rounded-[14px] px-4 py-3 mb-6 flex items-center justify-between">
+            <span className="text-ht-gold3 text-sm font-medium">
               You are editing Order #{editOrderId}. Delivery address is locked.
             </span>
             <button
               onClick={() => navigate(`/orders/${editOrderId}`)}
-              className="text-yellow-200 hover:text-white text-sm underline"
+              className="text-yellow-200 hover:text-ht-red text-sm underline"
             >
               Cancel Edit
             </button>
@@ -1739,15 +1739,15 @@ export default function Order() {
 
         {/* Empty Cart Message */}
         {lines.length === 0 && (
-          <div className="bg-neutral-800 rounded-lg p-8 text-center">
-            <ShoppingCart className="w-16 h-16 mx-auto text-neutral-600 mb-4" />
-            <h2 className="text-xl font-bold text-white mb-2">Your cart is empty</h2>
-            <p className="text-neutral-400 mb-6">
+          <div className="bg-ht-paper rounded-[14px] p-8 text-center">
+            <ShoppingCart className="w-16 h-16 mx-auto text-ht-mute/80 mb-4" />
+            <h2 className="text-xl font-bold text-ht-ink mb-2">Your cart is empty</h2>
+            <p className="text-ht-mute mb-6">
               Add some delicious items from our menu to get started!
             </p>
             <button
               onClick={() => navigate('/menu')}
-              className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg transition-colors"
+              className="px-6 py-3 bg-ht-red hover:bg-ht-red2 text-white font-bold rounded-[14px] transition-colors"
             >
               Browse Menu
             </button>
@@ -1757,8 +1757,8 @@ export default function Order() {
 
         {/* Cart Items Display */}
         {lines.length > 0 && (
-          <div className="bg-neutral-800 rounded-lg p-4 sm:p-6 mb-6">
-            <h3 className="text-white font-bold text-xl mb-4">
+          <div className="bg-ht-paper rounded-[14px] p-4 sm:p-6 mb-6">
+            <h3 className="text-ht-ink font-bold text-xl mb-4">
               Your Cart ({cartCount} items)
             </h3>
             <div className="space-y-3">
@@ -1769,23 +1769,23 @@ export default function Order() {
                 const lineTotal = unitPrice * (line.qty || 1);
 
                 return (
-                  <div key={idx} className="bg-neutral-800 rounded-lg p-4">
+                  <div key={idx} className="bg-ht-paper rounded-[14px] p-4">
                     <div className="flex items-start justify-between gap-4">
                       {/* Item Details */}
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-white font-medium text-base">
+                        <h4 className="text-ht-ink font-medium text-base">
                           {line.itemName || line.name || "Item"}
                         </h4>
-                        <p className="text-sm text-neutral-400 mt-1">
+                        <p className="text-sm text-ht-mute mt-1">
                           ₹{unitPrice} each
                         </p>
                         {line.variants && line.variants.length > 0 && (
-                          <p className="text-xs text-neutral-500 mt-1">
+                          <p className="text-xs text-ht-mute mt-1">
                             {line.variants.map(v => v.name).join(', ')}
                           </p>
                         )}
                         {shownAddons.length > 0 && (
-                          <p className="text-xs text-neutral-500">
+                          <p className="text-xs text-ht-mute">
                             Add-ons: {shownAddons.map(a => a.name).join(', ')}
                           </p>
                         )}
@@ -1793,32 +1793,28 @@ export default function Order() {
 
                       {/* Price */}
                       <div className="text-right flex-shrink-0">
-                        <p className="text-white font-bold text-lg">₹{lineTotal}</p>
+                        <p className="text-ht-ink font-bold text-lg">₹{lineTotal}</p>
                       </div>
                     </div>
 
                     {/* Quantity Controls */}
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-neutral-700">
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-ht-ink/15">
                       <div className="flex items-center gap-3">
                         <button
                           onClick={() => updateQty(line.key, line.qty - 1)}
-                          className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
-                            line.qty === 1
-                              ? 'bg-red-600 hover:bg-red-700 active:bg-red-800 text-white'
-                              : 'bg-neutral-700 hover:bg-neutral-600 active:bg-neutral-500 text-white'
-                          }`}
+                          className="grid h-10 w-10 place-items-center rounded-full border-[1.5px] border-ht-red text-ht-red transition active:scale-90"
                           aria-label={line.qty === 1 ? 'Remove from cart' : 'Decrease quantity'}
                         >
                           {line.qty === 1 ? <Trash2 className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
                         </button>
 
-                        <span className="text-white font-semibold text-base min-w-[2rem] text-center">
+                        <span className="text-ht-ink font-semibold text-base min-w-[2rem] text-center">
                           {line.qty}
                         </span>
 
                         <button
                           onClick={() => updateQty(line.key, line.qty + 1)}
-                          className="w-9 h-9 bg-neutral-700 hover:bg-neutral-600 active:bg-neutral-500 rounded-lg flex items-center justify-center text-white transition-colors"
+                          className="grid h-10 w-10 place-items-center rounded-full border-[1.5px] border-ht-red text-ht-red transition active:scale-90"
                           aria-label="Increase quantity"
                         >
                           <Plus className="w-4 h-4" />
@@ -1827,7 +1823,7 @@ export default function Order() {
 
                       <button
                         onClick={() => removeLine(line.key)}
-                        className="text-red-400 hover:text-red-300 text-sm font-medium transition-colors flex items-center gap-1"
+                        className="text-ht-red hover:text-ht-red text-sm font-medium transition-colors flex items-center gap-1"
                       >
                         <Trash2 className="w-4 h-4" />
                         Remove
@@ -1842,15 +1838,15 @@ export default function Order() {
 
         {/* LOGIN PROMPT — shown prominently at top when not logged in */}
         {lines.length > 0 && !isAuthenticated && (
-          <div className="bg-gradient-to-r from-orange-600/20 to-orange-500/10 border-2 border-orange-500/50 rounded-xl p-6 mb-6 text-center">
+          <div className="bg-gradient-to-r from-ht-red/20 to-ht-red/10 border-2 border-ht-red/50 rounded-[14px] p-6 mb-6 text-center">
             <div className="text-3xl mb-3">🔐</div>
-            <h2 className="text-xl font-bold text-white mb-2">Login to Place Your Order</h2>
-            <p className="text-neutral-300 mb-4 text-sm">
+            <h2 className="text-xl font-bold text-ht-ink mb-2">Login to Place Your Order</h2>
+            <p className="text-ht-ink mb-4 text-sm">
               Create an account or login to add your delivery address and pay online or choose cash on delivery.
             </p>
             <button
               onClick={() => setShowAuthModal(true)}
-              className="px-8 py-3 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold rounded-xl transition-colors text-lg shadow-lg shadow-orange-500/25"
+              className="px-8 py-3 bg-ht-red hover:bg-ht-red2 active:bg-ht-red2 text-white font-bold rounded-[14px] transition-colors text-lg shadow-lg shadow-ht-red/25"
             >
               Login / Sign Up
             </button>
@@ -1865,41 +1861,29 @@ export default function Order() {
 
               {/* Order Type Toggle */}
               {!isEditMode && (
-                <div className="bg-neutral-800 rounded-lg p-4 sm:p-6">
-                  <h3 className="text-white font-bold text-lg mb-3">How would you like your order?</h3>
-                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <div className="bg-ht-paper rounded-[14px] p-4 sm:p-6">
+                  <h3 className="mb-3 font-display text-xl text-ht-ink">How would you like it?</h3>
+                  <div className="seg" role="group" aria-label="How would you like your order?">
                     <button
-                      onClick={() => { setOrderType('dine_in'); updateOrderMode('dine_in'); setIsScheduled(false); setScheduledDate(''); setScheduledTime(''); }}
-                      className={`flex flex-col items-center gap-1.5 sm:gap-2 py-3 sm:py-4 rounded-xl border-2 font-semibold transition-all text-sm sm:text-base ${
-                        orderType === 'dine_in'
-                          ? 'border-orange-500 bg-orange-500/10 text-orange-400'
-                          : 'border-neutral-600 text-neutral-400 hover:border-neutral-500'
-                      }`}
-                    >
-                      <UtensilsCrossed className="w-5 h-5 sm:w-6 sm:h-6" />
-                      <span>Dine-in</span>
-                    </button>
-                    <button
-                      onClick={() => { setOrderType('pickup'); updateOrderMode('pickup'); }}
-                      className={`flex flex-col items-center gap-1.5 sm:gap-2 py-3 sm:py-4 rounded-xl border-2 font-semibold transition-all text-sm sm:text-base ${
-                        orderType === 'pickup'
-                          ? 'border-orange-500 bg-orange-500/10 text-orange-400'
-                          : 'border-neutral-600 text-neutral-400 hover:border-neutral-500'
-                      }`}
-                    >
-                      <MapPin className="w-5 h-5 sm:w-6 sm:h-6" />
-                      <span>Pickup</span>
-                    </button>
-                    <button
+                      type="button"
+                      aria-pressed={orderType === 'delivery'}
                       onClick={() => { setOrderType('delivery'); updateOrderMode('delivery'); }}
-                      className={`flex flex-col items-center gap-1.5 sm:gap-2 py-3 sm:py-4 rounded-xl border-2 font-semibold transition-all text-sm sm:text-base ${
-                        orderType === 'delivery'
-                          ? 'border-orange-500 bg-orange-500/10 text-orange-400'
-                          : 'border-neutral-600 text-neutral-400 hover:border-neutral-500'
-                      }`}
                     >
-                      <Truck className="w-5 h-5 sm:w-6 sm:h-6" />
-                      <span>Delivery</span>
+                      Delivery
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={orderType === 'pickup'}
+                      onClick={() => { setOrderType('pickup'); updateOrderMode('pickup'); }}
+                    >
+                      Takeaway
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={orderType === 'dine_in'}
+                      onClick={() => { setOrderType('dine_in'); updateOrderMode('dine_in'); setIsScheduled(false); setScheduledDate(''); setScheduledTime(''); }}
+                    >
+                      Dine-in
                     </button>
                   </div>
                 </div>
@@ -1907,29 +1891,29 @@ export default function Order() {
 
               {/* Delivery Address / Pickup Info / Dine-in Info */}
               {orderType === 'dine_in' ? (
-                <div className="bg-neutral-800 rounded-lg p-4 sm:p-6 space-y-5">
-                  <h3 className="text-white font-bold text-xl flex items-center gap-2">
-                    <UtensilsCrossed className="w-5 h-5 text-orange-400" />
+                <div className="bg-ht-paper rounded-[14px] p-4 sm:p-6 space-y-5">
+                  <h3 className="text-ht-ink font-bold text-xl flex items-center gap-2">
+                    <UtensilsCrossed className="w-5 h-5 text-ht-red" />
                     Dine-in Details
                   </h3>
-                  <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4">
-                    <p className="text-orange-300 font-semibold mb-1">Hungry Times</p>
-                    <p className="text-neutral-300 text-sm">32/12A, Gariahat Road South, Kolkata 700 031</p>
+                  <div className="bg-ht-red/10 border border-ht-red/30 rounded-[14px] p-4">
+                    <p className="text-ht-red font-semibold mb-1">Hungry Times</p>
+                    <p className="text-ht-ink text-sm">32/12A, Gariahat Road South, Kolkata 700 031</p>
                     {packagingDeduction > 0 && (
-                      <p className="text-green-400 text-sm mt-2 font-medium">
+                      <p className="text-ht-veg text-sm mt-2 font-medium">
                         ✓ No packaging charge — saves ₹{money(packagingDeduction)}
                       </p>
                     )}
                   </div>
                   {/* Arrival time picker — required for dine-in */}
                   <div>
-                    <p className="text-white font-semibold mb-1">
+                    <p className="text-ht-ink font-semibold mb-1">
                       When would you like to arrive?{' '}
-                      <span className="text-red-400 text-sm">*</span>
+                      <span className="text-ht-red text-sm">*</span>
                     </p>
-                    <p className="text-neutral-500 text-xs mb-3">We'll have everything ready at this time.</p>
+                    <p className="text-ht-mute text-xs mb-3">We'll have everything ready at this time.</p>
                     {leadTier && (
-                      <p className="mb-3 text-xs text-amber-300 bg-amber-950/40 border border-amber-900/60 rounded-lg px-3 py-2 leading-relaxed">
+                      <p className="mb-3 text-xs text-ht-gold3 bg-ht-gold2/60 border border-ht-gold/50 rounded-[14px] px-3 py-2 leading-relaxed">
                         {leadTimeNote(leadTier)} It must also be paid online. For anything sooner, call{' '}
                         <a href={`tel:${RESTAURANT_PHONE}`} className="underline font-medium">{RESTAURANT_PHONE_DISPLAY}</a>.
                       </p>
@@ -1942,21 +1926,21 @@ export default function Order() {
                         <div className="space-y-3">
                           <div className="flex flex-col sm:flex-row gap-3">
                             <div className="flex-1">
-                              <label className="text-neutral-400 text-xs mb-1 block">Date</label>
+                              <label className="text-ht-mute text-xs mb-1 block">Date</label>
                               <input
                                 type="date"
                                 value={scheduledDate}
                                 min={leadTier?.nextDay ? tomorrowStr : todayStr}
                                 max={maxDateStr}
                                 onChange={e => { setScheduledDate(e.target.value); setScheduledTime(''); }}
-                                className="w-full px-3 py-2.5 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                className="w-full px-3 py-2.5 bg-white border border-ht-ink/15 rounded-[14px] text-ht-ink text-sm focus:outline-none focus:ring-2 focus:ring-ht-red"
                               />
                             </div>
                           </div>
                           <div>
-                            <label className="text-neutral-400 text-xs mb-1 block">Arrival time (12 PM – 11 PM)</label>
+                            <label className="text-ht-mute text-xs mb-1 block">Arrival time (12 PM – 11 PM)</label>
                             {!scheduledDate ? (
-                              <p className="text-neutral-500 text-xs px-1 py-2">Pick a date above first.</p>
+                              <p className="text-ht-mute text-xs px-1 py-2">Pick a date above first.</p>
                             ) : (() => {
                               const built = buildSlots(scheduledDate, nowIST);
                               // A large order gets no ASAP and no slot inside its notice period.
@@ -1964,7 +1948,7 @@ export default function Order() {
                               const slots = built.slots.filter(t => slotAllowedForTier(leadTier, scheduledDate, t, nowIST));
                               const showAsap = !!asapTime;
                               if (!showAsap && slots.length === 0) {
-                                return <p className="text-neutral-500 text-xs px-1 py-2">{leadTier ? 'No slots left on this day for an order this size. Pick a later date above.' : 'No slots left today — pick tomorrow above.'}</p>;
+                                return <p className="text-ht-mute text-xs px-1 py-2">{leadTier ? 'No slots left on this day for an order this size. Pick a later date above.' : 'No slots left today — pick tomorrow above.'}</p>;
                               }
                               return (
                                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
@@ -1972,10 +1956,10 @@ export default function Order() {
                                     <button
                                       type="button"
                                       onClick={() => setScheduledTime(asapTime)}
-                                      className={`rounded-lg border px-2 py-2 text-xs font-semibold transition flex flex-col items-center leading-tight ${
+                                      className={`rounded-[14px] border px-2 py-2 text-xs font-semibold transition flex flex-col items-center leading-tight ${
                                         scheduledTime === asapTime
-                                          ? 'border-orange-500 bg-orange-500/15 text-orange-300'
-                                          : 'border-orange-500/50 bg-orange-500/5 text-orange-200 hover:border-orange-500'
+                                          ? 'border-ht-red bg-ht-red/15 text-ht-red'
+                                          : 'border-ht-red/50 bg-ht-red/5 text-ht-gold2 hover:border-ht-red'
                                       }`}
                                     >
                                       <span>⚡ ASAP</span>
@@ -1989,10 +1973,10 @@ export default function Order() {
                                         key={t}
                                         type="button"
                                         onClick={() => setScheduledTime(t)}
-                                        className={`rounded-lg border px-2 py-2 text-xs font-semibold transition ${
+                                        className={`rounded-[14px] border px-2 py-2 text-xs font-semibold transition ${
                                           on
-                                            ? 'border-orange-500 bg-orange-500/15 text-orange-300'
-                                            : 'border-neutral-600 bg-neutral-700 text-neutral-200 hover:border-neutral-500'
+                                            ? 'border-ht-red bg-ht-red/15 text-ht-red'
+                                            : 'border-ht-ink/25 bg-ht-ink/10 text-ht-ink hover:border-ht-ink/25'
                                         }`}
                                       >
                                         {label12(t)}
@@ -2004,11 +1988,11 @@ export default function Order() {
                             })()}
                           </div>
                           {scheduledDate && scheduledTime ? (
-                            <div className="bg-green-900/30 border border-green-700 rounded-lg px-3 py-2 text-sm text-green-300">
+                            <div className="bg-ht-veg/10 border border-green-700 rounded-[14px] px-3 py-2 text-sm text-ht-veg">
                               We'll be ready for you on {scheduledDate} at {scheduledTime} 🍽️
                             </div>
                           ) : (
-                            <p className="text-neutral-500 text-xs">Select a date and arrival time to continue.</p>
+                            <p className="text-ht-mute text-xs">Select a date and arrival time to continue.</p>
                           )}
                         </div>
                       );
@@ -2016,31 +2000,31 @@ export default function Order() {
                   </div>
                 </div>
               ) : orderType === 'pickup' ? (
-                <div className="bg-neutral-800 rounded-lg p-4 sm:p-6">
-                  <h3 className="text-white font-bold text-xl mb-4">
+                <div className="bg-ht-paper rounded-[14px] p-4 sm:p-6">
+                  <h3 className="text-ht-ink font-bold text-xl mb-4">
                     <MapPin className="w-5 h-5 inline mr-2" />
                     Pickup Details
                   </h3>
-                  <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4">
-                    <p className="text-green-300 font-semibold text-base mb-1">Ready in ~30 minutes</p>
-                    <p className="text-neutral-300 text-sm">
+                  <div className="bg-ht-veg/10 border border-green-500/30 rounded-[14px] p-4">
+                    <p className="text-ht-veg font-semibold text-base mb-1">Ready in ~30 minutes</p>
+                    <p className="text-ht-ink text-sm">
                       Your order will be ready for pickup at our restaurant. We'll call if it takes a bit longer.
                     </p>
-                    <p className="text-neutral-400 text-sm mt-3">
-                      <span className="font-medium text-white">Location:</span> 32/12A, Gariahat Road South, Kolkata 700 031
+                    <p className="text-ht-mute text-sm mt-3">
+                      <span className="font-medium text-ht-ink">Location:</span> 32/12A, Gariahat Road South, Kolkata 700 031
                     </p>
                   </div>
                 </div>
               ) : (
-              <div className="bg-neutral-800 rounded-lg p-4 sm:p-6">
-                <h3 className="text-white font-bold text-xl mb-4">
+              <div className="bg-ht-paper rounded-[14px] p-4 sm:p-6">
+                <h3 className="text-ht-ink font-bold text-xl mb-4">
                   <MapPin className="w-5 h-5 inline mr-2" />
                   Delivery Address
                 </h3>
 
                 {!isAuthenticated ? (
                   <div className="text-center py-6">
-                    <p className="text-neutral-400">
+                    <p className="text-ht-mute">
                       Please login above to add your delivery address
                     </p>
                   </div>
@@ -2048,10 +2032,10 @@ export default function Order() {
                   <>
                     {addresses.length === 0 && !showAddAddressForm ? (
                       <div className="text-center py-6">
-                        <p className="text-neutral-400 mb-4">No saved addresses found</p>
+                        <p className="text-ht-mute mb-4">No saved addresses found</p>
                         <button
                           onClick={() => setShowAddAddressForm(true)}
-                          className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg transition-colors"
+                          className="px-6 py-3 bg-ht-red hover:bg-ht-red2 text-white font-bold rounded-[14px] transition-colors"
                         >
                           <Plus className="w-5 h-5 inline mr-2" />
                           Add Your First Address
@@ -2067,26 +2051,26 @@ export default function Order() {
                             return (
                               <div
                                 key={addr.id}
-                                className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                                className={`border rounded-[14px] p-4 cursor-pointer transition-all ${
                                   isSelected
-                                    ? 'border-orange-500 bg-orange-500/10'
-                                    : 'border-neutral-600 hover:border-neutral-500'
+                                    ? 'border-ht-red bg-ht-red/10'
+                                    : 'border-ht-ink/25 hover:border-ht-ink/25'
                                 }`}
                               >
                                 {isEditing ? (
                                   <div className="space-y-3">
                                     <div>
-                                      <label className="block text-neutral-300 text-sm mb-1">
+                                      <label className="block text-ht-ink text-sm mb-1">
                                         Label (Optional)
                                       </label>
                                       <AddressLabelPicker
                                         value={editAddressData.name}
                                         onChange={(name) => setEditAddressData({ ...editAddressData, name })}
-                                        inputClassName="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-white text-sm"
+                                        inputClassName="w-full px-3 py-2 bg-white border border-ht-ink/15 rounded text-ht-ink text-sm"
                                       />
                                     </div>
                                     <div>
-                                      <label className="block text-neutral-300 text-sm mb-1">
+                                      <label className="block text-ht-ink text-sm mb-1">
                                         Address *
                                       </label>
                                       <GoogleMapsAutocomplete
@@ -2105,13 +2089,13 @@ export default function Order() {
                                     <div className="flex gap-2 pt-2">
                                       <button
                                         onClick={handleCancelEdit}
-                                        className="flex-1 px-4 py-3 md:py-2 bg-neutral-700 hover:bg-neutral-600 text-white text-base md:text-sm rounded-lg font-medium"
+                                        className="flex-1 px-4 py-3 md:py-2 bg-ht-ink/10 hover:bg-ht-ink/15 text-ht-ink text-base md:text-sm rounded-[14px] font-medium"
                                       >
                                         Cancel
                                       </button>
                                       <button
                                         onClick={() => handleSaveEdit(addr.id)}
-                                        className="flex-1 px-4 py-3 md:py-2 bg-orange-500 hover:bg-orange-600 text-white text-base md:text-sm rounded-lg font-semibold"
+                                        className="flex-1 px-4 py-3 md:py-2 bg-ht-red hover:bg-ht-red2 text-white text-base md:text-sm rounded-[14px] font-semibold"
                                       >
                                         Save Changes
                                       </button>
@@ -2122,32 +2106,32 @@ export default function Order() {
                                     <div className="flex items-start justify-between mb-2">
                                       <div className="flex items-center gap-2">
                                         {isSelected && (
-                                          <Check className="w-5 h-5 text-orange-500 flex-shrink-0" />
+                                          <Check className="w-5 h-5 text-ht-red flex-shrink-0" />
                                         )}
                                         <div>
                                           <div className="flex items-center gap-2 flex-wrap">
                                             {addr.name && (
-                                              <span className="text-white font-medium">{addr.name}</span>
+                                              <span className="text-ht-ink font-medium">{addr.name}</span>
                                             )}
                                             {addr.isDefault && (
-                                              <span className="px-2 py-0.5 bg-orange-500/20 text-orange-400 text-xs rounded">
+                                              <span className="px-2 py-0.5 bg-ht-red/20 text-ht-red text-xs rounded">
                                                 Default
                                               </span>
                                             )}
                                             {addr.isLegacy && (
-                                              <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded" title="This is your registration address. Add more addresses below.">
+                                              <span className="px-2 py-0.5 bg-ht-gold2 text-ht-red2 text-xs rounded" title="This is your registration address. Add more addresses below.">
                                                 Primary
                                               </span>
                                             )}
                                           </div>
-                                          <p className="text-neutral-300 text-sm mt-1">{addr.fullAddress}</p>
+                                          <p className="text-ht-ink text-sm mt-1">{addr.fullAddress}</p>
                                           
                                           {/* Delivery Status Badge */}
                                           {(() => {
                                             const status = getDeliveryStatus(addr);
                                             if (status.canDeliver === null) {
                                               return (
-                                                <div className="mt-2 px-2 py-1 rounded text-xs inline-flex items-center gap-1 bg-neutral-700/50 text-neutral-400 border border-neutral-600">
+                                                <div className="mt-2 px-2 py-1 rounded text-xs inline-flex items-center gap-1 bg-ht-ink/10 text-ht-mute border border-ht-ink/25">
                                                   <Loader className="w-3 h-3 animate-spin" />
                                                   Checking area…
                                                 </div>
@@ -2156,8 +2140,8 @@ export default function Order() {
                                             return (
                                               <div className={`mt-2 px-2 py-1 rounded text-xs inline-flex items-center gap-1 ${
                                                 status.canDeliver
-                                                  ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                                                  : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                                                  ? 'bg-ht-veg/10 text-ht-veg border border-green-500/30'
+                                                  : 'bg-ht-red/10 text-ht-red border border-ht-red/30'
                                               }`}>
                                                 {status.canDeliver ? (
                                                   <>
@@ -2183,7 +2167,7 @@ export default function Order() {
                                                 e.stopPropagation();
                                                 handleStartEdit(addr);
                                               }}
-                                              className="p-3 md:p-2 text-neutral-400 hover:text-blue-400 transition-colors"
+                                              className="p-3 md:p-2 text-ht-mute hover:text-ht-red transition-colors"
                                               title="Edit"
                                             >
                                               <Edit2 className="w-5 h-5 md:w-4 md:h-4" />
@@ -2193,7 +2177,7 @@ export default function Order() {
                                                 e.stopPropagation();
                                                 handleDeleteAddress(addr.id);
                                               }}
-                                              className="p-3 md:p-2 text-neutral-400 hover:text-red-400 transition-colors"
+                                              className="p-3 md:p-2 text-ht-mute hover:text-ht-red transition-colors"
                                               title="Delete"
                                             >
                                               <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
@@ -2206,7 +2190,7 @@ export default function Order() {
                                               e.stopPropagation();
                                               handleSetDefault(addr.id);
                                             }}
-                                            className="p-2 text-xs text-neutral-400 hover:text-orange-400 transition-colors"
+                                            className="p-2 text-xs text-ht-mute hover:text-ht-red transition-colors"
                                             title="Set as default"
                                           >
                                             ★
@@ -2224,7 +2208,7 @@ export default function Order() {
                         {addresses.length < 5 && (
                           <button
                             onClick={() => setShowAddAddressForm(true)}
-                            className="w-full py-2 mt-3 border-2 border-dashed border-neutral-600 hover:border-orange-500 text-neutral-400 hover:text-orange-500 rounded-lg font-medium transition-colors"
+                            className="w-full py-2 mt-3 border-2 border-dashed border-ht-ink/25 hover:border-ht-red text-ht-mute hover:text-ht-red rounded-[14px] font-medium transition-colors"
                           >
                             <Plus className="w-5 h-5 inline mr-2" />
                             Add New Address
@@ -2235,20 +2219,20 @@ export default function Order() {
 
                     {/* Add Address Form */}
                     {showAddAddressForm && (
-                      <form onSubmit={handleAddNewAddress} className="space-y-4 mt-4 pt-4 border-t border-neutral-700">
+                      <form onSubmit={handleAddNewAddress} className="space-y-4 mt-4 pt-4 border-t border-ht-ink/15">
                         <div>
-                          <label className="block text-neutral-300 text-sm mb-2">
+                          <label className="block text-ht-ink text-sm mb-2">
                             Label (Optional)
                           </label>
                           <AddressLabelPicker
                             value={newAddressData.name}
                             onChange={(name) => setNewAddressData({ ...newAddressData, name })}
-                            inputClassName="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white"
+                            inputClassName="w-full px-3 py-2 bg-white border border-ht-ink/15 rounded-[14px] text-ht-ink"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-neutral-300 text-sm mb-2">
+                          <label className="block text-ht-ink text-sm mb-2">
                             Address *
                           </label>
                           <GoogleMapsAutocomplete
@@ -2271,13 +2255,13 @@ export default function Order() {
                               setShowAddAddressForm(false);
                               setNewAddressData({ name: '', fullAddress: '', latitude: null, longitude: null });
                             }}
-                            className="flex-1 px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg"
+                            className="flex-1 px-4 py-2 bg-ht-ink/10 hover:bg-ht-ink/15 text-ht-ink rounded-[14px]"
                           >
                             Cancel
                           </button>
                           <button
                             type="submit"
-                            className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium"
+                            className="flex-1 px-4 py-2 bg-ht-red hover:bg-ht-red2 text-white rounded-[14px] font-medium"
                           >
                             Save Address
                           </button>
@@ -2286,7 +2270,7 @@ export default function Order() {
                     )}
 
                     {!selectedAddressId && addresses.length > 0 && !showAddAddressForm && (
-                      <p className="text-red-400 text-sm mt-2">
+                      <p className="text-ht-red text-sm mt-2">
                         ⚠ Please select an address to continue
                       </p>
                     )}
@@ -2296,8 +2280,8 @@ export default function Order() {
               )}
 
               {/* Special Instructions */}
-              <div className="bg-neutral-800 rounded-lg p-4 sm:p-6">
-                <label className="block text-white font-bold text-lg mb-2">
+              <div className="bg-ht-paper rounded-[14px] p-4 sm:p-6">
+                <label className="block text-ht-ink font-bold text-lg mb-2">
                   <MessageSquare className="w-5 h-5 inline mr-2" />
                   Special Instructions (Optional)
                 </label>
@@ -2309,22 +2293,22 @@ export default function Order() {
                     }
                   }}
                   placeholder="Any special requests? (e.g., extra spicy, no onions, gate code)"
-                  className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-neutral-500"
+                  className="w-full px-3 py-2 bg-white border border-ht-ink/15 rounded-[14px] text-ht-ink text-sm focus:outline-none focus:ring-2 focus:ring-ht-red placeholder-ht-mute/60"
                   rows="3"
                   maxLength={200}
                 />
-                <p className="text-neutral-500 text-xs mt-1 text-right">
+                <p className="text-ht-mute text-xs mt-1 text-right">
                   {deliveryInstructions.length}/200 characters
                 </p>
               </div>
 
               {/* Schedule Order — hidden for dine-in (uses arrival time picker instead) */}
               {orderType !== 'dine_in' && (
-              <div className="bg-neutral-800 rounded-lg p-4 sm:p-6">
+              <div className="bg-ht-paper rounded-[14px] p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <p className="text-white font-bold text-lg leading-tight">Schedule for later</p>
-                    <p className="text-neutral-400 text-sm">
+                    <p className="text-ht-ink font-bold text-lg leading-tight">Schedule for later</p>
+                    <p className="text-ht-mute text-sm">
                       {isScheduled ? "We'll start preparing at the time you chose" : "Order will be placed immediately"}
                     </p>
                   </div>
@@ -2334,7 +2318,7 @@ export default function Order() {
                     aria-disabled={!!leadTier}
                     onClick={() => { if (leadTier) return; setIsScheduled(!isScheduled); setScheduledDate(""); setScheduledTime(""); }}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                      isScheduled ? "bg-orange-500" : "bg-neutral-600"
+                      isScheduled ? "bg-ht-red" : "bg-ht-ink/15"
                     }`}
                   >
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -2343,7 +2327,7 @@ export default function Order() {
                   </button>
                 </div>
                 {leadTier && (
-                  <p className="mb-3 text-xs text-amber-300 bg-amber-950/40 border border-amber-900/60 rounded-lg px-3 py-2 leading-relaxed">
+                  <p className="mb-3 text-xs text-ht-gold3 bg-ht-gold2/60 border border-ht-gold/50 rounded-[14px] px-3 py-2 leading-relaxed">
                     {leadTimeNote(leadTier)} It must also be paid online. For anything sooner, call{' '}
                     <a href={`tel:${RESTAURANT_PHONE}`} className="underline font-medium">{RESTAURANT_PHONE_DISPLAY}</a>.
                   </p>
@@ -2359,21 +2343,21 @@ export default function Order() {
                     <div className="space-y-3">
                       <div className="flex flex-col sm:flex-row gap-3">
                         <div className="flex-1">
-                          <label className="text-neutral-400 text-xs mb-1 block">Date</label>
+                          <label className="text-ht-mute text-xs mb-1 block">Date</label>
                           <input
                             type="date"
                             value={scheduledDate}
                             min={leadTier?.nextDay ? tomorrowStr : todayStr}
                             max={maxDateStr}
                             onChange={e => { setScheduledDate(e.target.value); setScheduledTime(""); }}
-                            className="w-full px-3 py-2.5 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            className="w-full px-3 py-2.5 bg-white border border-ht-ink/15 rounded-[14px] text-ht-ink text-sm focus:outline-none focus:ring-2 focus:ring-ht-red"
                           />
                         </div>
                       </div>
                       <div>
-                        <label className="text-neutral-400 text-xs mb-1 block">Time (12 PM – 11 PM)</label>
+                        <label className="text-ht-mute text-xs mb-1 block">Time (12 PM – 11 PM)</label>
                         {!scheduledDate ? (
-                          <p className="text-neutral-500 text-xs px-1 py-2">Pick a date above first.</p>
+                          <p className="text-ht-mute text-xs px-1 py-2">Pick a date above first.</p>
                         ) : (() => {
                           const built = buildSlots(scheduledDate, nowIST);
                           // A large order gets no ASAP and no slot inside its notice period.
@@ -2381,7 +2365,7 @@ export default function Order() {
                           const slots = built.slots.filter(t => slotAllowedForTier(leadTier, scheduledDate, t, nowIST));
                           const showAsap = !!asapTime;
                           if (!showAsap && slots.length === 0) {
-                            return <p className="text-neutral-500 text-xs px-1 py-2">{leadTier ? 'No slots left on this day for an order this size. Pick a later date above.' : 'No slots left today — pick tomorrow above.'}</p>;
+                            return <p className="text-ht-mute text-xs px-1 py-2">{leadTier ? 'No slots left on this day for an order this size. Pick a later date above.' : 'No slots left today — pick tomorrow above.'}</p>;
                           }
                           return (
                             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
@@ -2389,10 +2373,10 @@ export default function Order() {
                                 <button
                                   type="button"
                                   onClick={() => setScheduledTime(asapTime)}
-                                  className={`rounded-lg border px-2 py-2 text-xs font-semibold transition flex flex-col items-center leading-tight ${
+                                  className={`rounded-[14px] border px-2 py-2 text-xs font-semibold transition flex flex-col items-center leading-tight ${
                                     scheduledTime === asapTime
-                                      ? 'border-orange-500 bg-orange-500/15 text-orange-300'
-                                      : 'border-orange-500/50 bg-orange-500/5 text-orange-200 hover:border-orange-500'
+                                      ? 'border-ht-red bg-ht-red/15 text-ht-red'
+                                      : 'border-ht-red/50 bg-ht-red/5 text-ht-gold2 hover:border-ht-red'
                                   }`}
                                 >
                                   <span>⚡ ASAP</span>
@@ -2404,10 +2388,10 @@ export default function Order() {
                                   key={t}
                                   type="button"
                                   onClick={() => setScheduledTime(t)}
-                                  className={`rounded-lg border px-2 py-2 text-xs font-semibold transition ${
+                                  className={`rounded-[14px] border px-2 py-2 text-xs font-semibold transition ${
                                     scheduledTime === t
-                                      ? 'border-orange-500 bg-orange-500/15 text-orange-300'
-                                      : 'border-neutral-600 bg-neutral-700 text-neutral-200 hover:border-neutral-500'
+                                      ? 'border-ht-red bg-ht-red/15 text-ht-red'
+                                      : 'border-ht-ink/25 bg-ht-ink/10 text-ht-ink hover:border-ht-ink/25'
                                   }`}
                                 >
                                   {label12(t)}
@@ -2418,7 +2402,7 @@ export default function Order() {
                         })()}
                       </div>
                       {scheduledDate && scheduledTime && (
-                        <div className="bg-orange-900/30 border border-orange-700 rounded-lg px-3 py-2 text-sm text-orange-300">
+                        <div className="bg-ht-red2/30 border border-ht-red2 rounded-[14px] px-3 py-2 text-sm text-ht-red">
                           We'll start preparing on {scheduledDate} at {label12(scheduledTime)}
                         </div>
                       )}
@@ -2432,14 +2416,14 @@ export default function Order() {
 
             {/* RIGHT: Order Summary & Payment */}
             <div className="md:col-span-1">
-              <div className="bg-neutral-800 rounded-lg p-4 sm:p-6 md:sticky md:top-6">
-                <h3 className="text-white font-bold text-xl mb-4">Order Summary</h3>
+              <div className="bg-ht-paper rounded-[14px] p-4 sm:p-6 md:sticky md:top-6">
+                <h3 className="text-ht-ink font-bold text-xl mb-4">Order Summary</h3>
                 
                 {/* Price Summary with Discount */}
                 <div className="space-y-2 mb-4">
-                  <div className="flex justify-between text-neutral-400">
+                  <div className="flex justify-between text-ht-mute">
                     <span>Subtotal</span>
-                    <span className="text-white font-medium">₹{money(cartTotal)}</span>
+                    <span className="text-ht-ink font-medium">₹{money(cartTotal)}</span>
                   </div>
                   
                   {/* Fixed-price bundle in the cart: no code and no loyalty can
@@ -2448,7 +2432,7 @@ export default function Order() {
                       points, watches a discount appear, and is then charged the
                       full amount. */}
                   {hasNoStackItem && cartTotal > 0 && (
-                    <p className="text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/25 rounded px-3 py-2 leading-relaxed">
+                    <p className="text-xs text-ht-gold3/90 bg-ht-gold2/60 border border-ht-gold/25 rounded px-3 py-2 leading-relaxed">
                       Promo codes and loyalty points can't be used with a combo — its
                       price already includes the saving. Your points stay in your balance.
                     </p>
@@ -2477,7 +2461,7 @@ export default function Order() {
                   {isAuthenticated && loyaltyPoints === 0 && !appliedCode && offersAllowed && (
                     <button
                       onClick={() => { setCodeInput('WELCOME15'); setCodeExpanded(true); }}
-                      className="w-full py-2 text-sm text-green-400 bg-green-500/10 rounded text-center font-medium"
+                      className="w-full py-2 text-sm text-ht-veg bg-ht-veg/10 rounded text-center font-medium"
                     >
                       New customer? Use <span className="font-bold">WELCOME15</span> for 15% off your first order
                     </button>
@@ -2495,11 +2479,11 @@ export default function Order() {
                       also false on a combo, which is how a ₹449 bundle came to be
                       told "add ₹51 more" right under "combos can't take a code". */}
                   {serverQuote?.rejected ? (
-                    <p className="text-xs text-emerald-300/90 bg-emerald-500/10 border border-emerald-500/25 rounded px-3 py-2 leading-relaxed">
+                    <p className="text-xs text-emerald-300/90 bg-ht-veg/10 border border-emerald-500/25 rounded px-3 py-2 leading-relaxed">
                       {serverQuote.rejected}
                     </p>
                   ) : !appliedCode && belowOfferFloor && !hasNoStackItem && cartTotal > 0 && !serverQuote?.autoItemOffers ? (
-                    <p className="text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/25 rounded px-3 py-2 leading-relaxed">
+                    <p className="text-xs text-ht-gold3/90 bg-ht-gold2/60 border border-ht-gold/25 rounded px-3 py-2 leading-relaxed">
                       Add ₹{Math.ceil(Math.max(0, offerFloor - offerFloorBasis))} more to use a promo code or your
                       loyalty points — discounts start at a ₹{offerFloor} bill. Ordering now is fine too.
                     </p>
@@ -2508,7 +2492,7 @@ export default function Order() {
                   {/* The saving, named. An automatic offer with an unexplained
                       deduction reads as a pricing error; this says which offer. */}
                   {serverQuote?.autoItemOffers?.titles?.length > 0 && (
-                    <p className="text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/25 rounded px-3 py-2 leading-relaxed">
+                    <p className="text-xs text-emerald-300 bg-ht-veg/10 border border-emerald-500/25 rounded px-3 py-2 leading-relaxed">
                       {serverQuote.autoItemOffers.titles.join(' · ')} — applied automatically.
                       {/* Said once, plainly, BEFORE the buttons. Menu prices include
                           GST until a discount applies, at which point 5% is charged
@@ -2529,13 +2513,13 @@ export default function Order() {
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                           <button
                             onClick={() => setCodeExpanded(true)}
-                            className="text-orange-400 hover:text-orange-300 text-sm font-medium transition-colors"
+                            className="text-ht-red hover:text-ht-red text-sm font-medium transition-colors"
                           >
                             {isAuthenticated && customer?.phone ? 'Have a different code?' : 'Have a code?'}
                           </button>
                           <Link
                             to="/offers"
-                            className="text-xs text-neutral-400 hover:text-neutral-200 underline underline-offset-2 transition-colors"
+                            className="text-xs text-ht-mute hover:text-ht-ink underline underline-offset-2 transition-colors"
                           >
                             See all offers &amp; how discounts work
                           </Link>
@@ -2549,39 +2533,39 @@ export default function Order() {
                               onChange={e => setCodeInput(e.target.value.toUpperCase())}
                               onKeyDown={e => e.key === 'Enter' && handleApplyCode()}
                               placeholder="Enter code"
-                              className="flex-1 bg-neutral-700 border border-neutral-600 text-white text-sm rounded px-3 py-2 focus:outline-none focus:border-orange-500"
+                              className="flex-1 bg-white border border-ht-ink/15 text-ht-ink text-sm rounded px-3 py-2 focus:outline-none focus:border-ht-red"
                               autoFocus
                             />
                             <button
                               onClick={handleApplyCode}
                               disabled={codeValidating || !codeInput.trim()}
-                              className="px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-neutral-600 text-white text-sm font-bold rounded transition-colors"
+                              className="px-4 py-2 bg-ht-red hover:bg-ht-red2 disabled:bg-ht-ink/15 text-white text-sm font-bold rounded transition-colors"
                             >
                               {codeValidating ? <Loader className="w-4 h-4 animate-spin" /> : 'Apply'}
                             </button>
                             <button
                               onClick={() => { setCodeExpanded(false); setCodeError(''); }}
-                              className="p-2 text-neutral-400 hover:text-white"
+                              className="p-2 text-ht-mute hover:text-ht-red"
                             >
                               <X className="w-4 h-4" />
                             </button>
                           </div>
                           {codeError && (
-                            <p className="text-red-400 text-xs">{codeError}</p>
+                            <p className="text-ht-red text-xs">{codeError}</p>
                           )}
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className={`-mx-6 px-6 py-2 rounded ${discountAmount > 0 ? 'bg-orange-500/10' : 'bg-neutral-700/40'}`}>
+                    <div className={`-mx-6 px-6 py-2 rounded ${discountAmount > 0 ? 'bg-ht-red/10' : 'bg-ht-ink/10'}`}>
                       <div className="flex items-center justify-between">
-                        <span className={`text-sm font-medium ${discountAmount > 0 ? 'text-orange-400' : 'text-neutral-400'}`}>
+                        <span className={`text-sm font-medium ${discountAmount > 0 ? 'text-ht-red' : 'text-ht-mute'}`}>
                           Code: {appliedCode.code}
                           {discountAmount === 0 && <span className="ml-2 text-xs">(not applied)</span>}
                         </span>
                         <button
                           onClick={handleRemoveCode}
-                          className="text-neutral-400 hover:text-red-400 text-xs underline"
+                          className="text-ht-mute hover:text-ht-red text-xs underline"
                         >
                           Remove
                         </button>
@@ -2591,7 +2575,7 @@ export default function Order() {
                           between "add ₹X more" reading as advice and reading as a
                           blocked checkout. */}
                       {discountAmount === 0 && belowOfferFloor && !hasNoStackItem && (
-                        <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
+                        <p className="text-xs text-ht-mute mt-1 leading-relaxed">
                           Discounts start at a ₹{offerFloor} bill — add ₹{Math.ceil(Math.max(0, offerFloor - offerFloorBasis))} more to use it.
                           You can place this order now without it.
                         </p>
@@ -2601,21 +2585,21 @@ export default function Order() {
 
                   {/* 💚 DISCOUNT ROW */}
                   {discountAmount > 0 && (
-                    <div className="flex justify-between items-center bg-green-500/10 -mx-6 px-6 py-2 rounded">
+                    <div className="flex justify-between items-center bg-ht-veg/10 -mx-6 px-6 py-2 rounded">
                       {/* Name the offer the SERVER actually applied. This read
                           appliedOffer, which is offers.find(o => o.apply_automatically)
                           — the first automatic offer in the list, not necessarily
                           the one that priced this cart. With two live (Fish n
                           Chips flat ₹65, Meifoon 20%), a Meifoon order correctly
                           discounted ₹60 under a label reading "(65₹)". */}
-                      <span className="text-green-400 font-medium text-sm">
+                      <span className="text-ht-veg font-medium text-sm">
                         {serverQuote?.autoItemOffers?.titles?.length
                           ? serverQuote.autoItemOffers.titles.join(' · ')
                           : serverQuote?.offerTitle
                             ? serverQuote.offerTitle
                             : `Offer Discount (${appliedOffer?.discount_value ?? ''}${appliedOffer?.discount_type === 'percent' ? '%' : '₹'})`}
                       </span>
-                      <span className="text-green-400 font-bold">- ₹{money(discountAmount)}</span>
+                      <span className="text-ht-veg font-bold">- ₹{money(discountAmount)}</span>
                     </div>
                   )}
 
@@ -2629,8 +2613,8 @@ export default function Order() {
                       which does not add up. The saving is real and still worth
                       saying — it just isn't arithmetic. */}
                   {isDineIn && packagingDeduction > 0 && (
-                    <div className="bg-green-500/10 -mx-6 px-6 py-2 rounded">
-                      <span className="text-green-400 font-medium text-sm">
+                    <div className="bg-ht-veg/10 -mx-6 px-6 py-2 rounded">
+                      <span className="text-ht-veg font-medium text-sm">
                         ✓ No packaging charge on dine-in — saves ₹{money(packagingDeduction)}
                       </span>
                     </div>
@@ -2638,15 +2622,15 @@ export default function Order() {
 
                   {/* 🎯 LOYALTY POINTS REDEMPTION */}
                   {isAuthenticated && loyaltyPoints >= 30 && maxRedeemablePoints >= 30 && (
-                    <div className="bg-purple-500/10 -mx-6 px-6 py-3 rounded space-y-2">
+                    <div className="bg-ht-gold2/60 -mx-6 px-6 py-3 rounded space-y-2">
                       <div className="flex justify-between items-center">
-                        <span className="text-purple-400 font-medium text-sm">
+                        <span className="text-ht-red2 font-medium text-sm">
                           Loyalty Points ({loyaltyPoints} available)
                         </span>
                         {pointsToRedeem > 0 && (
                           <button
                             onClick={() => setPointsToRedeem(0)}
-                            className="text-neutral-400 hover:text-red-400 text-xs underline"
+                            className="text-ht-mute hover:text-ht-red text-xs underline"
                           >
                             Remove
                           </button>
@@ -2655,7 +2639,7 @@ export default function Order() {
                       {pointsToRedeem === 0 ? (
                         <button
                           onClick={handleUsePoints}
-                          className="w-full py-1.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-sm font-medium rounded transition-colors"
+                          className="w-full py-1.5 bg-ht-gold2 hover:bg-ht-gold text-ht-red2 text-sm font-medium rounded transition-colors"
                         >
                           Use {Math.min(loyaltyPoints, maxRedeemablePoints)} points (save ₹{Math.min(loyaltyPoints, maxRedeemablePoints)})
                         </button>
@@ -2668,9 +2652,9 @@ export default function Order() {
                             step={10}
                             value={pointsToRedeem}
                             onChange={(e) => setPointsToRedeem(Number(e.target.value))}
-                            className="w-full accent-purple-500"
+                            className="w-full accent-ht-red"
                           />
-                          <div className="flex justify-between text-xs text-purple-300">
+                          <div className="flex justify-between text-xs text-ht-red2">
                             <span>30 pts</span>
                             <span className="font-bold">Using {pointsToRedeem} pts (- ₹{pointsDiscount})</span>
                             <span>{maxRedeemablePoints} pts</span>
@@ -2682,11 +2666,11 @@ export default function Order() {
 
                   {/* Points discount display */}
                   {pointsDiscount > 0 && (
-                    <div className="flex justify-between items-center bg-purple-500/10 -mx-6 px-6 py-2 rounded">
-                      <span className="text-purple-400 font-medium text-sm">
+                    <div className="flex justify-between items-center bg-ht-gold2/60 -mx-6 px-6 py-2 rounded">
+                      <span className="text-ht-red2 font-medium text-sm">
                         Points Discount
                       </span>
-                      <span className="text-purple-400 font-bold">- ₹{money(pointsDiscount)}</span>
+                      <span className="text-ht-red2 font-bold">- ₹{money(pointsDiscount)}</span>
                     </div>
                   )}
 
@@ -2698,28 +2682,28 @@ export default function Order() {
                       and same wording as lib/billTotals.js, which drives the
                       confirmation and order-details pages. */}
                   {gstOnTop && (
-                    <div className="flex justify-between text-neutral-400">
+                    <div className="flex justify-between text-ht-mute">
                       <span>GST (5%)</span>
-                      <span className="text-white">₹{money(gstAmount)}</span>
+                      <span className="text-ht-ink">₹{money(gstAmount)}</span>
                     </div>
                   )}
 
                   {/* Borzo delivery partner toggle — only shown when quote is available */}
                   {orderType === 'delivery' && borzoQuote.charge != null && (
-                    <div className="bg-neutral-800/60 rounded-lg p-3 space-y-2">
-                      <p className="text-xs text-neutral-400 font-medium">Delivery partner</p>
+                    <div className="bg-ht-paper rounded-[14px] p-3 space-y-2">
+                      <p className="text-xs text-ht-mute font-medium">Delivery partner</p>
                       <div className="flex gap-2">
                         <button
                           type="button"
                           onClick={() => setUseBorzoDelivery(false)}
-                          className={`flex-1 py-2 px-3 rounded text-xs font-medium transition-colors ${!useBorzoDelivery ? 'bg-orange-500 text-white' : 'bg-neutral-700 text-neutral-400 hover:bg-neutral-600'}`}
+                          className={`flex-1 py-2 px-3 rounded text-xs font-medium transition-colors ${!useBorzoDelivery ? 'bg-ht-ivory text-ht-red shadow-sm' : 'text-ht-mute'}`}
                         >
                           Standard · ₹{deliveryStatus?.deliveryCharge > 0 ? deliveryStatus.deliveryCharge : 'Free'}
                         </button>
                         <button
                           type="button"
                           onClick={() => setUseBorzoDelivery(true)}
-                          className={`flex-1 py-2 px-3 rounded text-xs font-medium transition-colors ${useBorzoDelivery ? 'bg-orange-500 text-white' : 'bg-neutral-700 text-neutral-400 hover:bg-neutral-600'}`}
+                          className={`flex-1 py-2 px-3 rounded text-xs font-medium transition-colors ${useBorzoDelivery ? 'bg-ht-ivory text-ht-red shadow-sm' : 'text-ht-mute'}`}
                         >
                           Borzo · ₹{borzoQuote.charge}
                         </button>
@@ -2728,42 +2712,42 @@ export default function Order() {
                   )}
 
                   {/* Delivery Charge / Pickup */}
-                  <div className="flex justify-between text-neutral-400">
+                  <div className="flex justify-between text-ht-mute">
                     <span className="flex items-center gap-1.5">
                       {orderType === 'pickup' ? <MapPin className="w-3.5 h-3.5" /> : <Truck className="w-3.5 h-3.5" />}
                       {orderType === 'pickup' ? 'Pickup' : 'Delivery'}
                     </span>
                     {orderType === 'pickup' ? (
-                      <span className="text-green-400 font-medium">FREE</span>
+                      <span className="text-ht-veg font-medium">FREE</span>
                     ) : borzoQuote.loading ? (
-                      <span className="flex items-center gap-1 text-neutral-400 text-sm"><Loader className="w-3.5 h-3.5 animate-spin" /> Calculating...</span>
+                      <span className="flex items-center gap-1 text-ht-mute text-sm"><Loader className="w-3.5 h-3.5 animate-spin" /> Calculating...</span>
                     ) : deliveryCharge > 0 ? (
-                      <span className="text-white">₹{money(deliveryCharge)}</span>
+                      <span className="text-ht-ink">₹{money(deliveryCharge)}</span>
                     ) : (
-                      <span className="text-green-400 font-medium">FREE</span>
+                      <span className="text-ht-veg font-medium">FREE</span>
                     )}
                   </div>
 
-                  <div className="border-t border-neutral-700 pt-2 mt-2 flex justify-between">
-                    <span className="text-lg font-bold text-white">Total</span>
-                    <span className="text-xl font-bold text-orange-500">₹{money(finalTotal)}</span>
+                  <div className="mt-2 flex justify-between border-t-[1.5px] border-ht-ink pt-3 text-xl font-extrabold tabular-nums text-ht-ink">
+                    <span>To pay</span>
+                    <span>₹{money(finalTotal)}</span>
                   </div>
                   {!gstOnTop && (
-                    <p className="text-neutral-500 text-xs text-right">{gstIncludedNote(gstAmount)}</p>
+                    <p className="text-ht-mute text-xs text-right">{gstIncludedNote(gstAmount)}</p>
                   )}
 
                   {/* 🎊 SAVINGS MESSAGE */}
                   {(discountAmount > 0 || pointsDiscount > 0) && (
-                    <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-2 text-center mt-2">
-                      <p className="text-green-400 font-semibold text-sm">
-                        🎊 Yay! You saved ₹{discountAmount + pointsDiscount} on this order!
+                    <div className="bg-ht-veg/10 border border-ht-veg/30 rounded-[10px] p-2 text-center mt-2">
+                      <p className="text-ht-veg font-semibold text-sm">
+                        You saved ₹{discountAmount + pointsDiscount} on this order!
                       </p>
                     </div>
                   )}
                 </div>
 
                 {paymentError && (
-                  <div ref={paymentErrorRef} className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-400 text-sm">
+                  <div ref={paymentErrorRef} className="mb-4 p-3 bg-ht-red/10 border border-ht-red/40 rounded-[14px] text-ht-red text-sm">
                     {paymentError}
                   </div>
                 )}
@@ -2773,7 +2757,7 @@ export default function Order() {
                   const status = getDeliveryStatus(selectedAddress);
                   if (status.canDeliver === null) {
                     return (
-                      <div className="mb-4 p-3 bg-neutral-700/50 border border-neutral-600 rounded-lg flex items-center gap-2 text-neutral-300 text-sm">
+                      <div className="mb-4 p-3 bg-white border border-ht-ink/15 rounded-[14px] flex items-center gap-2 text-ht-ink text-sm">
                         <Loader className="w-4 h-4 animate-spin flex-shrink-0" />
                         Checking delivery area for your address…
                       </div>
@@ -2781,18 +2765,18 @@ export default function Order() {
                   }
                   if (status.canDeliver === false) {
                     return (
-                      <div className="mb-4 p-4 bg-red-500/10 border border-red-500/50 rounded-lg">
+                      <div className="mb-4 p-4 bg-ht-red/10 border border-ht-red/40 rounded-[14px]">
                         <div className="flex items-start gap-3">
-                          <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                          <AlertCircle className="w-5 h-5 text-ht-red flex-shrink-0 mt-0.5" />
                           <div>
-                            <p className="text-red-400 font-semibold mb-1">
+                            <p className="text-ht-red font-semibold mb-1">
                               ⚠️ Outside Delivery Area
                             </p>
-                            <p className="text-red-300 text-sm mb-2">
+                            <p className="text-ht-red text-sm mb-2">
                               {status.message}
                             </p>
-                            <p className="text-neutral-300 text-sm">
-                              Please call us at <a href="tel:+918420822919" className="text-orange-400 hover:text-orange-300 font-semibold">+91-8420822919</a> to place your order.
+                            <p className="text-ht-ink text-sm">
+                              Please call us at <a href="tel:+918420822919" className="text-ht-red hover:text-ht-red font-semibold">+91-8420822919</a> to place your order.
                             </p>
                           </div>
                         </div>
@@ -2807,7 +2791,7 @@ export default function Order() {
                     customer fixes it here rather than meeting a rejection at
                     payment. */}
                 {fulfilmentBlock && (
-                  <div className="mb-3 p-3 bg-amber-500/10 border border-amber-500/50 rounded-lg text-amber-300 text-sm">
+                  <div className="mb-3 p-3 bg-ht-gold2/60 border border-ht-gold/50 rounded-[14px] text-ht-gold3 text-sm">
                     {fulfilmentBlock.message}
                   </div>
                 )}
@@ -2818,7 +2802,7 @@ export default function Order() {
                     <button
                       onClick={handleRazorpayPayment}
                       disabled={paymentProcessing || lines.length === 0 || !!fulfilmentBlock || (orderType === 'delivery' && (!selectedAddressId || geocodingPending))}
-                      className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors"
+                      className="flex h-[52px] w-full items-center justify-center whitespace-nowrap rounded-full bg-ht-red text-base font-bold text-white transition hover:bg-ht-red2 active:scale-[.98] disabled:cursor-not-allowed disabled:bg-ht-ink/15"
                     >
                       {paymentProcessing ? (
                         <>
@@ -2826,13 +2810,13 @@ export default function Order() {
                           Processing...
                         </>
                       ) : (
-                        "💳 Pay Online - Razorpay"
+                        <>Pay ₹{money(finalTotal)} →</>
                       )}
                     </button>
                   )}
 
                   {!codAllowed(finalTotal) && (
-                    <p className="text-xs text-amber-300 bg-amber-950/40 border border-amber-900/60 rounded-lg px-3 py-2 leading-relaxed">
+                    <p className="text-xs text-ht-gold3 bg-ht-gold2/60 border border-ht-gold/50 rounded-[14px] px-3 py-2 leading-relaxed">
                       {isEditMode
                         ? <>This change takes the bill above ₹{COD_MAX_TOTAL}, which must be paid online. To change this order, call{' '}</>
                         : <>Orders above ₹{COD_MAX_TOTAL} must be paid online. To arrange it differently, call{' '}</>}
@@ -2840,7 +2824,7 @@ export default function Order() {
                     </p>
                   )}
                   {codAllowed(finalTotal) && cashTooFar && (
-                    <p className="text-xs text-amber-300 bg-amber-950/40 border border-amber-900/60 rounded-lg px-3 py-2 leading-relaxed">
+                    <p className="text-xs text-ht-gold3 bg-ht-gold2/60 border border-ht-gold/50 rounded-[14px] px-3 py-2 leading-relaxed">
                       Deliveries more than {COD_MAX_DISTANCE_KM} km away must be paid online. To discuss it, call{' '}
                       <a href={`tel:${RESTAURANT_PHONE}`} className="underline font-medium">{RESTAURANT_PHONE_DISPLAY}</a>.
                     </p>
@@ -2849,7 +2833,7 @@ export default function Order() {
                   <button
                     onClick={handleCODPayment}
                     disabled={paymentProcessing || lines.length === 0 || !!fulfilmentBlock || !codAllowed(finalTotal) || cashTooFar || (orderType === 'delivery' && (!selectedAddressId || geocodingPending))}
-                    className={`w-full py-3 ${isEditMode ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700'} disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors`}
+                    className={`flex h-[52px] w-full items-center justify-center whitespace-nowrap rounded-full text-base font-bold transition active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-40 ${isEditMode ? 'bg-ht-red text-white hover:bg-ht-red2' : 'border-[1.5px] border-ht-red bg-transparent text-ht-red hover:bg-ht-red/5'}`}
                   >
                     {paymentProcessing ? (
                       <>
@@ -2859,7 +2843,7 @@ export default function Order() {
                     ) : isEditMode ? (
                       `Update Order #${editOrderId}`
                     ) : (
-                      "💵 Cash on Delivery"
+                      "Cash on delivery"
                     )}
                   </button>
                 </div>
@@ -2920,29 +2904,29 @@ export default function Order() {
 
       {/* Last-resort delivery pin prompt — only when every automatic attempt failed */}
       {pinPromptOpen && (
-        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/70 p-0 sm:p-4">
-          <div className="w-full sm:max-w-md bg-neutral-900 border border-neutral-700 rounded-t-2xl sm:rounded-2xl p-4 max-h-[92vh] overflow-y-auto">
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-ht-ink/70 p-0 sm:p-4">
+          <div className="w-full sm:max-w-md bg-ht-ivory border border-ht-ink/15 rounded-t-2xl sm:rounded-2xl p-4 max-h-[92vh] overflow-y-auto">
             <div className="flex items-start justify-between gap-3 mb-1">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-orange-500 shrink-0" />
+              <h3 className="text-base font-bold text-ht-ink flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-ht-red shrink-0" />
                 Where should we deliver?
               </h3>
               <button
                 type="button"
                 onClick={() => setPinPromptOpen(false)}
-                className="text-neutral-400 hover:text-white shrink-0"
+                className="text-ht-mute hover:text-ht-red shrink-0"
                 aria-label="Close"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <p className="text-xs text-neutral-400 mb-3">
+            <p className="text-xs text-ht-mute mb-3">
               We couldn't find this address on the map. Drop a pin so your rider reaches
               you directly — you only have to do this once.
             </p>
 
-            <p className="text-xs text-neutral-500 mb-3 break-words">
+            <p className="text-xs text-ht-mute mb-3 break-words">
               {selectedAddress?.fullAddress}
             </p>
 
@@ -2957,7 +2941,7 @@ export default function Order() {
               type="button"
               onClick={handlePinPromptConfirm}
               disabled={!pinPromptCoords || pinPromptSaving}
-              className="mt-3 w-full py-3 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="mt-3 w-full py-3 bg-ht-red text-white font-semibold rounded-[14px] hover:bg-ht-red disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {pinPromptSaving
                 ? 'Saving…'
@@ -2971,7 +2955,7 @@ export default function Order() {
             <button
               type="button"
               onClick={handlePinPromptSkip}
-              className="mt-2 w-full py-2 text-xs text-neutral-400 underline underline-offset-2 hover:text-neutral-200"
+              className="mt-2 w-full py-2 text-xs text-ht-mute underline underline-offset-2 hover:text-ht-ink"
             >
               I can't pin it — confirm my address on the call
             </button>
