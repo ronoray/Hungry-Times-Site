@@ -82,24 +82,29 @@ html { height: 100%; }
   /* Offer ticket — gold2 stub, dashed divider, paper notches at the divider.
      Children: .ticket-main and .ticket-stub. One ticket per screen. */
   .ticket {
+    --stub-w: 112px;
     position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) var(--stub-w);
     overflow: hidden;
     border-radius: 14px;
     background: #F6DC9A;
     color: #150A0A;
   }
-  .ticket .ticket-main { padding: 16px 18px; border-right: 2px dashed rgba(90, 7, 13, .35); min-width: 0; }
+  .ticket .ticket-main { padding: 14px 14px 14px 16px; border-right: 2px dashed rgba(90, 7, 13, .35); min-width: 0; }
   .ticket .ticket-stub {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 6px; padding: 16px 12px; min-width: 104px;
+    gap: 6px; padding: 14px 8px; min-width: 0;
+  }
+  @media (min-width: 768px) {
+    .ticket { --stub-w: 148px; }
+    .ticket .ticket-main { padding: 16px 18px; }
   }
   .ticket::before,
   .ticket::after {
     content: "";
     position: absolute;
-    right: calc(104px - 9px);
+    right: calc(var(--stub-w) - 9px);
     width: 18px; height: 18px; border-radius: 50%;
     background: var(--ticket-notch, #F7EEDC);
   }

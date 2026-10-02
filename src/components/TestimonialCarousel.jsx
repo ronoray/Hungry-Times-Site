@@ -97,7 +97,7 @@ export default function TestimonialCarousel({ items = [], intervalMs = 6000 }) {
               className="w-full flex-shrink-0 px-1"
               aria-hidden={i !== index}
             >
-              <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 mx-auto max-w-2xl">
+              <div className="mx-auto max-w-2xl rounded-[14px] border border-ht-ink/10 bg-ht-ivory p-5 md:p-6">
                 <StarRating value={Number(t.rating) || 5} className="mb-3" />
                 {/* Most reviewers leave stars and no words, and every published
                     rating belongs on the page. Rendering the quote block
@@ -105,11 +105,11 @@ export default function TestimonialCarousel({ items = [], intervalMs = 6000 }) {
                     marks — trim first, because ' ' is truthy. A wordless review
                     is stars and a name. */}
                 {quoteOf(t) && (
-                  <p className="text-sm sm:text-base text-neutral-300 leading-relaxed mb-4">
+                  <p className="mb-3 font-serif text-[19px] italic leading-snug text-ht-ink">
                     &ldquo;{quoteOf(t)}&rdquo;
                   </p>
                 )}
-                <p className={`text-xs text-neutral-500 font-medium${quoteOf(t) ? '' : ' mt-1'}`}>
+                <p className={`font-mono text-[11px] uppercase tracking-[.08em] text-ht-mute${quoteOf(t) ? '' : ' mt-1'}`}>
                   &mdash; {t.customer_name || t.name || 'Happy Customer'}
                 </p>
               </div>
@@ -119,20 +119,20 @@ export default function TestimonialCarousel({ items = [], intervalMs = 6000 }) {
       </div>
 
       {count > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-4">
+        <div className="mt-2 flex items-center justify-center gap-1">
           {items.map((t, i) => (
             <button
               key={t.id ?? i}
               onClick={() => go(i)}
               // 24px hit area around a 6px dot — the dot alone is far below any
               // usable tap target on a phone.
-              className="p-2 -m-1"
+              className="grid h-11 w-6 place-items-center"
               aria-label={`Show review ${i + 1} of ${count}`}
               aria-current={i === index}
             >
               <span
                 className={`block w-1.5 h-1.5 rounded-full transition-colors ${
-                  i === index ? 'bg-orange-500' : 'bg-neutral-700'
+                  i === index ? 'bg-ht-red' : 'bg-ht-ink/20'
                 }`}
               />
             </button>
