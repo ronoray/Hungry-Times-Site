@@ -1,10 +1,10 @@
 // site/public/sw.js - Customer Site Service Worker
 // ============================================================================
 // CORRECTED VERSION - Fixed icon paths to match actual files
-// Version: v9
+// Version: v10 (2 Oct 2026: Lal-Paar icon set)
 // ============================================================================
 
-const CACHE_NAME = 'hungry-times-v9';
+const CACHE_NAME = 'hungry-times-v10';
 
 // ✅ FIXED: Match actual icon filenames in /public folder
 const STATIC_ASSETS = [

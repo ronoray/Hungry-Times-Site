@@ -8,7 +8,7 @@
       <wide310x150logo src="/icon-384.png"/>
       <square310x310logo src="/icon-512.png"/>
       <!-- Background color for pinned tiles -->
-      <TileColor>#0B0B0B</TileColor>
+      <TileColor>#7E0E15</TileColor>
     </tile>
     <notification>
       <polling-uri src="/notifications/"/>
