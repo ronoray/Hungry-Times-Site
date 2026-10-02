@@ -29,11 +29,11 @@ const RESTAURANT_SCHEMA = {
   "url": "https://home.hungrytimes.in",
   "logo": "https://home.hungrytimes.in/hungry-times-logo.png",
   "image": "https://home.hungrytimes.in/banner.png",
-  "description": "Hungry Times — Chinese, Continental & Indian restaurant in Dhakuria / Gariahat, South Kolkata. Order online with fast home delivery within 5 km, plus dine-in and takeaway.",
+  "description": "Hungry Times — Chinese, Continental & Indian restaurant in Dhakuria / Gariahat, South Kolkata. Order straight from our kitchen — delivery, takeaway and dine-in.",
   "telephone": "+91-8420822919",
   "address": {
     "@type": "PostalAddress",
-    "streetAddress": "32, 12A, Gariahat Road South, Dhakuria",
+    "streetAddress": "32/12A, Gariahat Road South, Ground Floor",
     "addressLocality": "Kolkata",
     "addressRegion": "West Bengal",
     "postalCode": "700031",
@@ -43,7 +43,7 @@ const RESTAURANT_SCHEMA = {
   "openingHoursSpecification": [{
     "@type": "OpeningHoursSpecification",
     "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
-    "opens": "11:00", "closes": "22:30"
+    "opens": "12:00", "closes": "23:00"
   }],
   "servesCuisine": ["Indian", "Chinese", "Continental", "North Indian"],
   "priceRange": "$$",
@@ -158,7 +158,7 @@ export default function Home() {
     <>
       <SEOHead
         title="Hungry Times — Order Food Online in Kolkata"
-        description="Order delicious food online from Hungry Times. Fast delivery within 5km. Indian, Chinese, Continental cuisine. Free delivery under 3km!"
+        description="Order straight from the Hungry Times kitchen on Gariahat Road South. Chinese & Continental — delivery, takeaway and dine-in."
         canonicalPath="/"
       />
       <StructuredData data={restaurantSchema} />
@@ -179,14 +179,6 @@ export default function Home() {
             <div className="bg-black/40 backdrop-blur-sm rounded-full px-3 py-1">
               <KitchenStatus />
             </div>
-            {/* Static copy, matching the delivery strip below and the rest of
-                the site. Deliberately NOT KitchenStatus's estimatedWait — that
-                is a kitchen prep figure only surfaced when activeOrders > 3, so
-                showing it here would read as a delivery promise. */}
-            <div className="bg-black/40 backdrop-blur-sm rounded-full px-3 py-1 flex items-center gap-1.5 text-xs text-neutral-200">
-              <Clock className="w-3.5 h-3.5 text-orange-500" />
-              30–45 min delivery
-            </div>
           </div>
           <h1
             className="text-3xl md:text-5xl font-bold mb-3 text-white leading-tight"
@@ -196,7 +188,7 @@ export default function Home() {
             <span className="text-orange-500">Fresh. Cozy. Kolkata.</span>
           </h1>
           <p className="text-neutral-300 text-base md:text-lg mb-6 max-w-xl">
-            Signature dishes, fast delivery within 5km, and free delivery under 3km.
+            Order straight from our kitchen — delivery, takeaway and dine-in.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link
@@ -350,32 +342,6 @@ export default function Home() {
         </section>
       )}
 
-      {/* ─── Delivery Info Strip ─── */}
-      <section className="py-8 px-4 bg-neutral-950 border-y border-neutral-800/50">
-        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-          <div>
-            <Truck className="w-6 h-6 text-orange-500 mx-auto mb-2" />
-            <p className="text-sm font-medium text-neutral-200">Free Delivery</p>
-            <p className="text-xs text-neutral-500">Under 3km</p>
-          </div>
-          <div>
-            <Clock className="w-6 h-6 text-orange-500 mx-auto mb-2" />
-            <p className="text-sm font-medium text-neutral-200">30-45 Min</p>
-            <p className="text-xs text-neutral-500">Avg. delivery time</p>
-          </div>
-          <div>
-            <CreditCard className="w-6 h-6 text-orange-500 mx-auto mb-2" />
-            <p className="text-sm font-medium text-neutral-200">Online Payment</p>
-            <p className="text-xs text-neutral-500">UPI, Cards & COD</p>
-          </div>
-          <div>
-            <MapPin className="w-6 h-6 text-orange-500 mx-auto mb-2" />
-            <p className="text-sm font-medium text-neutral-200">5km Radius</p>
-            <p className="text-xs text-neutral-500">Delivery coverage</p>
-          </div>
-        </div>
-      </section>
-
       {/* ─── Social Proof + Testimonial Carousel ─── */}
       {testimonials.length > 0 && (
         <section className="py-10 px-4 bg-neutral-900/20">
@@ -448,7 +414,7 @@ export default function Home() {
             air-conditioned setting perfect for dining in or takeaway.
           </p>
           <p className="text-neutral-500 text-sm">
-            Located at {BRAND.address}, open daily 12 PM — 11 PM.
+            Located at {BRAND.address}. Open every day, 12 PM – 11 PM.
           </p>
         </div>
       </section>
@@ -457,7 +423,7 @@ export default function Home() {
       <section className="py-10 px-4 bg-neutral-900 border-t border-b border-neutral-700 text-center">
         <div className="max-w-xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">Hungry? Order Now!</h2>
-          <p className="text-neutral-400 mb-6">Free delivery under 3km. Pay online or cash on delivery.</p>
+          <p className="text-neutral-400 mb-6">Pay online or cash on delivery.</p>
           <Link
             to="/menu"
             className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-8 py-3 rounded-full transition-colors"

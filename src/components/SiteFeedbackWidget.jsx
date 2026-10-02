@@ -138,16 +138,16 @@ export default function SiteFeedbackWidget() {
       {/* ── Slide-up card ── */}
       {(phase === 'card' || phase === 'followup' || phase === 'done') && (
         <div
-          className="w-72 bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl overflow-hidden"
+          className="w-72 bg-ht-ivory border border-ht-ink/15 rounded-2xl shadow-2xl overflow-hidden"
           style={{ animation: 'ht-slide-up 0.3s cubic-bezier(0.34,1.56,0.64,1)' }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-800">
-            <span className="text-sm font-semibold text-white">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-ht-ink/10">
+            <span className="text-sm font-semibold text-ht-ink">
               {phase === 'done' ? 'Thank you! 🙏' : 'Quick question'}
             </span>
             {phase !== 'done' && (
-              <button onClick={dismiss} className="text-neutral-500 hover:text-neutral-300 transition-colors">
+              <button onClick={dismiss} className="text-ht-mute hover:text-ht-ink transition-colors">
                 <X className="w-4 h-4" />
               </button>
             )}
@@ -156,14 +156,14 @@ export default function SiteFeedbackWidget() {
           {/* Done state */}
           {phase === 'done' && (
             <div className="px-4 py-5 text-center">
-              <p className="text-neutral-300 text-sm">Your feedback helps us improve for everyone.</p>
+              <p className="text-ht-ink text-sm">Your feedback helps us improve for everyone.</p>
             </div>
           )}
 
           {/* Rating step */}
           {phase === 'card' && (
             <div className="px-4 py-4">
-              <p className="text-neutral-300 text-sm mb-4">How's your experience on our site?</p>
+              <p className="text-ht-ink text-sm mb-4">How's your experience on our site?</p>
               <div className="flex justify-between">
                 {EMOJI_RATINGS.map(r => (
                   <button
@@ -173,11 +173,11 @@ export default function SiteFeedbackWidget() {
                     className="flex flex-col items-center gap-1 group"
                   >
                     <span className="text-2xl group-hover:scale-125 transition-transform">{r.emoji}</span>
-                    <span className="text-neutral-600 text-[10px] group-hover:text-neutral-400">{r.label}</span>
+                    <span className="text-ht-mute/80 text-[10px] group-hover:text-ht-mute">{r.label}</span>
                   </button>
                 ))}
               </div>
-              <p className="text-neutral-600 text-xs text-center mt-3">Tap to rate — takes 10 seconds</p>
+              <p className="text-ht-mute/80 text-xs text-center mt-3">Tap to rate — takes 10 seconds</p>
             </div>
           )}
 
@@ -187,7 +187,7 @@ export default function SiteFeedbackWidget() {
               {/* Chosen emoji confirmation */}
               <div className="flex items-center gap-2">
                 <span className="text-xl">{EMOJI_RATINGS.find(r => r.value === rating)?.emoji}</span>
-                <span className="text-white text-sm font-medium">
+                <span className="text-ht-ink text-sm font-medium">
                   {isNegative ? 'What went wrong?' : 'What did you love?'}
                 </span>
               </div>
@@ -201,9 +201,9 @@ export default function SiteFeedbackWidget() {
                     className={`px-2.5 py-1 rounded-full text-xs border transition-colors ${
                       selected.includes(opt.id)
                         ? isNegative
-                          ? 'bg-red-900/60 border-red-600 text-red-300'
-                          : 'bg-green-900/60 border-green-600 text-green-300'
-                        : 'bg-neutral-800 border-neutral-700 text-neutral-400 hover:border-neutral-500'
+                          ? 'bg-ht-red/10 border-red-600 text-ht-red'
+                          : 'bg-ht-veg/10 border-green-600 text-ht-veg'
+                        : 'bg-ht-paper border-ht-ink/15 text-ht-mute hover:border-ht-ink/25'
                     }`}
                   >
                     {opt.label}
@@ -217,7 +217,7 @@ export default function SiteFeedbackWidget() {
                 onChange={e => setComment(e.target.value)}
                 placeholder="Anything else? (optional)"
                 rows={2}
-                className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-500 resize-none focus:outline-none focus:border-neutral-500"
+                className="w-full bg-ht-paper border border-ht-ink/15 rounded-lg px-3 py-2 text-sm text-ht-ink placeholder-ht-mute/60 resize-none focus:outline-none focus:border-ht-ink/25"
               />
 
               {/* Optional contact */}
@@ -226,23 +226,23 @@ export default function SiteFeedbackWidget() {
                   value={name}
                   onChange={e => setName(e.target.value)}
                   placeholder="Name (optional)"
-                  className="flex-1 bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-500"
+                  className="flex-1 bg-ht-paper border border-ht-ink/15 rounded-lg px-3 py-1.5 text-xs text-ht-ink placeholder-ht-mute/60 focus:outline-none focus:border-ht-ink/25"
                 />
                 <input
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
                   placeholder="Phone (optional)"
                   inputMode="tel"
-                  className="flex-1 bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-500"
+                  className="flex-1 bg-ht-paper border border-ht-ink/15 rounded-lg px-3 py-1.5 text-xs text-ht-ink placeholder-ht-mute/60 focus:outline-none focus:border-ht-ink/25"
                 />
               </div>
-              <p className="text-neutral-600 text-xs">Leave phone if you'd like us to follow up</p>
+              <p className="text-ht-mute/80 text-xs">Leave phone if you'd like us to follow up</p>
 
               {/* Submit */}
               <button
                 onClick={submit}
                 disabled={submitting}
-                className="w-full flex items-center justify-center gap-2 bg-[#D4AF37] hover:bg-[#c49d2f] active:scale-95 text-black font-semibold text-sm py-2.5 rounded-xl transition-all"
+                className="w-full flex items-center justify-center gap-2 bg-ht-red hover:bg-ht-red2 active:scale-95 text-white font-bold text-sm min-h-11 py-2.5 rounded-full transition-all"
               >
                 <Send className="w-4 h-4" />
                 {submitting ? 'Sending…' : 'Send feedback'}
@@ -266,10 +266,10 @@ export default function SiteFeedbackWidget() {
             phase === 'bubble'
               ? `gap-2 py-2 border text-neutral-300 hover:text-[#D4AF37] focus-visible:text-[#D4AF37] ${
                   expanded
-                    ? 'opacity-100 bg-neutral-800 border-neutral-600 hover:border-[#D4AF37] px-3'
-                    : 'opacity-50 hover:opacity-100 focus-visible:opacity-100 bg-neutral-800/40 border-neutral-600/40 px-2'
+                    ? 'opacity-100 bg-ht-paper border-ht-ink/25 hover:border-ht-gold px-3'
+                    : 'opacity-50 hover:opacity-100 focus-visible:opacity-100 bg-ht-paper border-ht-ink/25 px-2'
                 }`
-              : 'gap-2 bg-neutral-700 border border-neutral-600 text-neutral-400 hover:text-white p-2'
+              : 'gap-2 bg-ht-ink/10 border border-ht-ink/25 text-ht-mute hover:text-ht-red p-2'
           }`}
         >
           {phase === 'bubble' ? (

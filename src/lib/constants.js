@@ -5,7 +5,7 @@ phone1: '+91-8420822919',
 phone2: '+91-9830422919',
 whatsapp: '918420822919',
 email: 'admin@hungrytimes.in',
-address: 'Hungry Times, Selimpur, Ballygunge, Kolkata 700031',
+address: '32/12A, Gariahat Road South, Ground Floor, Kolkata 700031',
 googleReviewUrl: 'https://search.google.com/local/writereview?placeid=ChIJvWGYyyhxAjoRjhl2_3xBiuM',
 // Registration numbers for the public footer. The M/s Phoenix pair — the same
 // one on the POS thermal bill and the public feedback page. NOTE: the online-order

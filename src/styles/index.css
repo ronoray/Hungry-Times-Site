@@ -2,36 +2,148 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: dark; }
+/* DNA v2 "Lal-Paar Table" — docs/DESIGN_DNA.md. Light paper ground.
+   --nav-h is the fixed header's height INCLUDING the paar band under it
+   (64 + 12 on phones, 84 + 12 from md). Anything sticky below the header
+   offsets by calc(var(--banner-h, 0px) + var(--nav-h)). */
+:root {
+  color-scheme: light;
+  --nav-h: 76px;
+}
+@media (min-width: 768px) {
+  :root { --nav-h: 96px; }
+}
 html { height: 100%; }
 
 .container-section { @apply max-w-6xl mx-auto px-4; }
-.card { @apply bg-neutral-900/70 border border-neutral-800 rounded-2xl shadow-soft; }
+.card { @apply bg-ht-ivory border border-ht-ink/10 rounded-[14px]; }
 .btn { @apply inline-flex items-center justify-center rounded-full px-4 py-2 font-medium transition; }
-.btn-primary { @apply bg-brand-red hover:bg-brand-redDark text-white; }
-.btn-ghost { @apply bg-transparent hover:bg-neutral-800 border border-neutral-700; }
+.btn-primary { @apply bg-ht-red hover:bg-ht-red2 text-white; }
+.btn-ghost { @apply bg-transparent hover:bg-ht-ink/5 border border-ht-ink/15; }
 
 @layer base {
   body, #root { min-height: 100%; }
   /* Prevent mobile auto text zoom that was exploding line breaks */
   html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   body {
-    @apply bg-[#0B0B0B] text-white;
-    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji";
+    @apply bg-ht-paper text-ht-ink font-sans;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden; /* stop any accidental sideways scroll */
   }
 }
 
+@layer components {
+  /* Lal-paar band — red / gold / gap / red, 12px. Max two per screen. */
+  .paar {
+    height: 12px;
+    flex: none;
+    background: linear-gradient(#7E0E15 0 6px, #E0AE45 6px 7.5px, transparent 7.5px 9.5px, #7E0E15 9.5px 12px);
+  }
+
+  /* Menu-card row: name · dotted leader · price · 44px add button.
+     Description and tags sit on their own full-width lines below. */
+  .menu-row {
+    display: grid;
+    grid-template-columns: minmax(0, max-content) 1fr auto 44px;
+    align-items: center;
+    column-gap: 10px;
+  }
+  .menu-row .leader {
+    align-self: end;
+    min-width: 12px;
+    height: 1em;
+    margin-bottom: .55em;
+    border-bottom: 2px dotted rgba(21, 10, 10, .3);
+  }
+  .menu-row .row-desc,
+  .menu-row .row-tags {
+    grid-column: 1 / -1;
+  }
+  .menu-row .row-desc {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 17px;
+    line-height: 1.25;
+    color: #5E4B45;
+    padding-right: 54px;
+  }
+
+  /* Size / price chip — mono size label + bold price. Selected = red fill. */
+  .price-chip {
+    @apply inline-flex h-11 items-center gap-2 whitespace-nowrap rounded-[10px] border-[1.5px] border-ht-ink/15 bg-ht-ivory px-3.5 text-ht-ink transition active:scale-95;
+  }
+  .price-chip > small { @apply font-mono text-[10px] font-semibold tracking-[.08em] text-ht-mute; }
+  .price-chip > b { @apply text-[15px] font-bold tabular-nums; }
+  .price-chip.is-on { @apply border-ht-red bg-ht-red text-white; }
+  .price-chip.is-on > small { @apply text-ht-gold2; }
+
+  /* Offer ticket — gold2 stub, dashed divider, paper notches at the divider.
+     Children: .ticket-main and .ticket-stub. One ticket per screen. */
+  .ticket {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    overflow: hidden;
+    border-radius: 14px;
+    background: #F6DC9A;
+    color: #150A0A;
+  }
+  .ticket .ticket-main { padding: 16px 18px; border-right: 2px dashed rgba(90, 7, 13, .35); min-width: 0; }
+  .ticket .ticket-stub {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; padding: 16px 12px; min-width: 104px;
+  }
+  .ticket::before,
+  .ticket::after {
+    content: "";
+    position: absolute;
+    right: calc(104px - 9px);
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--ticket-notch, #F7EEDC);
+  }
+  .ticket::before { top: -9px; }
+  .ticket::after { bottom: -9px; }
+
+  /* Round top-down dish photo on the table. */
+  .plate {
+    border-radius: 9999px;
+    object-fit: cover;
+    background: #fff;
+    box-shadow: 0 18px 30px -12px rgba(60, 20, 10, .45), 0 2px 4px rgba(60, 20, 10, .15);
+  }
+
+  /* 3-up pill segment (Delivery · Takeaway · Dine-in). */
+  .seg {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    padding: 4px;
+    border-radius: 9999px;
+    background: rgba(21, 10, 10, .06);
+  }
+  .seg > button {
+    @apply h-11 whitespace-nowrap rounded-full px-2 text-[14px] font-semibold text-ht-mute transition active:scale-95;
+  }
+  .seg > button[aria-pressed="true"] {
+    @apply bg-ht-ivory text-ht-red shadow-[0_1px_3px_rgba(0,0,0,.15)];
+  }
+
+  /* Mono kicker above a section title. */
+  .kicker { @apply font-mono text-[11px] font-medium uppercase tracking-[.14em] text-ht-gold3; }
+}
+
 /* ============================================
-   MOBILE BOTTOM NAVIGATION FIX
+   MOBILE BOTTOM NAVIGATION
    ============================================ */
 
 @layer utilities {
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
 }
 
 @media (max-width: 767px) {

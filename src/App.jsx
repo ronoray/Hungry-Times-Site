@@ -353,7 +353,7 @@ export default function App() {
           <LocationProvider>
             <FavoritesProvider>
             <ToastProvider>
-            <div className="min-h-screen flex flex-col bg-[#0B0B0B] text-white">
+            <div className="min-h-screen flex flex-col bg-ht-paper text-ht-ink">
 
               {/* Remembers where each page was left; restores it on back */}
               <ScrollMemory />
@@ -369,7 +369,7 @@ export default function App() {
                   navbar only. The promo strip is the first thing INSIDE main,
                   in normal flow, so it scrolls away instead of permanently
                   eating viewport height on every screen. */}
-              <main className="flex-1" style={{ paddingTop: 'calc(var(--banner-h, 0px) + 64px)' }}>
+              <main className="flex-1" style={{ paddingTop: 'calc(var(--banner-h, 0px) + var(--nav-h))' }}>
                 {/* One promo strip: live discount, else WhatsApp cross-promo */}
                 <PromoBar />
                 <ErrorBoundary>

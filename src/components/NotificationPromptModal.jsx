@@ -2,6 +2,7 @@
 // Small bottom notification bar — non-blocking, sequenced after FirstVisitPopup
 import { useState, useEffect } from 'react';
 import { Bell, X } from 'lucide-react';
+import { claimOverlay, overlayClaimedByOther } from '../utils/overlayBudget';
 
 const DELAY_AFTER_FIRST_VISIT_MS = 15_000; // 15s after FIRST30 is done
 
@@ -14,7 +15,9 @@ export default function NotificationPromptModal({ onGranted, firstVisitDone }) {
     if (!checkShouldShowPrompt()) return;
 
     const timer = setTimeout(() => {
-      if (checkShouldShowPrompt()) setShow(true);
+      // One overlay per visit — the welcome popup or install prompt may
+      // already have had this session.
+      if (checkShouldShowPrompt() && claimOverlay('notify')) setShow(true);
     }, DELAY_AFTER_FIRST_VISIT_MS);
 
     return () => clearTimeout(timer);
@@ -22,6 +25,7 @@ export default function NotificationPromptModal({ onGranted, firstVisitDone }) {
 
   function checkShouldShowPrompt() {
     if (!('Notification' in window)) return false;
+    if (overlayClaimedByOther('notify')) return false;
 
     // iOS Safari (not PWA) doesn't support push
     const ua = navigator.userAgent;
@@ -68,40 +72,33 @@ export default function NotificationPromptModal({ onGranted, firstVisitDone }) {
 
   if (!show) return null;
 
+  // Sits above the bottom nav on phones so it never covers it.
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-[9990] flex items-center gap-3 px-4 py-3 bg-neutral-900 border-t border-neutral-700 shadow-2xl"
-      style={{ animation: 'slideUp 0.3s ease-out' }}
+      className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom,0px))] z-[9990] flex items-center gap-3 border-t border-ht-ink/10 bg-ht-ivory px-4 py-3 text-ht-ink shadow-[0_-8px_24px_-12px_rgba(60,20,10,.35)] motion-safe:animate-slideUp md:bottom-0"
     >
-      <style>{`
-        @keyframes slideUp {
-          from { transform: translateY(100%); opacity: 0; }
-          to   { transform: translateY(0);    opacity: 1; }
-        }
-      `}</style>
-
-      <div className="flex-shrink-0 w-9 h-9 rounded-full bg-neutral-800 border border-neutral-600 flex items-center justify-center">
-        <Bell className="w-4 h-4 text-amber-400" />
+      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-ht-gold2">
+        <Bell className="h-4 w-4 text-ht-red" />
       </div>
 
-      <p className="flex-1 text-sm text-neutral-300 leading-tight">
-        <span className="font-semibold text-white">Track your order live</span>
+      <p className="min-w-0 flex-1 text-sm leading-tight text-ht-mute">
+        <span className="font-semibold text-ht-ink">Track your order live</span>
         {' '}— enable delivery notifications
       </p>
 
       <button
         onClick={handleEnable}
-        className="flex-shrink-0 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold rounded-lg transition-colors"
+        className="h-11 shrink-0 whitespace-nowrap rounded-full bg-ht-red px-4 text-sm font-bold text-white active:scale-95"
       >
         Enable
       </button>
 
       <button
         onClick={handleDismiss}
-        className="flex-shrink-0 p-1.5 text-neutral-500 hover:text-neutral-300 transition-colors"
+        className="grid h-11 w-11 shrink-0 place-items-center text-ht-mute hover:text-ht-ink"
         aria-label="Dismiss"
       >
-        <X className="w-4 h-4" />
+        <X className="h-4 w-4" />
       </button>
     </div>
   );

@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { Download, X } from 'lucide-react';
+import { claimOverlay } from '../utils/overlayBudget';
 
 export default function PWAInstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
@@ -26,7 +27,8 @@ export default function PWAInstallPrompt() {
     const showAfterDelay = (prompt) => {
       setDeferredPrompt(prompt);
       setTimeout(() => {
-        if (!sessionStorage.getItem('pwa-prompt-dismissed')) setShowPrompt(true);
+        // One overlay per visit (docs/DESIGN_DNA.md §8).
+        if (!sessionStorage.getItem('pwa-prompt-dismissed') && claimOverlay('pwa')) setShowPrompt(true);
       }, 5000);
     };
 
@@ -75,137 +77,66 @@ export default function PWAInstallPrompt() {
 
   return (
     <>
-      {/* Mobile Banner - Bottom - Elegant dark design */}
-      <div 
-        className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-neutral-900 via-[#0B0B0B] to-neutral-900 border-t-2 border-[#D4AF37]/30 text-white p-4 shadow-2xl z-[9999] md:hidden animate-slide-up backdrop-blur-md"
-        style={{ zIndex: 9999 }}
-      >
-        {/* Subtle gold glow at top */}
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent"></div>
-        
+      {/* Mobile banner — sits above the bottom nav, never over it */}
+      <div className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom,0px))] z-[9999] border-t border-ht-ink/10 bg-ht-ivory p-3 text-ht-ink shadow-[0_-8px_24px_-12px_rgba(60,20,10,.35)] motion-safe:animate-slideUp md:hidden">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            {/* App icon with gold border */}
-            <div className="w-12 h-12 bg-gradient-to-br from-neutral-800 to-neutral-900 border-2 border-[#D4AF37]/30 rounded-xl flex items-center justify-center flex-shrink-0 p-0.5">
-              <img 
-                src="/icon-192.png" 
-                alt="Hungry Times" 
-                className="w-full h-full rounded-lg"
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-sm truncate bg-gradient-to-r from-white to-[#D4AF37] bg-clip-text text-transparent">
-                Install Hungry Times
-              </p>
-              <p className="text-xs text-neutral-400 truncate">
-                Quick access & faster ordering
-              </p>
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <img src="/ht_badge.png" alt="" className="h-11 w-11 shrink-0" width="44" height="44" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold">Install Hungry Times</p>
+              <p className="truncate text-xs text-ht-mute">Quick access & faster ordering</p>
             </div>
           </div>
-          
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Install button - Gold gradient */}
+          <div className="flex shrink-0 items-center gap-1">
             <button
               onClick={handleInstall}
-              className="bg-gradient-to-r from-[#D4AF37] to-[#F0C674] text-black px-4 py-2 rounded-lg font-semibold text-sm hover:shadow-lg hover:shadow-[#D4AF37]/30 active:scale-95 transition-all whitespace-nowrap"
+              className="h-11 whitespace-nowrap rounded-full bg-ht-red px-4 text-sm font-bold text-white active:scale-95"
             >
               Install
             </button>
-            {/* Close button */}
             <button
               onClick={handleDismiss}
-              className="text-neutral-400 hover:text-[#D4AF37] p-1 transition-colors"
+              className="grid h-11 w-11 place-items-center text-ht-mute hover:text-ht-ink"
               aria-label="Dismiss"
             >
-              <X className="w-5 h-5" />
+              <X className="h-5 w-5" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Desktop Card - Bottom Right - Elegant dark design */}
-      <div 
-        className="hidden md:block fixed bottom-6 right-6 bg-gradient-to-br from-neutral-900 via-[#0B0B0B] to-neutral-900 border border-[#D4AF37]/20 rounded-2xl shadow-2xl shadow-black/50 p-6 max-w-sm z-[9999] animate-slide-up backdrop-blur-md"
-        style={{ zIndex: 9999 }}
-      >
-        {/* Subtle gold glow effect */}
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-[#D4AF37]/10 via-transparent to-[#D4AF37]/10 rounded-2xl blur-xl opacity-50"></div>
-        
-        {/* Content */}
-        <div className="relative">
-          {/* Close button */}
+      {/* Desktop card — bottom right */}
+      <div className="fixed bottom-6 right-6 z-[9999] hidden max-w-sm rounded-[14px] border border-ht-ink/10 bg-ht-ivory p-5 text-ht-ink shadow-2xl motion-safe:animate-slideUp md:block">
+        <button
+          onClick={handleDismiss}
+          className="absolute right-2 top-2 grid h-11 w-11 place-items-center text-ht-mute hover:text-ht-ink"
+          aria-label="Dismiss"
+        >
+          <X className="h-5 w-5" />
+        </button>
+        <div className="mb-4 flex items-start gap-4 pr-8">
+          <img src="/ht_badge.png" alt="" className="h-14 w-14 shrink-0" width="56" height="56" />
+          <div className="flex-1">
+            <h3 className="font-display text-lg leading-tight">Install Hungry Times</h3>
+            <p className="font-serif text-base italic text-ht-mute">quick access, faster ordering, offline menu</p>
+          </div>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={handleInstall}
+            className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-ht-red px-4 font-bold text-white transition hover:bg-ht-red2 active:scale-95"
+          >
+            <Download className="h-5 w-5" />
+            Install app
+          </button>
           <button
             onClick={handleDismiss}
-            className="absolute top-0 right-0 text-neutral-400 hover:text-[#D4AF37] transition-colors"
-            aria-label="Dismiss"
+            className="h-11 px-4 font-semibold text-ht-mute hover:text-ht-ink"
           >
-            <X className="w-5 h-5" />
+            Not now
           </button>
-          
-          {/* Header */}
-          <div className="flex items-start gap-4 mb-4">
-            {/* App icon with gold border and glow */}
-            <div className="relative">
-              <div className="absolute inset-0 bg-[#D4AF37]/20 rounded-2xl blur-lg"></div>
-              <div className="relative w-16 h-16 bg-gradient-to-br from-neutral-800 to-neutral-900 border-2 border-[#D4AF37]/30 rounded-2xl flex items-center justify-center flex-shrink-0 p-1">
-                <img 
-                  src="/icon-192.png" 
-                  alt="Hungry Times" 
-                  className="w-full h-full rounded-xl"
-                />
-              </div>
-            </div>
-            
-            {/* Text */}
-            <div className="flex-1">
-              <h3 className="font-bold text-white text-lg mb-1 bg-gradient-to-r from-white via-[#D4AF37] to-white bg-clip-text text-transparent">
-                Install Hungry Times
-              </h3>
-              <p className="text-neutral-400 text-sm">
-                Quick access, faster ordering, offline menu
-              </p>
-            </div>
-          </div>
-          
-          {/* Action buttons */}
-          <div className="flex gap-3">
-            {/* Install button - Gold gradient */}
-            <button
-              onClick={handleInstall}
-              className="flex-1 bg-gradient-to-r from-[#D4AF37] via-[#F0C674] to-[#D4AF37] text-black px-4 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-[#D4AF37]/30 active:scale-95 transition-all flex items-center justify-center gap-2"
-            >
-              <Download className="w-5 h-5" />
-              Install App
-            </button>
-            
-            {/* Dismiss button */}
-            <button
-              onClick={handleDismiss}
-              className="px-4 py-3 text-neutral-400 hover:text-neutral-200 font-medium transition-colors"
-            >
-              Not now
-            </button>
-          </div>
         </div>
       </div>
-
-      {/* Smooth animations */}
-      <style jsx>{`
-        @keyframes slide-up {
-          from {
-            transform: translateY(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateY(0);
-            opacity: 1;
-          }
-        }
-        
-        .animate-slide-up {
-          animation: slide-up 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-      `}</style>
     </>
   );
 }

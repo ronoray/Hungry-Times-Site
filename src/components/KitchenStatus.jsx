@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import API_BASE from '../config/api';
 
-export default function KitchenStatus() {
+export default function KitchenStatus({ compact = false }) {
   const [status, setStatus] = useState(null);
 
   useEffect(() => {
@@ -21,24 +21,25 @@ export default function KitchenStatus() {
 
   const { isOpen, closingSoon, activeOrders, estimatedWait } = status;
 
+  // DNA v2 pill on the paper/ivory ground. `compact` is the header version —
+  // short labels so the 390px bar never wraps (badge + pill + bag icon).
+  const tone = !isOpen
+    ? 'bg-ht-red/10 text-ht-red'
+    : closingSoon
+      ? 'bg-ht-gold2 text-ht-red2'
+      : 'bg-ht-veg/10 text-ht-veg';
+  const dot = !isOpen ? 'bg-ht-red' : closingSoon ? 'bg-ht-gold3 motion-safe:animate-pulse' : 'bg-ht-veg';
+
+  let label;
+  if (!isOpen) label = compact ? 'Opens 12 PM' : 'Kitchen closed — opens at 12 PM';
+  else if (closingSoon) label = compact ? 'Closing soon' : 'Closing soon — order now';
+  else if (activeOrders > 3 && !compact) label = `Kitchen open — ~${estimatedWait} min wait`;
+  else label = 'Kitchen open';
+
   return (
-    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
-      !isOpen ? 'bg-red-500/10 text-red-400 border border-red-500/20'
-      : closingSoon ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
-      : 'bg-green-500/10 text-green-400 border border-green-500/20'
-    }`}>
-      <span className={`w-2 h-2 rounded-full ${
-        !isOpen ? 'bg-red-500' : closingSoon ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'
-      }`} />
-      {!isOpen ? (
-        <span>Kitchen Closed — Opens at 12 PM</span>
-      ) : closingSoon ? (
-        <span>Closing Soon — Order now!</span>
-      ) : activeOrders > 3 ? (
-        <span>Kitchen Open — ~{estimatedWait} min wait</span>
-      ) : (
-        <span>Kitchen Open</span>
-      )}
+    <div className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-semibold ${tone}`}>
+      <span className={`h-[7px] w-[7px] shrink-0 rounded-full ${dot}`} />
+      <span>{label}</span>
     </div>
   );
 }

@@ -13,7 +13,7 @@ export default function SEOHead({ title, description, canonicalPath, ogImage }) 
       : 'Hungry Times — Order Food Online in Kolkata';
 
     const desc = description ||
-      'Order delicious food online from Hungry Times Kolkata. Indian, Chinese, Continental cuisine. Fast delivery within 5km. COD & online payment.';
+      'Order straight from the Hungry Times kitchen, Gariahat Road South, Kolkata. Chinese & Continental — delivery, takeaway and dine-in.';
 
     setMeta('description', desc);
     setLink('canonical', `${BASE_URL}${canonical}`);

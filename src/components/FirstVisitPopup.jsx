@@ -11,16 +11,20 @@
 // It used to say "your first online order", which read as though counter orders
 // did not count. They do.
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { X, Copy, Check, Clock } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { X, Copy, Check } from 'lucide-react';
 import { useBackableOverlay } from '../hooks/useBackableOverlay';
 import { useOfferFloor, useOffer } from '../hooks/useOfferFloor';
+import { claimOverlay, welcomeTicketSeen } from '../utils/overlayBudget';
 
 const STORAGE_KEY = 'ht_first_visit_seen';
 const CODE = 'WELCOME15';
 // Fallbacks only — the live numbers come from the offer row (see useOffer below).
 const FALLBACK_DISCOUNT = '15%';
 const FALLBACK_MAX_DISCOUNT = 200;
+// Popup budget (docs/DESIGN_DNA.md §8): Home only, never /menu or /order.
+const HOME_PATHS = ['/', '/home'];
+const SHOW_AFTER_MS = 20_000;
 
 /** '2026-12-31' -> '31 December'. Returns null for anything unparseable. */
 function formatValidTill(raw) {
@@ -47,6 +51,7 @@ export default function FirstVisitPopup({ onDone }) {
   const [show, setShow] = useState(false);
   const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   useEffect(() => {
     // Already seen?
@@ -61,29 +66,41 @@ export default function FirstVisitPopup({ onDone }) {
       return;
     }
 
-    // Show after 4 seconds or 25% scroll, whichever comes first
+    // Home only. Anywhere else, release the notification prompt that waits
+    // on us; if the visitor reaches Home later this effect runs again.
+    if (!HOME_PATHS.includes(pathname)) { onDone?.(); return; }
+
+    // The WELCOME15 ticket on Home already put the offer in front of them.
+    if (welcomeTicketSeen()) { onDone?.(); return; }
+
+    // After the visitor scrolls past the hero, or 20 s — whichever is first.
     let triggered = false;
     const trigger = () => {
       if (triggered) return;
       triggered = true;
-      setShow(true);
       window.removeEventListener('scroll', onScroll);
       clearTimeout(timeoutId);
+      // Re-check at the moment of showing: scrolling past the hero usually
+      // brings the ticket into view, and another overlay may have claimed
+      // this visit meanwhile.
+      if (welcomeTicketSeen() || !claimOverlay('welcome')) { onDone?.(); return; }
+      setShow(true);
     };
 
     const onScroll = () => {
-      const scrollPercent = window.scrollY / (document.body.scrollHeight - window.innerHeight);
-      if (scrollPercent >= 0.25) trigger();
+      const hero = document.querySelector('[data-hero]');
+      const heroBottom = hero ? hero.offsetTop + hero.offsetHeight : window.innerHeight;
+      if (window.scrollY + 64 >= heroBottom) trigger();
     };
 
-    const timeoutId = setTimeout(trigger, 4000);
+    const timeoutId = setTimeout(trigger, SHOW_AFTER_MS);
     window.addEventListener('scroll', onScroll, { passive: true });
 
     return () => {
       clearTimeout(timeoutId);
       window.removeEventListener('scroll', onScroll);
     };
-  }, []);
+  }, [pathname]);
 
   const dismiss = () => {
     setShow(false);
@@ -131,94 +148,57 @@ export default function FirstVisitPopup({ onDone }) {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/70 z-[9998] backdrop-blur-sm"
+        className="fixed inset-0 z-[9998] bg-ht-ink/55"
         onClick={closePopup}
       />
 
-      {/* Popup */}
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-        <div className="bg-[#141418] border border-orange-500/30 rounded-2xl max-w-md w-full shadow-2xl shadow-orange-500/10 relative overflow-hidden">
-          {/* Gold accent line */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500" />
+      {/* Popup — bottom sheet on phones, centred card from md */}
+      <div className="fixed inset-x-0 bottom-0 z-[9999] flex justify-center md:inset-0 md:items-center md:p-4">
+        <div className="relative w-full max-w-md overflow-hidden rounded-t-[22px] bg-ht-ivory pb-[env(safe-area-inset-bottom,0px)] text-ht-ink shadow-2xl motion-safe:animate-slideUp md:rounded-[14px]">
+          <div className="paar" />
 
-          {/* Close button */}
           <button
             onClick={closePopup}
-            className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-white/10 transition-colors z-10"
+            className="absolute right-2 top-4 z-10 grid h-11 w-11 place-items-center rounded-full text-ht-mute hover:bg-ht-ink/5"
+            aria-label="Close"
           >
-            <X className="w-5 h-5 text-gray-400" />
+            <X className="h-5 w-5" />
           </button>
 
-          <div className="p-6 pt-8 text-center">
-            {/* Header */}
-            <p className="text-sm font-medium text-orange-400 tracking-wider uppercase mb-2">
-              Welcome to Hungry Times
-            </p>
-            <h2 className="text-3xl font-bold text-white mb-2">
-              {discountLabel} <span className="text-orange-400">OFF</span>
+          <div className="px-5 pb-5 pt-5 text-center">
+            <p className="kicker mb-2">First order with us</p>
+            <h2 className="font-display text-[40px] leading-none text-ht-red">
+              {discountLabel} off
             </h2>
-            <span className="inline-block bg-orange-500/15 border border-orange-500/30 text-orange-400 text-xs font-semibold px-3 py-1 rounded-full mb-3">
-              First-time customers only
-            </span>
-            <p className="text-gray-400 text-sm mb-5">
-              On your first ever order of ₹{OFFER_MIN_ORDER} or more.
+            <p className="mt-2 text-[15px] font-semibold">
+              on ₹{OFFER_MIN_ORDER}+ · up to ₹{maxDiscount}
+              {validTill ? ` · till ${validTill}` : ''}
             </p>
 
             {/* Code box */}
-            <div className="bg-black/40 border border-orange-500/20 rounded-xl p-4 mb-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Your exclusive code</p>
-              <div className="flex items-center justify-center gap-3">
-                <span className="text-2xl font-mono font-bold text-orange-400 tracking-[0.15em]">
-                  {CODE}
-                </span>
-                <button
-                  onClick={copyCode}
-                  className="p-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 transition-colors"
-                  title="Copy code"
-                >
-                  {copied
-                    ? <Check className="w-4 h-4 text-green-400" />
-                    : <Copy className="w-4 h-4 text-orange-400" />
-                  }
-                </button>
-              </div>
-              {copied && (
-                <p className="text-xs text-green-400 mt-1">Copied!</p>
-              )}
-            </div>
-
-            {/* What this slot used to be: a 30-minute countdown that, on hitting
-                zero, replaced itself with "Don't worry — the code still works!".
-                An urgency claim the component itself retracted half an hour
-                later, on the most-seen screen on the site. The offer has no
-                30-minute life; nothing expired when the clock did.
-                What replaces it is true on both counts — the money is the real
-                pull, and the only real deadline is the offer's own valid_till,
-                read live so a retune in the ops panel moves it. */}
-            {/* Mobile first: at 320-390px this line is wider than the card's
-                content box, so it must be allowed to wrap rather than squeeze
-                the icon or overflow. flex-wrap + text-center keeps it centred on
-                two lines on a small phone and one line everywhere else. */}
-            <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-gray-400 mb-5 text-center">
-              <Clock className="w-4 h-4 shrink-0 text-orange-400" />
-              <span>
-                Save up to <span className="font-bold text-orange-400">₹{maxDiscount}</span>
-                {validTill ? ` — yours until ${validTill}` : ' — no rush, it keeps'}
-              </span>
+            <div className="mt-4 flex items-center justify-between gap-3 rounded-[14px] bg-ht-gold2 px-4 py-3">
+              <span className="font-mono text-lg font-semibold tracking-[.12em] text-ht-red2">{CODE}</span>
+              <button
+                onClick={copyCode}
+                className="flex h-11 items-center gap-1.5 whitespace-nowrap rounded-full border-[1.5px] border-ht-red px-4 text-sm font-bold text-ht-red active:scale-95"
+              >
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copied ? 'Copied' : 'Copy code'}
+              </button>
             </div>
 
             {/* CTA */}
             <button
               onClick={orderNow}
-              className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white font-bold rounded-xl transition-all text-lg shadow-lg shadow-orange-500/20"
+              className="mt-4 flex h-[52px] w-full items-center justify-center rounded-full bg-ht-red text-base font-bold text-white transition hover:bg-ht-red2 active:scale-95"
             >
-              Order Now
+              Open the menu →
             </button>
 
-            <p className="text-xs text-gray-500 mt-3">
+            <p className="mt-3 text-xs text-ht-mute">
               Max discount ₹{maxDiscount}. No discount on orders below ₹{OFFER_MIN_ORDER}. Online orders only.
             </p>
-            <p className="text-xs text-gray-600 mt-2">
+            <p className="mt-1.5 text-xs text-ht-mute">
               Already ordered from us — online or at the counter? This one is for
               first-timers, so it won&rsquo;t apply.
             </p>

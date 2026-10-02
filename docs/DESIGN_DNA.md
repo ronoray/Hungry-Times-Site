@@ -1,96 +1,97 @@
-# Hungry Times — Design DNA
+# Hungry Times — Website DNA v2 · "Lal-Paar Table"
 
-Every frontend change on hungrytimes.in follows this. Owner's rule (1 Oct 2026):
-"our own DNA for any frontend change". When a change needs something this file
-does not cover, decide it, then add it here in the same commit.
+Replaces v1 (dark / orange) as of 2 Oct 2026. The rule for every frontend change on
+hungrytimes.in. Brand rules in the project CLAUDE.md win on conflict.
 
-Draft v1 — written from what the site already does, plus the owner's calls.
-The owner has final say; record each new call under **Owner decisions**.
+## 1. The idea
+The site is **our table, not an app**. Ivory paper like the printed menu card, a red-and-gold
+*lal-paar* border like a Bengali sari edge, real plates shot from above sitting on the paper.
+Prices set like a menu — name, dotted leader, price. It should feel like being handed the
+menu at Gariahat Road South, then being able to order from it.
 
-## 1. Feel
+Spine line (from the Sep 2026 diagnosis): **"We're not on the apps. By choice."**
+One reason · one offer · one CTA per screen.
 
-Dark, warm, appetising. Night-time kitchen glow: near-black surfaces, orange heat,
-gold for value. Friendly and alive, never loud. Food photography carries the
-colour; the interface stays out of its way.
-
-## 2. Colour
-
-| Role | Value | Use |
+## 2. Colour (brand palette only)
+| Token | Hex | Use |
 |---|---|---|
-| Page | `#0B0B0B` / `neutral-950` | Background everywhere |
-| Card | `#161616`, `neutral-900` | Raised surfaces |
-| Hairline | `neutral-800`, `white/5` | Borders between surfaces |
-| **Action orange** | `#F97316` (hover `#EA580C`) | Primary buttons, active tab, cart, floating actions |
-| Ember orange | `#DC5F1E` | Offer card borders and tints (`/15`, `/40`) |
-| **Value gold** | `#F5B944` | Offer badges, "ON THE MENU NOW", prices that are a deal |
-| Prestige gold | `#D4AF37` | Hairline accents on special surfaces (install prompt, VIP) |
-| Success / veg | `#22C55E` | Veg dot, "Kitchen Open", in-cart state |
-| Danger | `#EF4444` | Errors, cart count badge |
-| WhatsApp | `#25D366` | WhatsApp only — never reuse for anything else |
-| Text | `white`, `white/85`, `neutral-400`, `white/45` | Heading → body → secondary → fine print |
+| paper | #F7EEDC | page ground |
+| ivory | #FBF2E1 | raised cards, sheets, bottom nav |
+| ink | #150A0A | body text, headings on paper |
+| red | #7E0E15 | **action** — primary buttons, active tab, cart bar, links |
+| red2 | #5A070D | pressed state, footer ground |
+| gold | #E0AE45 | **value** on red/ink grounds — offer figures, prices on red |
+| gold2 | #F6DC9A | floating circles, offer ticket fill |
+| gold3 | #A87524 | value on paper (≥24px only, 3.4:1), hairlines |
+| veg | #1F7A3A | FSSAI veg square only |
+| nonveg | #8A3B12 | FSSAI non-veg square only |
 
-No new colours without adding them here. Offer = gold, action = orange — keep
-them apart so a customer can tell "a deal" from "a button".
+Red = do something. Gold = a deal / value. Never swap them. No orange, no neutral-950.
+Badge red #EE3124 lives only inside `ht_badge.png`.
 
-## 3. Shape
+## 3. Type
+- **Archivo Black** — headlines, section titles, the wordmark's HUNGRY.
+- **Archivo** 400–700 — UI, dish names (600), prices (700, tabular).
+- **Cormorant Garamond italic** — descriptions, voice lines, "Chinese & Continental".
+- **IBM Plex Mono** — kickers, section numbers, codes (WELCOME15), category tabs.
+- Mobile minimums: body 15px, dish description 16px Cormorant (it runs small), tap targets 44px.
 
-- **Floating actions are circles.** Anything that hovers over the page
-  (WhatsApp, Menu, future quick actions) is `rounded-full`, 56–64px.
-- Cards `rounded-2xl`; buttons and inputs `rounded-xl`; chips/badges `rounded-lg`
-  or `rounded-full`.
-- Floating actions are **light orange** so they stand out on the dark page:
-  `bg-[#FDBA74]/95 backdrop-blur-md`, `border-[#FB923C]`, icon and label in
-  `#7C2D12` (dark orange, readable on the light fill). WhatsApp keeps its green.
-- Soft shadow, tinted by the element's colour (`rgba(249,115,22,0.35)` for
-  orange, `rgba(37,211,102,0.5)` for WhatsApp).
+## 4. Signature elements
+1. **Paar band** — 12px red/gold/red stripe under the header and above the footer. Max 2 per screen.
+2. **Menu row** — dish name · dotted leader · price; Cormorant description under. Two-size dishes
+   show two tappable price chips (R / L, or HALF / FULL — label as the menu does).
+3. **Plates** — round, top-down dish photos with a soft table shadow. Allowed to crop off the
+   frame edge. Never a rectangle-cropped dish photo in a card grid.
+4. **Offer ticket** — gold2 stub with a perforated edge and notches. One ticket per screen.
+5. **Lockup** — paper grounds: `ht_badge.png` alone. Red grounds (footer, No.1 band): gold phoenix
+   above the two-tier wordmark `HUNGRY` / `Times`.
 
-## 4. Motion
+## 5. Shape & motion
+- Cards 14px radius; buttons 999px (pill); price chips 10px; plates 50%.
+- Floating actions stay **circles, gold2 fill, ink icon, a little bouncy** (`motion-safe:animate-hop`)
+  — the 1 Oct owner decision carried over, recoloured from light orange to gold2.
+- Press: `active:scale-95`. UI motion ≤ 250ms. Decorative motion `motion-safe:` only.
 
-- **Floating actions are a little bouncy** — `motion-safe:animate-hop`
-  (tailwind `hop`: rest, then one small double hop every 4.5 s). Never a
-  constant bounce; never more than one hopping element per screen region.
-- Press feedback on every tappable: `active:scale-95` (circles `active:scale-90`).
-- Entrances: `animate-slideUp` (0.25 s). Nothing over 300 ms for UI.
-- **Always `motion-safe:`** for decorative motion — reduced-motion users get a
-  still interface.
-
-## 5. Layout (mobile first)
-
-- Design at **390px wide** first, then scale up. No horizontal scroll, ever.
-- Bottom nav is 4 fixed tabs (Home, Menu, Orders, Account) — never reorder or
-  swap them by state.
+## 6. Layout (keep from v1)
+- 390px first. Bottom nav: Home · Menu · Orders · Account — fixed order.
 - **Right-hand floating stack** (mobile, above the bottom nav), bottom to top:
   1. `80px` FloatingCartBar (full width, when cart has items)
-  2. `144px` the page's primary floating action (Menu on /menu, WhatsApp elsewhere)
+  2. `144px` the page's primary floating circle (Menu on /menu, WhatsApp elsewhere)
   3. `220px` WhatsApp, when slot 2 is taken
   Left side `144px` is the feedback widget. Respect `env(safe-area-inset-bottom)`.
-- Tap targets at least 44×44px.
-- On `/menu`, `Menu.css` resets `.menu-page *` margin/padding — inside the menu
-  page use `!` utilities or inline style for spacing.
+- Tap targets ≥ 44×44px. No horizontal scroll at 320px.
+- On `/menu`, `Menu.css` resets `.menu-page *` margin/padding — use `!` utilities or inline style there.
+- Service mode (Delivery · Takeaway · Dine-in) is chosen ONCE, on Home or the bag, as a
+  3-way segment. All three always shown.
 
-## 6. Words
+## 7. Words
+- Dish names exactly as the menu. Descriptions in plain words, lower case, Cormorant.
+- Superlatives only where the order database proves them: Fish n Chips = our No. 1 by revenue;
+  Prawn Mixed Fried Rice = our best-selling *fried rice*. Nothing else is "best-selling".
+- No delivery time, no radius until Ops supplies numbers.
+- Deal prices carry "+5% GST"; menu prices are GST-inclusive (billTotals.js rule).
+- Never mention the apps by name.
 
-- Short, warm, plain English. Dish names exactly as the menu has them.
-- Every rupee price shown as a deal carries **"+5% GST"**; packaging (₹10/item,
-  delivery and takeaway) belongs on the bill, not the creative.
-- Prices keep paise when the offer produces them (₹237.60) — never round on a
-  surface the bill must agree with.
-- WhatsApp text: BMP characters only (★ ►), no 4-byte emoji.
-- Never mention Zomato/Swiggy.
+## 8. Popups
+One overlay per visit. Never on first paint of /menu. WELCOME15 shows as the Home ticket
+first; a modal only on exit-intent or second visit.
 
-## 7. Before shipping a frontend change
-
-- [ ] Uses only the colours, shapes and motion above (or adds to this file)
-- [ ] Checked at 390px with the cart empty AND with items (floating stack clear)
-- [ ] Decorative motion is `motion-safe:`
-- [ ] Tap targets ≥ 44px; nothing overlaps the bottom nav or cart bar
-- [ ] `npm run lint:undef` and `npm run build` clean
+## 9. Before shipping a frontend change
+- [ ] Base Tailwind classes are the phone layout (390px, holds at 320px); `md:`/`lg:` only add
+- [ ] Checked at 320 / 360 / 390 / 768 — cart empty AND with items (`npm run mobile:check`)
+- [ ] No horizontal scroll at 320px; no chip/tab/segment label wraps
+- [ ] Nothing overlaps the bottom nav, cart bar or floating circles
+- [ ] Text contrast ≥ 4.5:1 (gold3 on paper only at ≥ 24px)
+- [ ] Only §7 claims — no delivery time, no radius
+- [ ] Prices keep paise when the bill has them; WhatsApp text BMP-only (★ ►)
+- [ ] `npm run lint:undef`, `npm run build`, `npm test` clean
 
 ## Owner decisions
-
-- **1 Oct 2026** — Floating actions are circular and a little bouncy. First use:
-  the /menu "Menu" button (opens the category list) after visitors missed the
-  top-right ☰.
-- **1 Oct 2026** — The top-row ☰ on /menu is removed; the floating Menu circle is
-  the only category opener on phones/tablets. Floating actions use a light
-  background, not dark glass — light orange/yellow, **not cream** (owner).
+- **1 Oct 2026** — Floating actions are circular and a little bouncy. First use: the /menu
+  "Menu" button (opens the category list) after visitors missed the top-right ☰.
+  v2: kept, recoloured from light orange to gold2.
+- **1 Oct 2026** — The top-row ☰ on /menu is removed; the floating Menu circle is the only
+  category opener on phones/tablets. Floating actions use a light fill, not dark glass.
+- **2 Oct 2026** — v2 "Lal-Paar Table" adopted: light paper ground replaces the dark site.
+- **2 Oct 2026** — Opening hours are **12 PM – 11 PM, every day**. Schema, footer and any
+  visible hours text must say exactly this.

@@ -1,45 +1,38 @@
-// src/components/Navbar.jsx - FIXED: Force hamburger styles with !important
+// src/components/Navbar.jsx — DNA v2 top bar, floating Menu circle, bottom nav
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { BRAND } from '../lib/constants';
 import { useAuth } from '../context/AuthContext';
-import logo from '../assets/logo.svg';
 import UserMenu from './UserMenu';
 import AuthModal from './AuthModal';
+import KitchenStatus from './KitchenStatus';
 import { useMenuCategory } from '../context/MenuCategoryContext';
 import { useCart } from '../context/CartContext';
-import { trackPhoneClick } from '../utils/analytics';
 import {
   Home,
-  UtensilsCrossed,
-  ShoppingCart,
-  Image as ImageIcon,
+  BookOpen,
+  ShoppingBag,
   Menu as MenuIcon,
-  X,
-  MessageSquare,
-  Star,
-  Phone,
   Package,
   User
 } from 'lucide-react';
 
+// Contact and Feedback live in the footer.
 const desktopLinks = [
-  { to: '/home', label: 'Home' },
   { to: '/menu', label: 'Menu' },
   { to: '/offers', label: 'Offers' },
+  { to: '/reservation', label: 'Reserve a table' },
   { to: '/gallery', label: 'Gallery' },
-  { to: '/testimonials', label: 'Testimonials' },
-  { to: '/contact', label: 'Contact' },
-  { to: '/feedback', label: 'Feedback' }
+  { to: '/testimonials', label: 'Reviews' },
 ];
 
 // Fixed 4 tabs, fixed order — never swapped by cart state. The first slot used
 // to flip between Home and Cart depending on whether the cart had items, which
 // moved every other tab under the user's thumb the moment they added a dish.
-// Cart lives in the top bar (icon + badge) and the floating cart bar instead.
+// Cart lives in the top bar (bag + badge) and the floating cart bar instead.
 const MOBILE_NAV_TABS = [
   { to: '/home', label: 'Home', icon: Home },
-  { to: '/menu', label: 'Menu', icon: UtensilsCrossed },
+  { to: '/menu', label: 'Menu', icon: BookOpen },
   { to: '/orders', label: 'Orders', icon: Package },
   { to: '/profile', label: 'Account', icon: User },
 ];
@@ -47,11 +40,10 @@ const MOBILE_NAV_TABS = [
 export default function Navbar() {
   const { isAuthenticated } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const { lines } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const cartCount = lines.reduce((sum, line) => sum + (line.qty || 1), 0);
   const hasItems = lines.length > 0;
 
@@ -69,32 +61,33 @@ export default function Navbar() {
 
   return (
     <>
-      {/* TOP NAVBAR */}
-      <header className="fixed left-0 right-0 z-50 backdrop-blur-md bg-neutral-950/95 border-b border-neutral-800" style={{ top: 'var(--banner-h, 0px)' }}>
-        <nav className="w-full h-16 flex items-center justify-center px-4">
-          <div className="max-w-7xl w-full flex items-center justify-between">
-            {/* Logo */}
-            <Link to="/" className="flex items-center gap-3 py-1">
+      {/* TOP BAR — DNA v2: ivory bar, badge alone (never the wordmark beside it),
+          kitchen pill + bag on the right, lal-paar band underneath. Height is
+          --nav-h in styles/index.css (64 + 12 phone, 84 + 12 from md); main's
+          padding-top and every sticky offset read that variable. */}
+      <header className="fixed left-0 right-0 z-50" style={{ top: 'var(--banner-h, 0px)' }}>
+        <nav className="flex h-16 items-center bg-ht-ivory px-4 md:h-[84px] md:px-8 lg:px-14">
+          <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 md:gap-6">
+            <Link to="/" className="flex shrink-0 items-center" aria-label={`${BRAND.name} — home`}>
               <img
-                src={logo}
-                alt="Hungry Times"
-                className="h-9 w-auto"
-                width="180" 
-                height="36"
+                src="/ht_badge.png"
+                alt={BRAND.name}
+                className="h-[46px] w-[46px] md:h-[58px] md:w-[58px]"
+                width="58"
+                height="58"
                 loading="eager"
               />
-              <span className="sr-only">{BRAND.name}</span>
             </Link>
 
-            {/* Desktop Navigation */}
-            <ul className="hidden lg:flex items-center gap-6">
+            {/* Text links — md and up (phones use the bottom nav). */}
+            <ul className="hidden min-w-0 flex-1 items-center gap-4 md:flex lg:gap-8">
               {desktopLinks.map(l => (
-                <li key={l.to}>
+                <li key={l.to} className="whitespace-nowrap">
                   <NavLink
                     to={l.to}
-                    className={({ isActive }) => 
-                      `text-sm hover:text-white transition-colors ${
-                        isActive ? 'text-white' : 'text-neutral-300'
+                    className={({ isActive }) =>
+                      `text-sm font-semibold transition-colors lg:text-[15px] ${
+                        isActive ? 'text-ht-red' : 'text-ht-ink hover:text-ht-red'
                       }`
                     }
                   >
@@ -104,77 +97,55 @@ export default function Navbar() {
               ))}
             </ul>
 
-            {/* Right Side Actions */}
-            <div className="flex items-center gap-2 md:gap-3">
-              {/* Phone Number - Desktop only */}
-              <a
-                href={`tel:${BRAND.phone1}`}
-                className="hidden lg:inline text-sm text-neutral-300 hover:text-white transition-colors"
-                onClick={() => trackPhoneClick('navbar')}
-              >
-                {BRAND.phone1}
-              </a>
+            <div className="flex min-w-0 items-center gap-2 md:gap-3">
+              <span className="hidden lg:inline">
+                <KitchenStatus />
+              </span>
+              <span className="lg:hidden">
+                <KitchenStatus compact />
+              </span>
 
-              {/* Cart Badge — the only cart entry point on mobile outside /menu's
-                  FloatingCartBar, now that the bottom nav no longer swaps in a
-                  Cart tab. 44px tap target. */}
-              {cartCount > 0 && (
-                <Link
-                  to="/order"
-                  className="flex relative items-center justify-center w-11 h-11 md:w-auto md:h-auto md:p-2 text-neutral-300 hover:text-orange-400 transition-colors"
-                  aria-label={`Cart, ${cartCount} item${cartCount === 1 ? '' : 's'}`}
-                >
-                  <ShoppingCart className="w-6 h-6 md:w-5 md:h-5" />
-                  <span className="absolute top-0 right-0 md:-top-1 md:-right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {Math.min(cartCount, 9)}
-                  </span>
-                </Link>
-              )}
-
-              {/* The top-row ☰ was removed 1 Oct 2026 (owner): the floating
-                  "Menu" circle below is the one way to open categories. The
-                  sidebar closes itself — overlay tap, back button, or a pick. */}
-
-              {/* Login Button OR User Menu */}
-              {isAuthenticated ? (
-                <UserMenu />
-              ) : (
-                <button
-                  onClick={() => setShowAuthModal(true)}
-                  className="
-                      bg-orange-500 hover:bg-orange-600 active:bg-orange-700
-                      rounded-lg text-white font-medium transition-colors text-sm
-                      flex items-center justify-center
-
-                      w-12 h-12 p-0
-                      sm:w-auto sm:h-auto
-                      sm:px-3 md:px-4 sm:py-2
-                      sm:gap-2
-                    "
-                >
-                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  <span className="hidden sm:inline">Login</span>
-                </button>
-              )}
-
-              {/* Desktop Order Button */}
+              {/* Bag — always present, 44px. Goes to the bag when it has
+                  something in it, else to the menu. */}
               <button
+                type="button"
                 onClick={handleOrderClick}
-                className="hidden lg:flex items-center gap-2 px-6 py-2 rounded-xl bg-yellow-500 hover:bg-yellow-600 text-black font-bold text-sm transition-colors"
+                className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full border-[1.5px] border-ht-ink/15 text-ht-ink transition hover:border-ht-red hover:text-ht-red active:scale-95"
+                aria-label={hasItems ? `Bag, ${cartCount} item${cartCount === 1 ? '' : 's'}` : 'Bag is empty, open the menu'}
+                style={{ padding: 0 }}
               >
-                📋 {hasItems ? `Order (${cartCount})` : "Menu"}
+                <ShoppingBag className="h-5 w-5" strokeWidth={1.8} />
+                {cartCount > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-ht-red px-1 text-[11px] font-bold text-white">
+                    {cartCount > 9 ? '9+' : cartCount}
+                  </span>
+                )}
               </button>
+
+              {/* Account — md and up. Phones reach it from the bottom nav. */}
+              <div className="hidden md:block">
+                {isAuthenticated ? (
+                  <UserMenu />
+                ) : (
+                  <button
+                    onClick={() => setShowAuthModal(true)}
+                    className="flex h-11 items-center gap-2 whitespace-nowrap rounded-full bg-ht-red px-5 text-sm font-bold text-white transition hover:bg-ht-red2 active:scale-95"
+                  >
+                    <User className="h-4 w-4" />
+                    Login
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </nav>
+        <div className="paar" />
       </header>
 
       {/* FLOATING "MENU" BUTTON — /menu, below lg (desktop shows categories as
           a permanent column). Owner, 1 Oct 2026: visitors didn't read the old
           top-right ☰ as "the menu listing"; this replaced it. DNA floating
-          action: 64px light-orange circle, hops (docs/DESIGN_DNA.md).
+          action: gold2 circle, ink icon, hops (docs/DESIGN_DNA.md §5).
           Takes the WhatsApp button's slot just above FloatingCartBar;
           WhatsAppFloat steps up on /menu to make room. Hidden while the
           category sidebar is open — the sidebar closes itself. */}
@@ -184,58 +155,46 @@ export default function Navbar() {
           onClick={() => setSidebarOpen(true)}
           aria-label="Open menu categories"
           className="lg:hidden fixed z-50 right-4 bottom-[calc(144px+env(safe-area-inset-bottom,0px))] md:right-6 md:bottom-24
-                     w-16 h-16 rounded-full flex flex-col items-center justify-center gap-0.5
-                     bg-[#FDBA74]/95 backdrop-blur-md border border-[#FB923C]
-                     text-[#7C2D12] shadow-[0_4px_18px_rgba(249,115,22,0.55)]
+                     w-[60px] h-[60px] rounded-full flex flex-col items-center justify-center gap-0.5
+                     bg-ht-gold2 border-[1.5px] border-ht-gold
+                     text-ht-ink shadow-[0_10px_20px_-6px_rgba(168,117,36,0.6)]
                      motion-safe:animate-hop active:scale-90 transition-transform"
           style={{ padding: 0 }}
         >
-          <MenuIcon className="w-5 h-5" strokeWidth={2.5} />
-          <span className="text-[11px] font-bold leading-none tracking-wide">Menu</span>
+          <MenuIcon className="w-5 h-5" strokeWidth={2.2} />
+          <span className="text-[10.5px] font-bold leading-none">Menu</span>
         </button>
       )}
 
-      {/* MOBILE BOTTOM NAVIGATION — 4 tabs */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-neutral-950 border-t border-neutral-800 pb-safe">
+      {/* MOBILE BOTTOM NAVIGATION — 4 tabs, fixed order */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-ht-ink/10 bg-ht-ivory pb-safe">
         <div className="flex">
           {MOBILE_NAV_TABS.map(item => {
             const Icon = item.icon;
             const active = isActive(item.to);
+            const cls = `flex-1 flex min-h-[56px] flex-col items-center justify-center gap-1 py-2 transition-colors ${
+              active ? 'text-ht-red' : 'text-ht-mute'
+            }`;
 
             // Account tab: open AuthModal if not logged in
             if (item.to === '/profile' && !isAuthenticated) {
               return (
-                <button
-                  key={item.to}
-                  onClick={() => setShowAuthModal(true)}
-                  className="flex-1 flex flex-col items-center justify-center gap-1 py-2.5 transition-colors text-neutral-400"
-                >
-                  <Icon className="w-5 h-5" strokeWidth={2} />
-                  <span className="text-[11px] leading-tight text-center font-normal">{item.label}</span>
+                <button key={item.to} onClick={() => setShowAuthModal(true)} className={cls}>
+                  <Icon className="w-[22px] h-[22px]" strokeWidth={1.8} />
+                  <span className="text-[11.5px] font-semibold leading-tight">{item.label}</span>
                 </button>
               );
             }
 
             return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={`flex-1 flex flex-col items-center justify-center gap-1 py-2.5 transition-colors ${
-                  active ? 'text-orange-500' : 'text-neutral-400'
-                }`}
-              >
-                <div className="relative">
-                  <Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 2} />
-                </div>
-                <span className={`text-[11px] leading-tight text-center ${active ? 'font-semibold' : 'font-normal'}`}>
-                  {item.label}
-                </span>
+              <Link key={item.to} to={item.to} className={cls} aria-current={active ? 'page' : undefined}>
+                <Icon className="w-[22px] h-[22px]" strokeWidth={active ? 2.2 : 1.8} />
+                <span className="text-[11.5px] font-semibold leading-tight">{item.label}</span>
               </Link>
             );
           })}
         </div>
       </nav>
-
 
       {/* Auth Modal */}
       <AuthModal

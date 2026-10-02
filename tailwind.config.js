@@ -5,6 +5,15 @@ export default {
   theme: {
     extend: {
       colors: {
+        // DNA v2 "Lal-Paar Table" — docs/DESIGN_DNA.md §2. Red = action,
+        // gold = value; never swap them.
+        ht: {
+          red: '#7E0E15', red2: '#5A070D', ink: '#150A0A',
+          gold: '#E0AE45', gold2: '#F6DC9A', gold3: '#A87524',
+          ivory: '#FBF2E1', paper: '#F7EEDC',
+          veg: '#1F7A3A', nonveg: '#8A3B12', mute: '#5E4B45',
+        },
+        // Legacy v1 tokens — removed once every page is on ht.* (Phase 5).
         brand: {
           red: '#E02424',
           redDark: '#B81E1E',
@@ -14,7 +23,16 @@ export default {
           gray: '#111316',
         }
       },
-      boxShadow: { soft: '0 8px 30px rgba(0,0,0,0.25)' },
+      fontFamily: {
+        sans: ['Archivo', 'system-ui', 'sans-serif'],
+        display: ['"Archivo Black"', 'Archivo', 'sans-serif'],
+        serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
+      },
+      boxShadow: {
+        soft: '0 8px 30px rgba(0,0,0,0.25)',
+        plate: '0 18px 30px -12px rgba(60,20,10,.45), 0 2px 4px rgba(60,20,10,.15)',
+      },
       borderRadius: { xl2: '1.25rem' },
       keyframes: {
         slideUp: {
