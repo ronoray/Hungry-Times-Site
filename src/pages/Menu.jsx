@@ -11,6 +11,7 @@ import FloatingCartBar from "../components/FloatingCartBar";
 import VegDot from "../components/VegDot";
 import OfferTicket from "../components/OfferTicket";
 import AutoOfferCard from "../components/AutoOfferCard";
+import RecommendedPanel from "../components/RecommendedPanel";
 import { useMenuCategory } from '../context/MenuCategoryContext';
 import { useFavorites } from '../context/FavoritesContext';
 import SEOHead from '../components/SEOHead';
@@ -1201,8 +1202,14 @@ export default function Menu() {
         {/* Offers on this page: the codeless dish offers (each row deep-links
             to its dish) and the live fixed-price bundle. Codes stay on Home
             and in the bag. Both render nothing when nothing is live. */}
-        <div className="mx-auto w-full max-w-5xl px-4 empty:hidden">
+        {/* Offers | Recommended. auto-fit: two equal columns once each gets
+            380px (desktop), one stacked column below that, and Recommended
+            takes the full width on its own when no offer is live. Grid rows
+            stretch, so the two panels share a height. On phones Recommended
+            is a compact swipe strip, so the menu stays near the top. */}
+        <div className="mx-auto grid w-full max-w-5xl gap-3 px-4 empty:hidden lg:grid-cols-[repeat(auto-fit,minmax(380px,1fr))]">
           <AutoOfferCard />
+          <RecommendedPanel canOrder={acceptingOnlineOrders} />
         </div>
         <OfferTicket surface="menu" allowWelcome={false} className="mx-auto mt-3 w-full max-w-5xl px-4" />
 

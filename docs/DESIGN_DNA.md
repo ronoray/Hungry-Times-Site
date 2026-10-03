@@ -99,3 +99,7 @@ first; a modal only on exit-intent or second visit.
   no codes or points). Menu tag is ink outline mono "PRE-ORDER · MIN 10 PLATES · A DAY
   AHEAD" — ink, not gold, because it is a condition, not a deal. Rules mirror
   `src/utils/preOrderPolicy.js`; the server is the authority.
+- **3 Oct 2026** — RECOMMENDED panel on /menu beside "On the menu now": ivory (information,
+  not a deal). "BEST SELLER" only on items ranked from real valid sales (server
+  `utils/bestSellers.js`, 30 days); the biryani pre-order card is "NEW & LOVED", states the
+  condition in plain text and only links to its menu section. Phones: compact swipe strip.
