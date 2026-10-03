@@ -60,7 +60,7 @@ export function cartFulfilmentBlock(lines, orderType, rules) {
       return {
         reason: 'pre_order_min',
         names,
-        message: `Biryani is pre-order only, minimum ${min} plates per order (chicken and mutton together). Add ${more} more plate${more === 1 ? '' : 's'} to continue.`,
+        message: `Biryani is pre-order only, minimum ${min} plates per order (any mix of biryani counts). Add ${more} more plate${more === 1 ? '' : 's'} to continue.`,
       };
     }
   }
