@@ -30,7 +30,40 @@ export function getVisitorSessionId() {
   }
 }
 
-function authHeaders() {
+// ── Device id ──────────────────────────────────────────────────────────────
+// ht_session_id is per TAB, so counting it counted tabs: one person opening the
+// menu in three tabs was three "menu visitors" (owner, 3 Oct 2026). This id is
+// per DEVICE (localStorage), so the ops panel counts people.
+const VISITOR_KEY = 'ht_visitor_id';
+const TEST_DEVICE_KEY = 'ht_test_device';
+
+/** One id per browser/device, kept until site data is cleared. */
+export function getVisitorId() {
+  try {
+    let vid = localStorage.getItem(VISITOR_KEY);
+    if (!vid) {
+      vid = 'v' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem(VISITOR_KEY, vid);
+    }
+    return vid;
+  } catch {
+    return null;
+  }
+}
+
+// Opening the site once with ?ht_test=1 marks this device as the owner's test
+// device; its menu visits then stay out of the visitor count for good.
+try {
+  if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('ht_test') === '1') {
+    localStorage.setItem(TEST_DEVICE_KEY, '1');
+  }
+} catch { /* storage blocked */ }
+
+export function isTestDevice() {
+  try { return localStorage.getItem(TEST_DEVICE_KEY) === '1'; } catch { return false; }
+}
+
+export function authHeaders() {
   const headers = { 'Content-Type': 'application/json' };
   try {
     const token = localStorage.getItem('customerToken');
@@ -71,7 +104,8 @@ export function identifyCartSession() {
   fetch(`${API_BASE}/site-activity/cart-identify`, {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify({ session_id: sessionId }),
+    // visitor_id lets the server mark this device if a test account logged in.
+    body: JSON.stringify({ session_id: sessionId, visitor_id: getVisitorId() }),
   }).catch(() => {});
 }
 

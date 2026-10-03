@@ -23,7 +23,7 @@ import { hasRealOptions } from '../utils/menuItems';
 import { packagingAddonOf } from '../utils/cartLine';
 
 import API_BASE from "../config/api";
-import { getVisitorSessionId } from "../utils/siteActivity";
+import { getVisitorSessionId, getVisitorId, isTestDevice, authHeaders } from "../utils/siteActivity";
 import { trackAddToCart, trackSearch, trackCtaClick, trackViewItem, trackFavoriteToggle, trackViewItemList } from "../utils/analytics";
 
 // "Under ₹250" filter chip (DNA v2 menu). List price, before any offer.
@@ -315,10 +315,12 @@ export default function Menu() {
     if (sessionStorage.getItem('menu_view_tracked')) return;
     // Same id the cart log uses, so a menu visit and its cart adds line up.
     const sid = getVisitorSessionId() || Math.random().toString(36).slice(2) + Date.now().toString(36);
+    // visitor_id (per device) makes the count unique people, not tabs; the
+    // token and the test flag let the server leave the owner's test device out.
     fetch(`${API_BASE}/public/menu-view`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: sid }),
+      headers: authHeaders(),
+      body: JSON.stringify({ session_id: sid, visitor_id: getVisitorId(), test: isTestDevice() }),
     }).catch(() => {});
     sessionStorage.setItem('menu_view_tracked', '1');
   }, []);
