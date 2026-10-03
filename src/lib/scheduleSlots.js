@@ -31,10 +31,13 @@ export function istDateStr(nowIST) {
   return nowIST.toISOString().slice(0, 10);
 }
 
-/** The date range the picker offers: today through SLOT_MAX_DAYS_AHEAD. */
-export function slotDateRange(nowIST) {
+/**
+ * The date range the picker offers: today through SLOT_MAX_DAYS_AHEAD, or
+ * through `daysAhead` when the order allows longer (pre-order biryani: 7).
+ */
+export function slotDateRange(nowIST, daysAhead = SLOT_MAX_DAYS_AHEAD) {
   const max = new Date(nowIST);
-  max.setUTCDate(max.getUTCDate() + SLOT_MAX_DAYS_AHEAD);
+  max.setUTCDate(max.getUTCDate() + (daysAhead || SLOT_MAX_DAYS_AHEAD));
   return { min: istDateStr(nowIST), max: istDateStr(max) };
 }
 

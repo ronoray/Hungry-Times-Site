@@ -937,6 +937,11 @@ export default function Order() {
     () => cartFulfilmentBlock(lines, orderType, fulfilmentRules),
     [lines, orderType, fulfilmentRules]
   );
+  // Pre-order biryani in the cart: it must be booked for a later day (leadTier).
+  const cartHasPreOrder = useMemo(
+    () => lines.some((l) => fulfilmentRules.preOrder?.has(String(l?.itemId ?? l?.id ?? ''))),
+    [lines, fulfilmentRules]
+  );
 
   // Authoritative discount from the server — see the note inside the memo.
   // { promoDiscount, loyaltyDiscount, rejected, autoItemOffers, offerTitle }
@@ -1085,7 +1090,10 @@ export default function Order() {
   // next day (utils/paymentPolicy, mirroring the server). Such an order cannot
   // be placed "now", so scheduling is switched on, and a time picked before the
   // cart grew is cleared once it no longer leaves enough notice.
-  const leadTier = leadTimeFor(finalTotal);
+  const leadTier = leadTimeFor(finalTotal, {
+    preOrder: cartHasPreOrder,
+    maxDaysAhead: fulfilmentRules.preOrderMaxDaysAhead,
+  });
   // Beyond 3 km a new delivery is online-only (owner, 27 Sep 2026). The server
   // re-checks against the distance it prices from; an unknown distance does not
   // block cash here or there. An edit keeps its address, so it is not re-judged.
@@ -1920,7 +1928,7 @@ export default function Order() {
                     )}
                     {(() => {
                       const nowIST = istNow();
-                      const { min: todayStr, max: maxDateStr } = slotDateRange(nowIST);
+                      const { min: todayStr, max: maxDateStr } = slotDateRange(nowIST, leadTier?.maxDaysAhead);
                       const tomorrowStr = new Date(nowIST.getTime() + 86400000).toISOString().slice(0, 10);
                       return (
                         <div className="space-y-3">
@@ -2337,7 +2345,7 @@ export default function Order() {
                   // on mobile, so a 6 PM order could ask for 10 AM the same day —
                   // and one did. buildSlots never offers a time that has passed.
                   const nowIST = istNow();
-                  const { min: todayStr, max: maxDateStr } = slotDateRange(nowIST);
+                  const { min: todayStr, max: maxDateStr } = slotDateRange(nowIST, leadTier?.maxDaysAhead);
                   const tomorrowStr = new Date(nowIST.getTime() + 86400000).toISOString().slice(0, 10);
                   return (
                     <div className="space-y-3">
@@ -2433,8 +2441,10 @@ export default function Order() {
                       full amount. */}
                   {hasNoStackItem && cartTotal > 0 && (
                     <p className="text-xs text-ht-gold3/90 bg-ht-gold2/60 border border-ht-gold/25 rounded px-3 py-2 leading-relaxed">
-                      Promo codes and loyalty points can't be used with a combo — its
-                      price already includes the saving. Your points stay in your balance.
+                      {cartHasPreOrder
+                        ? "Promo codes and loyalty points can't be used on biryani pre-orders."
+                        : "Promo codes and loyalty points can't be used with a combo — its price already includes the saving."}{' '}
+                      Your points stay in your balance.
                     </p>
                   )}
 

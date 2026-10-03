@@ -886,9 +886,11 @@ export default function Menu() {
     // outside dine-in mode: greying them with a reason reads as "come and have
     // it here", where hiding them would just look like a menu that lost items.
     const dineInOnlyBlocked = Boolean(it.dineInOnly) && orderMode !== 'dine_in';
+    // The mirror image: pre-order biryani goes out to gatherings, never dine-in.
+    const preOrderDineInBlocked = Boolean(it.preOrder) && orderMode === 'dine_in';
 
     // Check if item is disabled
-    const isDisabled = !acceptingOnlineOrders || it.effectiveDisabled || dineInOnlyBlocked;
+    const isDisabled = !acceptingOnlineOrders || it.effectiveDisabled || dineInOnlyBlocked || preOrderDineInBlocked;
     
     // Price display: show range for items with variants
     const priceDisplay = (() => {
@@ -1075,7 +1077,7 @@ export default function Menu() {
         {/* Tags line — its own line under the name, never inside it. The offer
             LABEL comes from the server and the price above stays the list
             price; the saving lands at checkout (one money authority). */}
-        {(it.autoOffer || (isCustomisable && !twoSize)) && (
+        {(it.autoOffer || it.preOrder || (isCustomisable && !twoSize)) && (
         <div className="row-tags mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1">
           {it.autoOffer ? (
             <span
@@ -1087,6 +1089,13 @@ export default function Menu() {
           ) : null}
           {isCustomisable && !twoSize && (
             <span className="font-mono text-[10px] font-semibold uppercase tracking-[.05em] text-ht-mute">Your way</span>
+          )}
+          {/* Pre-order (biryani): ink, not gold — it is a condition, not a deal
+              (DESIGN_DNA §2). Rules: utils/preOrderPolicy.js. */}
+          {it.preOrder && (
+            <span className="whitespace-nowrap rounded border border-ht-ink/20 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[.05em] text-ht-ink">
+              Pre-order · min 10 plates · a day ahead
+            </span>
           )}
         </div>
         )}
@@ -1118,6 +1127,11 @@ export default function Menu() {
         {dineInOnlyBlocked && !it.effectiveDisabled && (
           <p className="col-span-4 mt-1 text-[13px] font-semibold text-ht-gold3">
             Available at the restaurant only
+          </p>
+        )}
+        {preOrderDineInBlocked && !it.effectiveDisabled && (
+          <p className="col-span-4 mt-1 text-[13px] font-semibold text-ht-ink">
+            For delivery or pickup only
           </p>
         )}
 

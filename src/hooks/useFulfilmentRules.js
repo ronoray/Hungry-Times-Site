@@ -16,10 +16,15 @@
 // without a DOM (this file reaches window via the API config).
 import { useEffect, useState } from 'react';
 import API_BASE from '../config/api.js';
+import { PREORDER_MIN_QTY, PREORDER_MAX_DAYS_AHEAD } from '../utils/preOrderPolicy.js';
 
 export { cartFulfilmentBlock } from '../lib/fulfilmentRules.js';
 
-const EMPTY = { dineInOnly: new Set(), needsCompanion: new Set(), extras: new Set() };
+//   preOrder       Biryani: minimum plates, a later day, no dine-in.
+const EMPTY = {
+  dineInOnly: new Set(), needsCompanion: new Set(), extras: new Set(),
+  preOrder: new Set(), preOrderMinQty: PREORDER_MIN_QTY, preOrderMaxDaysAhead: PREORDER_MAX_DAYS_AHEAD,
+};
 
 export function useFulfilmentRules() {
   const [rules, setRules] = useState(EMPTY);
@@ -36,6 +41,9 @@ export function useFulfilmentRules() {
           dineInOnly: new Set((data?.dineInOnlyIds || []).map(String)),
           needsCompanion: new Set((data?.needsCompanionIds || []).map(String)),
           extras: new Set((data?.extraIds || []).map(String)),
+          preOrder: new Set((data?.preOrderIds || []).map(String)),
+          preOrderMinQty: Number(data?.preOrderMinQty) || PREORDER_MIN_QTY,
+          preOrderMaxDaysAhead: Number(data?.preOrderMaxDaysAhead) || PREORDER_MAX_DAYS_AHEAD,
         });
       } catch {
         // Leave the sets empty — checkout behaves as it did before, and the

@@ -4,6 +4,8 @@
 // MIRROR of server/utils/paymentPolicy.js in the webapp repo, which is the
 // authority: the server refuses a cash order above it whatever this screen
 // shows. Change both together.
+import { PREORDER_MAX_DAYS_AHEAD } from './preOrderPolicy.js';
+
 export const COD_MAX_TOTAL = 2000;
 export const RESTAURANT_PHONE = '+918420822919';
 export const RESTAURANT_PHONE_DISPLAY = '+91 84208 22919';
@@ -30,8 +32,13 @@ export const LEAD_TIME_TIERS = [
   { above: 5000, minutes: 120 },
 ];
 
-/** The notice tier this bill needs, or null. */
-export function leadTimeFor(total) {
+// Pre-order items (biryani): a later day whatever the bill, and no more than
+// maxDaysAhead out. Strictest tier, so it wins. MIRROR of the server's.
+export const PREORDER_TIER = { nextDay: true, preOrder: true, maxDaysAhead: PREORDER_MAX_DAYS_AHEAD };
+
+/** The notice tier this order needs, or null. preOrder: cart holds a pre-order item. */
+export function leadTimeFor(total, { preOrder = false, maxDaysAhead } = {}) {
+  if (preOrder) return maxDaysAhead ? { ...PREORDER_TIER, maxDaysAhead } : PREORDER_TIER;
   const t = Number(total);
   if (!Number.isFinite(t)) return null;
   return LEAD_TIME_TIERS.find((tier) => t > tier.above) || null;
@@ -40,6 +47,9 @@ export function leadTimeFor(total) {
 /** One line for the customer describing the notice this bill needs. */
 export function leadTimeNote(tier) {
   if (!tier) return '';
+  if (tier.preOrder) {
+    return `Biryani is pre-order only: book it for tomorrow or up to ${tier.maxDaysAhead} days ahead.`;
+  }
   return tier.nextDay
     ? `Orders above ₹${tier.above} must be booked for the next day or later.`
     : `Orders above ₹${tier.above} need at least 2 hours' notice.`;
@@ -54,6 +64,10 @@ export function slotAllowedForTier(tier, dateStr, timeStr, nowIST) {
   if (!tier) return true;
   if (!dateStr || !timeStr) return false;
   const todayStr = nowIST.toISOString().slice(0, 10);
+  if (tier.maxDaysAhead) {
+    const last = new Date(nowIST.getTime() + tier.maxDaysAhead * 86400000).toISOString().slice(0, 10);
+    if (dateStr > last) return false;
+  }
   if (tier.nextDay) return dateStr > todayStr;
   // IST fields parsed as UTC, the same convention as nowIST.
   const slotMs = Date.parse(`${dateStr}T${String(timeStr).slice(0, 5)}:00Z`);

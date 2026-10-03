@@ -95,3 +95,7 @@ first; a modal only on exit-intent or second visit.
 - **2 Oct 2026** — v2 "Lal-Paar Table" adopted: light paper ground replaces the dark site.
 - **2 Oct 2026** — Opening hours are **12 PM – 11 PM, every day**. Schema, footer and any
   visible hours text must say exactly this.
+- **3 Oct 2026** — Pre-order items (biryani: min 10 plates, a later day, delivery/pickup,
+  no codes or points). Menu tag is ink outline mono "PRE-ORDER · MIN 10 PLATES · A DAY
+  AHEAD" — ink, not gold, because it is a condition, not a deal. Rules mirror
+  `src/utils/preOrderPolicy.js`; the server is the authority.

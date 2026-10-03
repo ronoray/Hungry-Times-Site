@@ -8,6 +8,12 @@
 //
 // "Company" deliberately excludes anything flagged as an extra: a dip plus a
 // bottle of water is still a trip worth nothing, so drinks never satisfy a dip.
+//
+//   pre-order       Biryani is made for gatherings: at least PREORDER_MIN_QTY
+//                   plates across all pre-order lines, and never dine-in.
+//                   (The "later day" half lives in utils/paymentPolicy.js.)
+
+import { PREORDER_MIN_QTY, preOrderQty } from '../utils/preOrderPolicy.js';
 
 const lineId = (l) => String(l?.itemId ?? l?.id ?? '');
 
@@ -24,15 +30,42 @@ const lineId = (l) => String(l?.itemId ?? l?.id ?? '');
  *        orderMode — Order.jsx owns the choice and the customer can change it
  *        there, so a cart built in dine-in mode and switched to delivery would
  *        otherwise keep dine-in's exemption.
- * @param {object} rules     { dineInOnly:Set, needsCompanion:Set, extras:Set }
- * @returns {{reason:'dine_in_only'|'needs_companion', names:string[], message:string}|null}
+ * @param {object} rules     { dineInOnly:Set, needsCompanion:Set, extras:Set,
+ *                             preOrder?:Set, preOrderMinQty?:number }
+ * @returns {{reason:'dine_in_only'|'needs_companion'|'pre_order_dine_in'|'pre_order_min', names:string[], message:string}|null}
  */
 export function cartFulfilmentBlock(lines, orderType, rules) {
-  if (orderType === 'dine_in') return null; // the counter serves everything
   if (!rules) return null;
 
   const cart = Array.isArray(lines) ? lines : [];
   if (!cart.length) return null;
+
+  // 0. Pre-order (biryani). Checked before the dine-in exemption: it is party
+  //    food that goes out, and the minimum holds whatever the order type.
+  const isPre = (l) => !!rules.preOrder?.has(lineId(l));
+  const pre = cart.filter(isPre);
+  if (pre.length) {
+    const names = [...new Set(pre.map((l) => l?.name || 'Biryani'))];
+    if (orderType === 'dine_in') {
+      return {
+        reason: 'pre_order_dine_in',
+        names,
+        message: `${names.join(' and ')} ${names.length === 1 ? 'is' : 'are'} for delivery or pickup only. Please switch to delivery or pickup.`,
+      };
+    }
+    const min = rules.preOrderMinQty || PREORDER_MIN_QTY;
+    const qty = preOrderQty(cart, isPre);
+    if (qty < min) {
+      const more = min - qty;
+      return {
+        reason: 'pre_order_min',
+        names,
+        message: `Biryani is pre-order only, minimum ${min} plates per order (chicken and mutton together). Add ${more} more plate${more === 1 ? '' : 's'} to continue.`,
+      };
+    }
+  }
+
+  if (orderType === 'dine_in') return null; // the counter serves everything
 
   // 1. Anything that simply cannot travel. Reported first: telling someone to
   //    "add food" when the real problem is an unpackageable coffee would send

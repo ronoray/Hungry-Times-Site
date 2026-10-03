@@ -89,3 +89,31 @@ test("lines carrying `id` instead of `itemId` are still matched", () => {
   const b = cartFulfilmentBlock([{ id: 1154, name: "Regular Mayo" }], "delivery", RULES);
   assert.ok(b, "a cart line keyed on id must not slip past the guard");
 });
+
+// ── Pre-order (biryani, 3 Oct 2026) ─────────────────────────────────────
+const PRE_RULES = { ...RULES, preOrder: new Set(["2001", "2002"]), preOrderMinQty: 10 };
+const CHICKEN = (qty) => ({ itemId: 2001, name: "Chicken Biryani", qty });
+const MUTTON = (qty) => ({ itemId: 2002, name: "Mutton Biryani", qty });
+
+test("pre-order: chicken and mutton count together toward the 10-plate minimum", () => {
+  assert.equal(cartFulfilmentBlock([CHICKEN(6), MUTTON(4)], "delivery", PRE_RULES), null);
+  assert.equal(cartFulfilmentBlock([CHICKEN(10)], "pickup", PRE_RULES), null);
+  const b = cartFulfilmentBlock([CHICKEN(5), MUTTON(4)], "delivery", PRE_RULES);
+  assert.equal(b?.reason, "pre_order_min");
+  assert.match(b.message, /Add 1 more plate to/);
+});
+
+test("pre-order: other food does not count toward the minimum", () => {
+  const b = cartFulfilmentBlock([CHICKEN(9), { ...FOOD, qty: 5 }], "delivery", PRE_RULES);
+  assert.equal(b?.reason, "pre_order_min");
+});
+
+test("pre-order: blocked for dine-in, even though dine-in is otherwise exempt", () => {
+  const b = cartFulfilmentBlock([CHICKEN(12)], "dine_in", PRE_RULES);
+  assert.equal(b?.reason, "pre_order_dine_in");
+  assert.equal(cartFulfilmentBlock([COFFEE], "dine_in", PRE_RULES), null);
+});
+
+test("pre-order: a cart without biryani is untouched by the new rule", () => {
+  assert.equal(cartFulfilmentBlock([{ ...FOOD, qty: 1 }], "delivery", PRE_RULES), null);
+});
