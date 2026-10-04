@@ -1059,41 +1059,62 @@ export default function Order() {
 
   // Ask the server to price the cart. Same call order creation makes, so the
   // quoted total and the charged total come from one implementation.
+  //
+  // A failed quote must NEVER take a discount off the screen (owner, 4 Oct
+  // 2026: an address change during a server restart dropped the October 12%
+  // offer and showed "add ₹50 more" on a cart that qualified). So:
+  //   • a failure keeps the last good quote and retries (1s, 2s, 4s … 15s)
+  //     until the server answers — it never falls back to the local estimate,
+  //     which cannot see item offers;
+  //   • the pay buttons wait until the quote matches the cart as it is NOW
+  //     (quoteFresh), so nobody approves a total the server did not price.
+  const quoteBody = useMemo(() => (lines.length ? JSON.stringify({
+    subtotal: cartTotal,
+    deliveryFee: deliveryCharge,
+    appliedCode: appliedCode?.code || null,
+    pointsToRedeem: pointsToRedeem || 0,
+    customerPhone: customer?.phone || null,
+    items: lines.map((l) => ({
+      itemId: l.itemId,
+      basePrice: l.basePrice || 0,
+      variants: l.variants || [],
+      addons: l.addons || [],
+      quantity: l.qty || 1,
+    })),
+  }) : null), [lines, cartTotal, deliveryCharge, appliedCode, pointsToRedeem, customer?.phone]);
+  const [quotedBody, setQuotedBody] = useState(null);
+  const [quoteRetry, setQuoteRetry] = useState(0);
+  const quoteAttempts = useRef(0);
+  const quoteFresh = !quoteBody || quotedBody === quoteBody;
+
+  useEffect(() => { quoteAttempts.current = 0; }, [quoteBody]);
+
   useEffect(() => {
-    if (!lines.length) { setServerQuote(null); return; }
+    if (!quoteBody) { setServerQuote(null); setQuotedBody(null); return; }
     let cancelled = false;
+    let retryTimer = null;
     const t = setTimeout(async () => {
       try {
         const res = await fetch(`${API_BASE}/offers/quote`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            subtotal: cartTotal,
-            deliveryFee: deliveryCharge,
-            appliedCode: appliedCode?.code || null,
-            pointsToRedeem: pointsToRedeem || 0,
-            customerPhone: customer?.phone || null,
-            items: lines.map((l) => ({
-              itemId: l.itemId,
-              basePrice: l.basePrice || 0,
-              variants: l.variants || [],
-              addons: l.addons || [],
-              quantity: l.qty || 1,
-            })),
-          }),
+          body: quoteBody,
         });
         if (!res.ok) throw new Error(String(res.status));
         const data = await res.json();
-        if (!cancelled) setServerQuote(data);
+        if (cancelled) return;
+        quoteAttempts.current = 0;
+        setServerQuote(data);
+        setQuotedBody(quoteBody);
       } catch {
-        // Leave the local estimate in place rather than blocking checkout. The
-        // order path recomputes server-side regardless, so a failed quote costs
-        // accuracy in the preview, never correctness in the charge.
-        if (!cancelled) setServerQuote(null);
+        if (cancelled) return;
+        // Keep the last good quote on screen and ask again.
+        const n = quoteAttempts.current++;
+        retryTimer = setTimeout(() => setQuoteRetry((r) => r + 1), Math.min(1000 * 2 ** n, 15000));
       }
     }, 250);
-    return () => { cancelled = true; clearTimeout(t); };
-  }, [lines, cartTotal, deliveryCharge, appliedCode, pointsToRedeem, customer?.phone]);
+    return () => { cancelled = true; clearTimeout(t); clearTimeout(retryTimer); };
+  }, [quoteBody, quoteRetry]);
 
   // Component-scope twin of the memo's internal `offersAllowed`, for the JSX.
   // The memo's copy is local to its callback — reaching for it from the render
@@ -2441,7 +2462,7 @@ export default function Order() {
                     <p className="text-xs text-ht-veg bg-ht-veg/10 border border-ht-veg/25 rounded px-3 py-2 leading-relaxed">
                       {serverQuote.rejected}
                     </p>
-                  ) : !appliedCode && belowOfferFloor && !hasNoStackItem && cartTotal > 0 && !serverQuote?.autoItemOffers ? (
+                  ) : quoteFresh && !appliedCode && belowOfferFloor && !hasNoStackItem && cartTotal > 0 && !serverQuote?.autoItemOffers ? (
                     <p className="text-xs text-ht-gold3/90 bg-ht-gold2/60 border border-ht-gold/25 rounded px-3 py-2 leading-relaxed">
                       Add ₹{Math.ceil(Math.max(0, offerFloor - offerFloorBasis))} more to use a promo code or your
                       loyalty points — discounts start at a ₹{offerFloor} bill. Ordering now is fine too.
@@ -2735,13 +2756,18 @@ export default function Order() {
                   {!isEditMode && (
                     <button
                       onClick={handleRazorpayPayment}
-                      disabled={paymentProcessing || lines.length === 0 || !!fulfilmentBlock || (orderType === 'delivery' && (!selectedAddressId || geocodingPending))}
+                      disabled={paymentProcessing || !quoteFresh || lines.length === 0 || !!fulfilmentBlock || (orderType === 'delivery' && (!selectedAddressId || geocodingPending))}
                       className="flex h-[52px] w-full items-center justify-center whitespace-nowrap rounded-full bg-ht-red text-base font-bold text-white transition hover:bg-ht-red2 active:scale-[.98] disabled:cursor-not-allowed disabled:bg-ht-ink/15"
                     >
                       {paymentProcessing ? (
                         <>
                           <Loader className="w-4 h-4 inline animate-spin mr-2" />
                           Processing...
+                        </>
+                      ) : !quoteFresh ? (
+                        <>
+                          <Loader className="w-4 h-4 inline animate-spin mr-2" />
+                          Updating prices…
                         </>
                       ) : (
                         <>Pay ₹{money(finalTotal)} →</>
@@ -2766,7 +2792,7 @@ export default function Order() {
 
                   <button
                     onClick={handleCODPayment}
-                    disabled={paymentProcessing || lines.length === 0 || !!fulfilmentBlock || !codAllowed(finalTotal) || cashTooFar || (orderType === 'delivery' && (!selectedAddressId || geocodingPending))}
+                    disabled={paymentProcessing || !quoteFresh || lines.length === 0 || !!fulfilmentBlock || !codAllowed(finalTotal) || cashTooFar || (orderType === 'delivery' && (!selectedAddressId || geocodingPending))}
                     className={`flex h-[52px] w-full items-center justify-center whitespace-nowrap rounded-full text-base font-bold transition active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-40 ${isEditMode ? 'bg-ht-red text-white hover:bg-ht-red2' : 'border-[1.5px] border-ht-red bg-transparent text-ht-red hover:bg-ht-red/5'}`}
                   >
                     {paymentProcessing ? (
