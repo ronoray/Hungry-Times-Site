@@ -63,6 +63,12 @@ export function isTestDevice() {
   try { return localStorage.getItem(TEST_DEVICE_KEY) === '1'; } catch { return false; }
 }
 
+// Sent with every activity call so the server can leave a test device's tabs
+// out of Cart Activity and "On the site now", not just out of menu visitors.
+function deviceFields() {
+  return { visitor_id: getVisitorId(), test: isTestDevice() };
+}
+
 export function authHeaders() {
   const headers = { 'Content-Type': 'application/json' };
   try {
@@ -90,6 +96,7 @@ export function logCartAdd(item, { price, qty = 1, source } = {}) {
       qty,
       source,
       session_id: getVisitorSessionId(),
+      ...deviceFields(),
     }),
   }).catch(() => {});
 }
@@ -105,7 +112,7 @@ export function identifyCartSession() {
     method: 'POST',
     headers: authHeaders(),
     // visitor_id lets the server mark this device if a test account logged in.
-    body: JSON.stringify({ session_id: sessionId, visitor_id: getVisitorId() }),
+    body: JSON.stringify({ session_id: sessionId, ...deviceFields() }),
   }).catch(() => {});
 }
 
@@ -139,7 +146,7 @@ export function syncCartSnapshot(lines) {
     method: 'POST',
     headers: authHeaders(),
     keepalive: true,
-    body: JSON.stringify({ session_id: sessionId, lines: payload }),
+    body: JSON.stringify({ session_id: sessionId, lines: payload, ...deviceFields() }),
   }).catch(() => {});
 }
 
@@ -163,6 +170,7 @@ function presenceBody(extra = {}) {
   return JSON.stringify({
     session_id: getVisitorSessionId(),
     page: window.location.pathname,
+    ...deviceFields(),
     ...extra,
   });
 }
