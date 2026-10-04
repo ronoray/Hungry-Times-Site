@@ -2438,7 +2438,7 @@ export default function Order() {
                       also false on a combo, which is how a ₹449 bundle came to be
                       told "add ₹51 more" right under "combos can't take a code". */}
                   {serverQuote?.rejected ? (
-                    <p className="text-xs text-emerald-300/90 bg-ht-veg/10 border border-emerald-500/25 rounded px-3 py-2 leading-relaxed">
+                    <p className="text-xs text-ht-veg bg-ht-veg/10 border border-ht-veg/25 rounded px-3 py-2 leading-relaxed">
                       {serverQuote.rejected}
                     </p>
                   ) : !appliedCode && belowOfferFloor && !hasNoStackItem && cartTotal > 0 && !serverQuote?.autoItemOffers ? (
@@ -2451,14 +2451,14 @@ export default function Order() {
                   {/* The saving, named. An automatic offer with an unexplained
                       deduction reads as a pricing error; this says which offer. */}
                   {serverQuote?.autoItemOffers?.titles?.length > 0 && (
-                    <p className="text-xs text-emerald-300 bg-ht-veg/10 border border-emerald-500/25 rounded px-3 py-2 leading-relaxed">
+                    <p className="text-xs text-ht-veg bg-ht-veg/10 border border-ht-veg/25 rounded px-3 py-2 leading-relaxed">
                       {serverQuote.autoItemOffers.titles.join(' · ')} — applied automatically.
                       {/* Said once, plainly, BEFORE the buttons. Menu prices include
                           GST until a discount applies, at which point 5% is charged
                           on top — so a discounted total is higher than the headline
                           and the customer should meet that here, not discover it in
                           the GST row on the way to paying. */}
-                      <span className="block mt-1 text-emerald-300/70">
+                      <span className="block mt-1 text-ht-veg">
                         Discounted orders are charged 5% GST on top, shown below.
                       </span>
                     </p>
