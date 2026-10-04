@@ -103,3 +103,9 @@ first; a modal only on exit-intent or second visit.
   not a deal). "BEST SELLER" only on items ranked from real valid sales (server
   `utils/bestSellers.js`, 30 days); the biryani pre-order card is "NEW & LOVED", states the
   condition in plain text and only links to its menu section. Phones: compact swipe strip.
+- **4 Oct 2026** — Outside kitchen hours the only order taken is a biryani pre-order (server
+  `offHoursOrderError`). The closed kitchen pill says so: desktop "Kitchen closed — opens at
+  12 PM · Biryani pre-orders open"; phones alternate "Opens 12 PM" / "Biryani pre-orders"
+  every 4 s (≤18 chars keeps the 320px header on one line; static under reduced motion;
+  full sentence as the aria-label). Opening time comes from the API, "Closed today" on a
+  closed day.
