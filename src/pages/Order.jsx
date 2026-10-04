@@ -68,9 +68,10 @@ const MAX_DELIVERY_RADIUS_KM = 8;
 function calculateDeliveryCharge(distanceKm) {
   if (distanceKm == null) return 0;
   if (distanceKm <= 2) return 0;
-  if (distanceKm <= 4) return 70;
-  if (distanceKm <= 6) return 100;
-  if (distanceKm <= 8) return 130;
+  // Owner rates, 4 Oct 2026 (were 70 / 100 / 130) — mirrors the server.
+  if (distanceKm <= 4) return 40;
+  if (distanceKm <= 6) return 60;
+  if (distanceKm <= 8) return 90;
   return -1; // outside service area
 }
 
@@ -818,7 +819,7 @@ export default function Order() {
         // Couldn't auto-locate. Never waive delivery: quote the default floor —
         // the pin prompt at checkout replaces this with the real tiered fee as
         // soon as the customer drops a pin (near addresses are usually free).
-        return { canDeliver: true, distance: null, deliveryCharge: 70, message: "Delivery: ₹70 — add a map pin for the exact fee" };
+        return { canDeliver: true, distance: null, deliveryCharge: 40, message: "Delivery: ₹40 — add a map pin for the exact fee" };
       }
       lat = geocoded.lat;
       lng = geocoded.lng;
