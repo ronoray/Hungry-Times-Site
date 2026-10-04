@@ -64,7 +64,7 @@ const RESTAURANT_LOCATION = {
 // Maximum delivery radius in km
 const MAX_DELIVERY_RADIUS_KM = 8;
 
-// Fallback delivery charge tiers (used when Borzo estimate unavailable)
+// Delivery charge tiers — the server's resolver prices the same tiers
 function calculateDeliveryCharge(distanceKm) {
   if (distanceKm == null) return 0;
   if (distanceKm <= 2) return 0;
@@ -261,12 +261,6 @@ export default function Order() {
   const pinSkippedRef = useRef(false);
   const pinResumeRef = useRef(null);
 
-  // Borzo live delivery quote: { charge: number|null, loading: bool }
-  // Cache keyed by addressId so we don't re-fetch on every render
-  const [borzoQuote, setBorzoQuote] = useState({ charge: null, loading: false });
-  const borzoQuoteCache = useState({})[0]; // stable cache ref
-  const [useBorzoDelivery, setUseBorzoDelivery] = useState(false);
-
   // Form State
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
 
@@ -313,48 +307,6 @@ export default function Order() {
       fetchAddresses();
     }
   }, [isAuthenticated, customer?.id, customer?.address]);
-
-  // ============================================================================
-  // FETCH BORZO DELIVERY ESTIMATE WHEN ADDRESS CHANGES
-  // ============================================================================
-  useEffect(() => {
-    setUseBorzoDelivery(false);
-    if (orderType !== 'delivery' || !selectedAddressId) {
-      setBorzoQuote({ charge: null, loading: false });
-      return;
-    }
-    const addr = addresses.find(a => a.id === selectedAddressId);
-    if (!addr || !addr.fullAddress) return;
-
-    // Use cached result if available
-    if (borzoQuoteCache[selectedAddressId] != null) {
-      setBorzoQuote({ charge: borzoQuoteCache[selectedAddressId], loading: false });
-      return;
-    }
-
-    const lat = addr.latitude || geocodedCoords[selectedAddressId]?.lat || null;
-    const lng = addr.longitude || geocodedCoords[selectedAddressId]?.lng || null;
-
-    setBorzoQuote({ charge: null, loading: true });
-    const token = localStorage.getItem('customerToken');
-    fetch(`${API_BASE}/customer/delivery/estimate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({ address: addr.fullAddress, lat, lng }),
-    })
-      .then(r => r.json())
-      .then(data => {
-        const charge = data.deliveryCharge != null ? data.deliveryCharge : null;
-        borzoQuoteCache[selectedAddressId] = charge;
-        setBorzoQuote({ charge, loading: false });
-      })
-      .catch(() => {
-        setBorzoQuote({ charge: null, loading: false });
-      });
-  }, [selectedAddressId, orderType, addresses, geocodedCoords]);
 
   // ============================================================================
   // FETCH ACTIVE OFFERS ON LOAD
@@ -909,12 +861,11 @@ export default function Order() {
     return getDeliveryStatus(addr);
   }, [addresses, selectedAddressId]);
 
-  // Use Borzo quote only when the customer explicitly opts in; otherwise use tiered distance pricing
+  // Our tiered distance charge — the server recomputes the same fee and never
+  // uses the one sent from here.
   const deliveryCharge = (orderType === 'pickup' || orderType === 'dine_in')
     ? 0
-    : (useBorzoDelivery && borzoQuote.charge != null
-        ? borzoQuote.charge
-        : (deliveryStatus?.deliveryCharge > 0 ? deliveryStatus.deliveryCharge : 0));
+    : (deliveryStatus?.deliveryCharge > 0 ? deliveryStatus.deliveryCharge : 0);
 
   // Fixed-price bundles in the cart. Component scope, not memo-internal — the
   // JSX below reads it, and reaching into a memo's internals is what took
@@ -1352,7 +1303,6 @@ export default function Order() {
           delivery_instructions: deliveryInstructions,
           discount: discountAmount,
           delivery_charge: deliveryCharge,
-          use_borzo: useBorzoDelivery,
           offer_id: appliedOffer?.id || null,
           offer_title: appliedOffer?.title || null,
           applied_code: outboundCode,
@@ -1654,7 +1604,6 @@ export default function Order() {
         paymentMethod: "COD",
         discount: discountAmount,
         delivery_charge: deliveryCharge,
-        use_borzo: useBorzoDelivery,
         offer_id: appliedOffer?.id || null,
         offer_title: appliedOffer?.title || null,
         applied_code: outboundCode,
@@ -2698,29 +2647,6 @@ export default function Order() {
                     </div>
                   )}
 
-                  {/* Borzo delivery partner toggle — only shown when quote is available */}
-                  {orderType === 'delivery' && borzoQuote.charge != null && (
-                    <div className="bg-ht-paper rounded-[14px] p-3 space-y-2">
-                      <p className="text-xs text-ht-mute font-medium">Delivery partner</p>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setUseBorzoDelivery(false)}
-                          className={`flex-1 py-2 px-3 rounded text-xs font-medium transition-colors ${!useBorzoDelivery ? 'bg-ht-ivory text-ht-red shadow-sm' : 'text-ht-mute'}`}
-                        >
-                          Standard · ₹{deliveryStatus?.deliveryCharge > 0 ? deliveryStatus.deliveryCharge : 'Free'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setUseBorzoDelivery(true)}
-                          className={`flex-1 py-2 px-3 rounded text-xs font-medium transition-colors ${useBorzoDelivery ? 'bg-ht-ivory text-ht-red shadow-sm' : 'text-ht-mute'}`}
-                        >
-                          Borzo · ₹{borzoQuote.charge}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Delivery Charge / Pickup */}
                   <div className="flex justify-between text-ht-mute">
                     <span className="flex items-center gap-1.5">
@@ -2729,8 +2655,6 @@ export default function Order() {
                     </span>
                     {orderType === 'pickup' ? (
                       <span className="text-ht-veg font-medium">FREE</span>
-                    ) : borzoQuote.loading ? (
-                      <span className="flex items-center gap-1 text-ht-mute text-sm"><Loader className="w-3.5 h-3.5 animate-spin" /> Calculating...</span>
                     ) : deliveryCharge > 0 ? (
                       <span className="text-ht-ink">₹{money(deliveryCharge)}</span>
                     ) : (
