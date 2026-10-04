@@ -2458,7 +2458,23 @@ export default function Order() {
                       Test `belowOfferFloor`, never `!offersAllowed` — the latter is
                       also false on a combo, which is how a ₹449 bundle came to be
                       told "add ₹51 more" right under "combos can't take a code". */}
-                  {serverQuote?.rejected ? (
+                  {/* A code or points the customer CHOSE, paused because the bill
+                      (food + delivery) is now under the floor — usually a closer
+                      address made delivery free. Owner, 4 Oct 2026: never let it
+                      just vanish; say why and how much brings it back. The choice
+                      stays selected and re-applies by itself once the bill is back
+                      at the floor (server and page both recompute every change). */}
+                  {quoteFresh && belowOfferFloor && !hasNoStackItem && cartTotal > 0 && (appliedCode || pointsToRedeem > 0) ? (
+                    <p className="text-xs text-ht-gold3 bg-ht-gold2/60 border border-ht-gold/50 rounded px-3 py-2 leading-relaxed">
+                      Your bill is now ₹{money(offerFloorBasis)}
+                      {orderType === 'delivery' && !(Number(deliveryCharge) > 0) ? ' (free delivery to this address)' : ''}.
+                      {' '}Add ₹{Math.ceil(Math.max(0, offerFloor - offerFloorBasis))} more and{' '}
+                      {appliedCode?.code
+                        ? <>{appliedCode.code}{pointsToRedeem > 0 ? ' and your loyalty points apply' : ' applies'}</>
+                        : 'your loyalty points apply'}
+                      {' '}again — discounts start at a ₹{offerFloor} bill, delivery included.
+                    </p>
+                  ) : serverQuote?.rejected ? (
                     <p className="text-xs text-ht-veg bg-ht-veg/10 border border-ht-veg/25 rounded px-3 py-2 leading-relaxed">
                       {serverQuote.rejected}
                     </p>
