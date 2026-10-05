@@ -50,3 +50,42 @@ test("id lists are parsed leniently — spacing and trailing commas are real", (
   // Offer rows come back from SQLite, where an id list can arrive as a number.
   assert.equal(firstId(431), "431");
 });
+
+// ── promoBarCta: the top strip's button, per page ─────────────────────────────
+import { promoBarCta } from "../utils/offerLink.js";
+
+const dishOffer = { promo_code: null, applicable_item_ids: "1033", applicable_category_ids: null };
+const codeOffer = { promo_code: "WELCOME15", applicable_item_ids: null, applicable_category_ids: null };
+
+test("off the menu, a dish offer's button goes to the dish", () => {
+  assert.deepEqual(promoBarCta("/home", dishOffer), { action: "navigate", label: "Order Now", to: "/menu?highlight=1033" });
+});
+
+test("off the menu, a code offer's button goes to the menu", () => {
+  assert.deepEqual(promoBarCta("/gallery", codeOffer), { action: "navigate", label: "Order Now", to: "/menu" });
+});
+
+test("on the menu, a dish offer hides the strip (AutoOfferCard already shows it)", () => {
+  assert.deepEqual(promoBarCta("/menu", dishOffer), { hideStrip: true });
+});
+
+test("on the menu, a code offer's button saves the code instead of linking to itself", () => {
+  assert.deepEqual(promoBarCta("/menu", codeOffer), { action: "save", label: "Save code" });
+});
+
+test("COMBO50 always goes to its own page", () => {
+  const combo = { ...codeOffer, promo_code: "COMBO50" };
+  assert.equal(promoBarCta("/menu", combo).to, "/combo");
+  assert.equal(promoBarCta("/home", combo).to, "/combo");
+});
+
+test("checkout and post-order pages get no button", () => {
+  for (const p of ["/order", "/order-success/123", "/track/abc", "/delivery/abc"]) {
+    assert.equal(promoBarCta(p, codeOffer), null, p);
+    assert.equal(promoBarCta(p, dishOffer), null, p);
+  }
+});
+
+test("/orders (history) is not checkout — it keeps the button", () => {
+  assert.equal(promoBarCta("/orders", codeOffer).label, "Order Now");
+});

@@ -19,7 +19,7 @@ import { X } from 'lucide-react';
 import API_BASE from '../config/api.js';
 import { useAuth } from '../context/AuthContext';
 import { useExpiryLabel } from '../hooks/useExpiryLabel';
-import { offerDeepLink } from '../utils/offerLink';
+import { promoBarCta } from '../utils/offerLink';
 
 const DISMISS_KEY = 'ht_promo_bar_dismissed';
 const WA_NUMBER = '916290471281';
@@ -33,6 +33,8 @@ export default function PromoBar() {
   const [offer, setOffer] = useState(null);
   // Shared with OffersStrip and the Offers page — see utils/offerCountdown.js.
   const timeLeft = useExpiryLabel(offer?.valid_till);
+  // "Save code" on /menu flips to a confirmation once tapped.
+  const [codeSaved, setCodeSaved] = useState(false);
   const [dismissed, setDismissed] = useState(() => {
     try { return !!sessionStorage.getItem(DISMISS_KEY); } catch { return false; }
   });
@@ -63,10 +65,12 @@ export default function PromoBar() {
   if (dismissed) return null;
 
   // A live discount always outranks the WhatsApp cross-promo.
-  const showOffer = !!offer;
+  // The button (or the whole strip) depends on the page — see promoBarCta.
+  const cta = promoBarCta(location.pathname, offer);
+  const showOffer = !!offer && !cta?.hideStrip;
   // WhatsApp fallback stays off /menu — the search bar conflicts with it and the
   // pitch is redundant on the ordering page itself.
-  const showWhatsApp = !showOffer && location.pathname !== '/menu';
+  const showWhatsApp = !offer && location.pathname !== '/menu';
 
   if (!showOffer && !showWhatsApp) return null;
 
@@ -91,24 +95,34 @@ export default function PromoBar() {
               {timeLeft}
             </span>
           )}
-          <button
-            onClick={() => {
-              if (offer.promo_code) {
+          {cta?.action === 'navigate' && (
+            <button
+              onClick={() => {
+                if (offer.promo_code) {
+                  try { sessionStorage.setItem('ht_promo', offer.promo_code); } catch { /* private mode */ }
+                }
+                navigate(cta.to);
+              }}
+              className="h-9 whitespace-nowrap rounded-full bg-ht-red px-3.5 text-xs font-bold text-white transition hover:bg-ht-red2 active:scale-95"
+            >
+              {cta.label}
+            </button>
+          )}
+          {/* On /menu "Order Now" would link to the page already open. The
+              useful step left is carrying the code to checkout, which
+              auto-applies it from ht_promo. */}
+          {cta?.action === 'save' && (
+            <button
+              onClick={() => {
                 try { sessionStorage.setItem('ht_promo', offer.promo_code); } catch { /* private mode */ }
-              }
-              // COMBO50 has a page of its own. Every other CODE applies to
-              // whatever the customer builds, so the menu is the right landing.
-              // A codeless DISH offer is neither: it advertises one dish, and
-              // sending them to a bare /menu made this strip the loudest dead
-              // end on the site — it is on every page. offerDeepLink points it
-              // at the dish (or, for "any Meifoon", at the section).
-              if (offer.promo_code === 'COMBO50') return navigate('/combo');
-              navigate((!offer.promo_code && offerDeepLink(offer)) || '/menu');
-            }}
-            className="h-9 whitespace-nowrap rounded-full bg-ht-red px-3.5 text-xs font-bold text-white transition hover:bg-ht-red2 active:scale-95"
-          >
-            Order Now
-          </button>
+                setCodeSaved(true);
+              }}
+              disabled={codeSaved}
+              className="h-9 whitespace-nowrap rounded-full bg-ht-red px-3.5 text-xs font-bold text-white transition hover:bg-ht-red2 active:scale-95 disabled:bg-ht-ink/70 disabled:active:scale-100"
+            >
+              {codeSaved ? '✓ Saved for checkout' : cta.label}
+            </button>
+          )}
         </div>
         <button
           onClick={handleDismiss}

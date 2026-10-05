@@ -47,3 +47,44 @@ export function offerDeepLink(offer) {
   if (catId) return `/menu?sub=${catId}`;
   return null;
 }
+
+// Pages where the strip's button must not appear. Checkout and the post-order
+// pages are the end of the ordering path: "Order Now" there pulled the customer
+// OUT of a half-finished checkout and back to the menu.
+const isEndOfOrderPath = (path) =>
+  path === '/order' ||
+  path.startsWith('/order-success/') ||
+  path.startsWith('/track/') ||
+  path.startsWith('/delivery/');
+
+/**
+ * What PromoBar's button should be on this page, or null for no button.
+ *
+ * "Order Now" is a link to the menu, so on the menu itself it did nothing —
+ * owner, 5 Oct 2026: "serves no function on the menu page". On /menu:
+ *   - a codeless dish offer → `hideStrip`: AutoOfferCard, above the search bar,
+ *     already lists every codeless offer with a link to its dish. The strip was
+ *     a second copy of it, costing a phone ~40px.
+ *   - a code offer → "Save code": the one useful thing left to do here is carry
+ *     the code to checkout, which Order.jsx auto-applies from `ht_promo`.
+ *
+ * @param {string} pathname  location.pathname
+ * @param {{promo_code?: string|null, applicable_item_ids?: string|null, applicable_category_ids?: string|null}} offer
+ * @returns {{hideStrip?: true} | {action: 'navigate', label: string, to: string} | {action: 'save', label: string} | null}
+ */
+export function promoBarCta(pathname, offer) {
+  if (!offer) return null;
+  const path = pathname || '/';
+  if (isEndOfOrderPath(path)) return null;
+  if (path === '/menu') {
+    if (!offer.promo_code) return { hideStrip: true };
+    if (offer.promo_code === 'COMBO50') return { action: 'navigate', label: 'Order Now', to: '/combo' };
+    return { action: 'save', label: 'Save code' };
+  }
+  // COMBO50 has a page of its own. Every other CODE applies to whatever the
+  // customer builds, so the menu is the right landing; a codeless dish offer
+  // goes to the dish.
+  if (offer.promo_code === 'COMBO50') return { action: 'navigate', label: 'Order Now', to: '/combo' };
+  const to = (!offer.promo_code && offerDeepLink(offer)) || '/menu';
+  return { action: 'navigate', label: 'Order Now', to };
+}
