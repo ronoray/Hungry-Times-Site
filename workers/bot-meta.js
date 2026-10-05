@@ -18,8 +18,18 @@ const SOCIAL_BOT =
   /WhatsApp|facebookexternalhit|Twitterbot|LinkedInBot|Slackbot-LinkExpanding|Discordbot|TelegramBot|Applebot|PinterestBot|Snapchat|redditbot|vkShare|Embedly|Quora|W3C_Validator|MetaInspector/i;
 
 const BASE      = 'https://home.hungrytimes.in';
-const OG_IMAGE  = `${BASE}/og-image.jpg`;
+// Bump ?v= whenever public/og-image.jpg changes, in step with index.html and
+// SEOHead.jsx. Facebook, WhatsApp and Telegram cache previews by image URL, so a
+// same-name replacement keeps showing the old card.
+const OG_IMAGE  = `${BASE}/og-image.jpg?v=2`;
 const DEFAULT_IMAGE = { url: OG_IMAGE, width: '1200', height: '630', type: 'image/jpeg' };
+
+// Words follow docs/DESIGN_DNA.md §7: no delivery time, no delivery radius, no
+// app names. The address is 32/12A Gariahat Road South — not Selimpur.
+const HOME = {
+  title:       'Hungry Times — Chinese & Continental, Gariahat Road South, Kolkata',
+  description: 'We’re not on the apps. By choice. Chinese & Continental from Gariahat Road South, Kolkata — order straight from our kitchen. Dine-in, takeaway & delivery.',
+};
 
 const ROUTES = {
   '/combo': {
@@ -28,41 +38,35 @@ const ROUTES = {
     type:        'website',
     image:       { url: 'https://cdn.hungrytimes.in/images/gallery/combo-chilli-pork.png', width: '1124', height: '1055', type: 'image/png' },
   },
-  '/': {
-    title:       'Hungry Times — Chinese-Continental in Kolkata',
-    description: 'Order Chinese-Continental fusion food online from Hungry Times, Kolkata. Fast delivery within 5 km. Dine in, takeaway, and online ordering available.',
-  },
-  '/home': {
-    title:       'Hungry Times — Chinese-Continental in Kolkata',
-    description: 'Order Chinese-Continental fusion food online from Hungry Times, Kolkata. Fast delivery within 5 km. Dine in, takeaway, and online ordering available.',
-  },
+  '/':     HOME,
+  '/home': HOME,
   '/menu': {
-    title:       'Our Menu — Hungry Times | Chinese-Continental in Kolkata',
-    description: 'Explore our full Chinese-Continental menu — starters, mains, desserts and more. Order online for delivery or dine in at Selimpur, Ballygunge, Kolkata.',
+    title:       'The Menu — Hungry Times | Chinese & Continental, Kolkata',
+    description: 'The full Hungry Times menu — starters, fried rice, noodles, mains and Continental plates. Order straight from our kitchen on Gariahat Road South.',
   },
   '/gallery': {
-    title:       'Gallery — Hungry Times | Food & Ambiance Photos',
-    description: 'See photos of our signature dishes, restaurant ambiance, and the dining experience at Hungry Times, Kolkata.',
+    title:       'Gallery — Hungry Times | Gariahat Road South, Kolkata',
+    description: 'Our plates and our room — photos from the Hungry Times kitchen on Gariahat Road South, Kolkata.',
   },
   '/offers': {
-    title:       'Offers & Deals — Hungry Times | Kolkata',
-    description: 'Exclusive promo codes, loyalty rewards, and special offers at Hungry Times. Order online and save on your next meal.',
+    title:       'Offers — Hungry Times | Kolkata',
+    description: 'Every live offer and code at Hungry Times, and loyalty points on every order placed with us direct.',
   },
   '/contact': {
-    title:       'Contact Hungry Times | Selimpur, Ballygunge, Kolkata',
-    description: 'Get in touch with Hungry Times. Visit us at Selimpur, Ballygunge, Kolkata, or call +91 84208 22919.',
+    title:       'Contact — Hungry Times | Gariahat Road South, Kolkata',
+    description: 'Find us at 32/12A Gariahat Road South, ground floor, Kolkata 700031, or call +91 84208 22919. Open 12 PM – 11 PM, every day.',
   },
   '/feedback': {
-    title:       'Share Your Feedback — Hungry Times',
-    description: 'Had a meal at Hungry Times? Share your experience and help us serve you better.',
+    title:       'Feedback — Hungry Times',
+    description: 'Ate with us? Tell us how it was — every note reaches the kitchen.',
   },
   '/reservation': {
-    title:       'Book a Table — Hungry Times | Dhakuria, Kolkata',
-    description: 'Reserve a table at Hungry Times, Dhakuria / Gariahat, Kolkata. Pick your date, time and party size — we confirm your booking on WhatsApp.',
+    title:       'Reserve a table — Hungry Times | Gariahat Road South, Kolkata',
+    description: 'Book a table at Hungry Times, 32/12A Gariahat Road South. Pick the date, time and party size — we confirm on WhatsApp.',
   },
   '/testimonials': {
-    title:       'Customer Reviews — Hungry Times | Kolkata',
-    description: 'Read what our customers say about Hungry Times. Real reviews from diners who love our Chinese-Continental food in Kolkata.',
+    title:       'Reviews — Hungry Times | Kolkata',
+    description: 'What people who have eaten with us say about Hungry Times, Gariahat Road South, Kolkata.',
   },
 };
 
@@ -81,7 +85,7 @@ function buildHTML(path, { title, description, image, type }) {
 <meta property="og:type" content="${ogType}">
 <meta property="og:url" content="${url}">
 <meta property="og:site_name" content="Hungry Times">
-<meta property="og:locale" content="en_US">
+<meta property="og:locale" content="en_IN">
 <meta property="og:image" content="${img.url}">
 <meta property="og:image:width" content="${img.width}">
 <meta property="og:image:height" content="${img.height}">

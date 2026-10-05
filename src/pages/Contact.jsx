@@ -70,7 +70,7 @@ export default function Contact() {
     <>
     <SEOHead
       title="Contact Us"
-      description="Get in touch with Hungry Times. Visit us at Selimpur, Ballygunge, Kolkata or call +91-8420822919. Dine-in, takeaway & delivery."
+      description="Get in touch with Hungry Times. Visit us at 32/12A Gariahat Road South, Kolkata, or call +91-8420822919. Dine-in, takeaway & delivery."
       canonicalPath="/contact"
     />
     <section className="container-section py-12">
