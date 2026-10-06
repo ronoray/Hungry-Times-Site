@@ -229,12 +229,18 @@ export function CartProvider({ children }) {
     const t = setTimeout(() => {
       syncCartSnapshot(lines.map((l) => {
         const variants = Array.isArray(l.variants) ? l.variants : (l.variant ? [l.variant] : []);
+        // Add-ons (packaging included) are in unitPrice, so name them too —
+        // otherwise the ops panel shows a price it cannot explain.
+        const addons = Array.isArray(l.addons) ? l.addons : [];
         return {
           itemId: l.itemId,
           name: l.itemName || l.name,
           qty: Number(l.qty) || 1,
           unitPrice: calcUnit(l),
-          options: variants.map((v) => v?.name).filter(Boolean).join(', '),
+          options: [
+            ...variants.map((v) => v?.name),
+            ...addons.map((a) => (a?.name ? `+ ${a.name}` : null)),
+          ].filter(Boolean).join(', '),
         };
       }));
     }, 2000);
