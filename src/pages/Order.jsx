@@ -898,6 +898,23 @@ export default function Order() {
   // Authoritative discount from the server — see the note inside the memo.
   // { promoDiscount, loyaltyDiscount, rejected, autoItemOffers, offerTitle }
   const [serverQuote, setServerQuote] = useState(null);
+  // Dish offer OR points (owner, 8 Oct 2026). When the cart holds an automatic
+  // dish offer and the customer could redeem points instead, the quote names
+  // both savings in `discountOptions`. The bigger one is selected for them;
+  // null here means "follow the bigger", 'offer' / 'points' once they switch.
+  // Taking points puts every offer dish back to menu price — never a mix.
+  const [autoOfferChoice, setAutoOfferChoice] = useState(null);
+  const discountOptions = serverQuote?.discountOptions || null;
+  const pointsInsteadOfOffer = !!discountOptions
+    && (autoOfferChoice || discountOptions.better) === 'points';
+  // Keep the points request in step with the choice. The options are priced
+  // independently of the request, so setting it cannot change them — no loop.
+  const optionPoints = discountOptions?.points?.points || 0;
+  useEffect(() => {
+    if (!discountOptions) return;
+    const target = pointsInsteadOfOffer ? optionPoints : 0;
+    if (pointsToRedeem !== target) setPointsToRedeem(target);
+  }, [discountOptions?.better, optionPoints, pointsInsteadOfOffer]);
 
   const { cartTotal, discountAmount, pointsDiscount, maxRedeemablePoints, gstAmount, gstOnTop, finalTotal, packagingDeduction } = useMemo(() => {
     let total = 0;
@@ -2425,7 +2442,7 @@ export default function Order() {
                       "Add ₹190 more" beside an offer that is already applied and
                       cannot be stacked onto is an instruction the customer cannot
                       act on. */}
-                  {!hasNoStackItem && !serverQuote?.autoItemOffers && isAuthenticated && customer?.phone && (
+                  {!hasNoStackItem && !serverQuote?.autoItemOffers && !serverQuote?.autoItemOffersForgone && isAuthenticated && customer?.phone && (
                     <OffersPanel
                       cartTotal={cartTotal}
                       customerPhone={customer.phone}
@@ -2485,6 +2502,42 @@ export default function Order() {
                       loyalty points — discounts start at a ₹{offerFloor} bill. Ordering now is fine too.
                     </p>
                   ) : null}
+
+                  {/* Dish offer OR points — one per order. The bigger saving is
+                      preselected; the customer may keep their points instead. */}
+                  {discountOptions && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-ht-red2 font-medium">One discount per order — pick one:</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setAutoOfferChoice('offer')}
+                          aria-pressed={!pointsInsteadOfOffer}
+                          className={`min-w-0 text-left rounded-[14px] border-2 px-3 py-2 transition-colors active:scale-95 ${!pointsInsteadOfOffer ? 'border-ht-red bg-ht-gold2' : 'border-ht-gold/40 bg-ht-ivory'}`}
+                        >
+                          <span className="block text-xs font-semibold text-ht-red2">Dish offer</span>
+                          <span className="block text-sm font-bold text-ht-red2">Save ₹{money(discountOptions.offer.saving)}</span>
+                          <span className="block text-[11px] text-ht-mute">Keep your points</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAutoOfferChoice('points')}
+                          aria-pressed={pointsInsteadOfOffer}
+                          className={`min-w-0 text-left rounded-[14px] border-2 px-3 py-2 transition-colors active:scale-95 ${pointsInsteadOfOffer ? 'border-ht-red bg-ht-gold2' : 'border-ht-gold/40 bg-ht-ivory'}`}
+                        >
+                          <span className="block text-xs font-semibold text-ht-red2">Use {discountOptions.points.points} points</span>
+                          <span className="block text-sm font-bold text-ht-red2">Save ₹{money(discountOptions.points.saving)}</span>
+                          <span className="block text-[11px] text-ht-mute">Dish at menu price</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {serverQuote?.autoItemOffersForgone?.titles?.length > 0 && (
+                    <p className="text-xs text-ht-red2 bg-ht-gold2/60 border border-ht-gold/50 rounded px-3 py-2 leading-relaxed">
+                      Using your points instead of {serverQuote.autoItemOffersForgone.titles.join(' · ')}, so
+                      {serverQuote.autoItemOffersForgone.lines?.length > 1 ? ' those dishes are' : ' that dish is'} at menu price.
+                    </p>
+                  )}
 
                   {/* The saving, named. An automatic offer with an unexplained
                       deduction reads as a pricing error; this says which offer. */}
@@ -2618,7 +2671,7 @@ export default function Order() {
                   )}
 
                   {/* 🎯 LOYALTY POINTS REDEMPTION */}
-                  {isAuthenticated && loyaltyPoints >= 30 && maxRedeemablePoints >= 30 && (
+                  {isAuthenticated && loyaltyPoints >= 30 && maxRedeemablePoints >= 30 && !discountOptions && !serverQuote?.autoItemOffers && (
                     <div className="bg-ht-gold2/60 -mx-6 px-6 py-3 rounded space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="text-ht-red2 font-medium text-sm">
