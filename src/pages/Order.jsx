@@ -898,15 +898,18 @@ export default function Order() {
   // Authoritative discount from the server — see the note inside the memo.
   // { promoDiscount, loyaltyDiscount, rejected, autoItemOffers, offerTitle }
   const [serverQuote, setServerQuote] = useState(null);
-  // Dish offer OR points (owner, 8 Oct 2026). When the cart holds an automatic
-  // dish offer and the customer could redeem points instead, the quote names
-  // both savings in `discountOptions`. The bigger one is selected for them;
-  // null here means "follow the bigger", 'offer' / 'points' once they switch.
-  // Taking points puts every offer dish back to menu price — never a mix.
+  // Dish offer OR a code OR points (owner, 8 + 9 Oct 2026). When the cart
+  // holds an automatic dish offer and the customer's points or the code they
+  // applied could replace it, the quote names every saving in
+  // `discountOptions`. The bigger one is selected for them; null here means
+  // "follow the bigger", 'offer' / 'code' / 'points' once they switch.
+  // A code or points put every offer dish back to menu price — never a mix.
   const [autoOfferChoice, setAutoOfferChoice] = useState(null);
   const discountOptions = serverQuote?.discountOptions || null;
-  const pointsInsteadOfOffer = !!discountOptions
-    && (autoOfferChoice || discountOptions.better) === 'points';
+  const pickedAutoChoice = autoOfferChoice && discountOptions?.[autoOfferChoice] ? autoOfferChoice : null;
+  const autoChoice = discountOptions ? (pickedAutoChoice || discountOptions.better) : null;
+  const pointsInsteadOfOffer = autoChoice === 'points';
+  const codeInsteadOfOffer = autoChoice === 'code';
   // Keep the points request in step with the choice. The options are priced
   // independently of the request, so setting it cannot change them — no loop.
   const optionPoints = discountOptions?.points?.points || 0;
@@ -1010,6 +1013,15 @@ export default function Order() {
     if (serverQuote) {
       discount = serverQuote.promoDiscount;
     }
+    // On a dish-offer cart with a choice, the figures come from the option the
+    // customer is on. The quote prices the code and points they sent, which is
+    // not the same thing when they picked the dish offer over a typed code.
+    const options = serverQuote?.discountOptions || null;
+    if (options) {
+      discount = autoChoice === 'offer' ? options.offer.saving
+        : autoChoice === 'code' ? (options.code?.saving || 0)
+        : 0;
+    }
 
     const subtotalAfterDiscount = Math.max(0, total - discount);
     // Points redemption: max 20% of subtotalAfterDiscount, min 50 points.
@@ -1021,6 +1033,7 @@ export default function Order() {
       // page offers a slider whose value the order path will silently discard.
       pointsDiscount = serverQuote.loyaltyDiscount;
     }
+    if (options) pointsDiscount = autoChoice === 'points' ? (options.points?.saving || 0) : 0;
     const afterPoints = Math.max(0, subtotalAfterDiscount - pointsDiscount);
 
     // GST: added ON TOP only when a discount applied; otherwise it is already
@@ -1053,7 +1066,7 @@ export default function Order() {
       finalTotal: round2(afterPoints + deliveryCharge + (hasDiscount ? gst : 0)),
       packagingDeduction: round2(pkgTotal),
     };
-  }, [lines, appliedOffer, deliveryCharge, pointsToRedeem, loyaltyPoints, orderType, hasNoStackItem, offerFloor, serverQuote]);
+  }, [lines, appliedOffer, deliveryCharge, pointsToRedeem, loyaltyPoints, orderType, hasNoStackItem, offerFloor, serverQuote, autoChoice]);
 
   // Large orders need advance notice: above ₹5000 two hours, above ₹10000 the
   // next day (utils/paymentPolicy, mirroring the server). Such an order cannot
@@ -1156,7 +1169,13 @@ export default function Order() {
   // silently becomes "you cannot place this order at all", with no way out
   // except emptying the cart. A code that did earn a discount is still sent, so
   // combos (floor-exempt) and normal above-floor orders are unaffected.
-  const outboundCode = discountAmount > 0 ? (appliedCode?.code || null) : null;
+  //
+  // On a dish-offer cart the code is sent only when it is the CHOSEN discount
+  // (owner, 9 Oct 2026) — sending it asks the server for the code instead of
+  // the dish offer. A code the server would not land there stays home too.
+  const outboundCode = discountAmount > 0 && (discountOptions
+    ? codeInsteadOfOffer
+    : !serverQuote?.autoItemOffers) ? (appliedCode?.code || null) : null;
 
   // Adding a combo to a cart that already had points or a code selected must
   // clear both. The totals memo ignores them either way, but the payload sends
@@ -2437,12 +2456,11 @@ export default function Order() {
                   )}
 
                   {/* YOUR OFFERS PANEL — hidden when a fixed-price bundle is in
-                      the cart, and equally when an automatic item offer is, since
-                      every code here would be refused. Showing WELCOME15 with
-                      "Add ₹190 more" beside an offer that is already applied and
-                      cannot be stacked onto is an instruction the customer cannot
-                      act on. */}
-                  {!hasNoStackItem && !serverQuote?.autoItemOffers && !serverQuote?.autoItemOffersForgone && isAuthenticated && customer?.phone && (
+                      the cart, since every code there would be refused. Shown
+                      beside an automatic dish offer (owner, 9 Oct 2026): a code
+                      may be taken INSTEAD of it, and the choice card below
+                      preselects whichever saves more. */}
+                  {!hasNoStackItem && isAuthenticated && customer?.phone && (
                     <OffersPanel
                       cartTotal={cartTotal}
                       customerPhone={customer.phone}
@@ -2503,47 +2521,47 @@ export default function Order() {
                     </p>
                   ) : null}
 
-                  {/* Dish offer OR points — one per order. The bigger saving is
-                      preselected; the customer may keep their points instead. */}
-                  {discountOptions && (
-                    <div className="space-y-2">
-                      <p className="text-xs text-ht-red2 font-medium">One discount per order — pick one:</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setAutoOfferChoice('offer')}
-                          aria-pressed={!pointsInsteadOfOffer}
-                          className={`min-w-0 text-left rounded-[14px] border-2 px-3 py-2 transition-colors active:scale-95 ${!pointsInsteadOfOffer ? 'border-ht-red bg-ht-gold2' : 'border-ht-gold/40 bg-ht-ivory'}`}
-                        >
-                          <span className="block text-xs font-semibold text-ht-red2">Dish offer</span>
-                          <span className="block text-sm font-bold text-ht-red2">Save ₹{money(discountOptions.offer.saving)}</span>
-                          <span className="block text-[11px] text-ht-mute">Keep your points</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setAutoOfferChoice('points')}
-                          aria-pressed={pointsInsteadOfOffer}
-                          className={`min-w-0 text-left rounded-[14px] border-2 px-3 py-2 transition-colors active:scale-95 ${pointsInsteadOfOffer ? 'border-ht-red bg-ht-gold2' : 'border-ht-gold/40 bg-ht-ivory'}`}
-                        >
-                          <span className="block text-xs font-semibold text-ht-red2">Use {discountOptions.points.points} points</span>
-                          <span className="block text-sm font-bold text-ht-red2">Save ₹{money(discountOptions.points.saving)}</span>
-                          <span className="block text-[11px] text-ht-mute">Dish at menu price</span>
-                        </button>
+                  {/* Dish offer OR a code OR points — one per order. The bigger
+                      saving is preselected; the customer may switch. */}
+                  {discountOptions && (() => {
+                    const choices = [
+                      { key: 'offer', title: 'Dish offer', note: 'Keep your points', saving: discountOptions.offer.saving },
+                      discountOptions.code && { key: 'code', title: `Code ${discountOptions.code.code}`, note: 'Dish at menu price', saving: discountOptions.code.saving },
+                      discountOptions.points && { key: 'points', title: `Use ${discountOptions.points.points} points`, note: 'Dish at menu price', saving: discountOptions.points.saving },
+                    ].filter(Boolean);
+                    return (
+                      <div className="space-y-2">
+                        <p className="text-xs text-ht-red2 font-medium">One discount per order — pick one:</p>
+                        <div className={`grid gap-2 ${choices.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                          {choices.map((c) => (
+                            <button
+                              key={c.key}
+                              type="button"
+                              onClick={() => setAutoOfferChoice(c.key)}
+                              aria-pressed={autoChoice === c.key}
+                              className={`min-w-0 text-left rounded-[14px] border-2 px-3 py-2 transition-colors active:scale-95 ${autoChoice === c.key ? 'border-ht-red bg-ht-gold2' : 'border-ht-gold/40 bg-ht-ivory'}`}
+                            >
+                              <span className="block text-xs font-semibold text-ht-red2 truncate">{c.title}</span>
+                              <span className="block text-sm font-bold text-ht-red2">Save ₹{money(c.saving)}</span>
+                              <span className="block text-[11px] text-ht-mute truncate">{c.note}</span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {serverQuote?.autoItemOffersForgone?.titles?.length > 0 && (
+                    );
+                  })()}
+                  {(pointsInsteadOfOffer || codeInsteadOfOffer) && discountOptions.offer.titles?.length > 0 && (
                     <p className="text-xs text-ht-red2 bg-ht-gold2/60 border border-ht-gold/50 rounded px-3 py-2 leading-relaxed">
-                      Using your points instead of {serverQuote.autoItemOffersForgone.titles.join(' · ')}, so
-                      {serverQuote.autoItemOffersForgone.lines?.length > 1 ? ' those dishes are' : ' that dish is'} at menu price.
+                      Using {pointsInsteadOfOffer ? 'your points' : discountOptions.code.code} instead of {discountOptions.offer.titles.join(' · ')}, so
+                      {discountOptions.offer.titles.length > 1 ? ' those dishes are' : ' that dish is'} at menu price.
                     </p>
                   )}
 
                   {/* The saving, named. An automatic offer with an unexplained
                       deduction reads as a pricing error; this says which offer. */}
-                  {serverQuote?.autoItemOffers?.titles?.length > 0 && (
+                  {(discountOptions ? autoChoice === 'offer' : serverQuote?.autoItemOffers?.titles?.length > 0) && (
                     <p className="text-xs text-ht-veg bg-ht-veg/10 border border-ht-veg/25 rounded px-3 py-2 leading-relaxed">
-                      {serverQuote.autoItemOffers.titles.join(' · ')} — applied automatically.
+                      {(discountOptions?.offer.titles || serverQuote.autoItemOffers.titles).join(' · ')} — applied automatically.
                       {/* Said once, plainly, BEFORE the buttons. Menu prices include
                           GST until a discount applies, at which point 5% is charged
                           on top — so a discounted total is higher than the headline
