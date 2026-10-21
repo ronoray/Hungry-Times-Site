@@ -85,7 +85,9 @@ const apiUpstream = (argOf('api') || '').replace(/\/+$/, '');
 
 // Three plain lines in the CartContext shape (see addLine). Prices are only
 // for the bar's total; nothing is ordered.
-const SEED_CART = [
+// MOBILE_CHECK_CART (a JSON array in the same shape) replaces it, e.g. to
+// put pre-order biryani in the cart.
+const SEED_CART = process.env.MOBILE_CHECK_CART ? JSON.parse(process.env.MOBILE_CHECK_CART) : [
   { key: 'mc1', itemId: 900001, itemName: 'Fish n Chips', name: 'Fish n Chips', basePrice: 320, variants: [], addons: [], qty: 1 },
   { key: 'mc2', itemId: 900002, itemName: 'Prawn Mixed Fried Rice', name: 'Prawn Mixed Fried Rice', basePrice: 230, variants: [], addons: [], qty: 1 },
   { key: 'mc3', itemId: 900003, itemName: 'Chicken Chowmein', name: 'Chicken Chowmein', basePrice: 180, variants: [], addons: [], qty: 1 },
@@ -257,7 +259,7 @@ async function main() {
 
         const { vw, docWidth, offenders } = await page.evaluate(measureOverflow);
         const slug = route === '/' ? 'home' : route.replace(/^\//, '').replace(/\//g, '-');
-        const shot = path.join(OUT_DIR, `${slug}@${vp.name}-${mode}.png`);
+        const shot = path.join(OUT_DIR, `${slug.replace(/[?&=:]/g, "_")}@${vp.name}-${mode}.png`);
         await page.screenshot({ path: shot, fullPage: true });
 
         const overflows = docWidth > vw + 1;

@@ -12,6 +12,9 @@ import VegDot from "../components/VegDot";
 import OfferTicket from "../components/OfferTicket";
 import AutoOfferCard from "../components/AutoOfferCard";
 import RecommendedPanel from "../components/RecommendedPanel";
+import PreOrderNotice, { preOrderProgressText } from "../components/PreOrderNotice";
+import { useFulfilmentRules } from "../hooks/useFulfilmentRules";
+import { preOrderQty } from "../utils/preOrderPolicy";
 import { useMenuCategory } from '../context/MenuCategoryContext';
 import { useFavorites } from '../context/FavoritesContext';
 import SEOHead from '../components/SEOHead';
@@ -228,7 +231,15 @@ export default function Menu() {
      reconcileWithMenu,
      orderMode,
      updateOrderMode,
+     lines: cartLines,
    } = useCart();
+  // Biryani plates in the cart, all kinds together — the pre-order minimum
+  // counts the mix, so every biryani row shows the same running total.
+  const fulfilmentRules = useFulfilmentRules();
+  const preOrderPlates = preOrderQty(
+    cartLines,
+    (l) => fulfilmentRules.preOrder.has(String(l?.itemId ?? l?.id ?? '')),
+  );
   const [selectedItem, setSelectedItem] = useState(null);
   const [showAddToCartModal, setShowAddToCartModal] = useState(false);
   const [showMealModal, setShowMealModal] = useState(false);
@@ -1102,6 +1113,11 @@ export default function Menu() {
           )}
         </div>
         )}
+        {it.preOrder && simpleQty > 0 && (
+          <p className={`mt-1 text-[13px] font-semibold ${preOrderPlates < fulfilmentRules.preOrderMinQty ? 'text-ht-red' : 'text-ht-ink'}`}>
+            {preOrderProgressText(preOrderPlates, fulfilmentRules.preOrderMinQty)}
+          </p>
+        )}
 
         {it.description && (
           <p
@@ -1443,6 +1459,14 @@ export default function Menu() {
                           </h2>
                           {sc.isDisabled && (
                             <p className="text-sm font-semibold text-ht-red">Temporarily unavailable</p>
+                          )}
+                          {!sc.isDisabled && (filteredItemsBySub.get(sc.id) || []).some((it) => it.preOrder) && (
+                            <PreOrderNotice
+                              plates={preOrderPlates}
+                              min={fulfilmentRules.preOrderMinQty}
+                              maxDaysAhead={fulfilmentRules.preOrderMaxDaysAhead}
+                              className="mt-3"
+                            />
                           )}
                           <div className="mt-2">
                             {(filteredItemsBySub.get(sc.id) || []).map((it) => (

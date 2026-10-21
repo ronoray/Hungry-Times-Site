@@ -41,6 +41,8 @@ import { useOfferFloor } from '../hooks/useOfferFloor';
 import { istNow, slotDateRange, buildSlots, label12, isSlotInPast } from '../lib/scheduleSlots.js';
 import { codAllowed, COD_MAX_TOTAL, RESTAURANT_PHONE, RESTAURANT_PHONE_DISPLAY, leadTimeFor, leadTimeNote, slotAllowedForTier, codAllowedForDistance, COD_MAX_DISTANCE_KM } from "../utils/paymentPolicy";
 import { matchKnownPlace } from '../utils/geo';
+import PreOrderNotice from '../components/PreOrderNotice';
+import { preOrderQty } from '../utils/preOrderPolicy';
 
 // Offers & loyalty points require an order subtotal ≥ the server's
 // `min_order_for_offer` floor. Item-restricted combos are exempt (deliberate
@@ -1778,6 +1780,14 @@ export default function Order() {
             <h3 className="text-ht-ink font-bold text-xl mb-4">
               Your Cart ({cartCount} items)
             </h3>
+            {cartHasPreOrder && (
+              <PreOrderNotice
+                plates={preOrderQty(lines, (l) => fulfilmentRules.preOrder.has(String(l?.itemId ?? l?.id ?? '')))}
+                min={fulfilmentRules.preOrderMinQty}
+                maxDaysAhead={fulfilmentRules.preOrderMaxDaysAhead}
+                className="mb-4"
+              />
+            )}
             <div className="space-y-3">
               {lines.map((line, idx) => {
                 // Dine-in carries no packaging charge — see utils/cartLine.js.
