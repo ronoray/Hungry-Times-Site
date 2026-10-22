@@ -1175,6 +1175,12 @@ export default function Order() {
   // On a dish-offer cart the code is sent only when it is the CHOSEN discount
   // (owner, 9 Oct 2026) — sending it asks the server for the code instead of
   // the dish offer. A code the server would not land there stays home too.
+  // The automatic dish offer is the discount on this bill (owner, 22 Oct
+  // 2026): the Subtotal and cart lines then show the reduced price directly,
+  // instead of a ₹330 headline with the saving several rows below.
+  const dishOfferInUse = !!serverQuote?.autoItemOffers && discountAmount > 0
+    && (!discountOptions || autoChoice === 'offer');
+
   const outboundCode = discountAmount > 0 && (discountOptions
     ? codeInsteadOfOffer
     : !serverQuote?.autoItemOffers) ? (appliedCode?.code || null) : null;
@@ -1791,6 +1797,13 @@ export default function Order() {
                 // Dine-in carries no packaging charge — see utils/cartLine.js.
                 const shownAddons = visibleAddons(line, isDineIn);
                 const unitPrice = lineUnitPrice(line, isDineIn);
+                // The dish offer on THIS line, from the server quote (never
+                // computed here), while the dish offer is the discount in use.
+                const hit = dishOfferInUse
+                  ? (serverQuote.autoItemOffers.lines || []).find((q) => String(q.itemId) === String(line.itemId)
+                    && Number(q.qty) === Number(line.qty || 1))
+                  : null;
+                const lineOffer = hit && hit.discount > 0 ? { total: hit.discount, each: hit.discount / (line.qty || 1) } : null;
                 const lineTotal = unitPrice * (line.qty || 1);
 
                 return (
@@ -1801,24 +1814,17 @@ export default function Order() {
                         <h4 className="text-ht-ink font-medium text-base">
                           {line.itemName || line.name || "Item"}
                         </h4>
-                        <p className="text-sm text-ht-mute mt-1">
-                          ₹{unitPrice} each
-                        </p>
-                        {(() => {
-                          // The dish offer on THIS line, from the server quote
-                          // (never computed here) — shown only while the dish
-                          // offer is the discount in use.
-                          const auto = serverQuote?.autoItemOffers;
-                          if (!auto || (discountOptions && autoChoice !== 'offer')) return null;
-                          const hit = (auto.lines || []).find((q) => String(q.itemId) === String(line.itemId)
-                            && Number(q.qty) === Number(line.qty || 1));
-                          if (!hit || !(hit.discount > 0)) return null;
-                          return (
-                            <p className="text-sm font-semibold text-ht-red mt-0.5">
-                              Dish offer −₹{money(hit.discount / (line.qty || 1))} each
-                            </p>
-                          );
-                        })()}
+                        {lineOffer ? (
+                          <p className="text-sm mt-1">
+                            <span className="font-semibold text-ht-red">₹{money(unitPrice - lineOffer.each)} each</span>
+                            <s className="ml-2 text-ht-mute">₹{unitPrice}</s>
+                            <span className="ml-2 text-xs font-semibold text-ht-red2">dish offer</span>
+                          </p>
+                        ) : (
+                          <p className="text-sm text-ht-mute mt-1">
+                            ₹{unitPrice} each
+                          </p>
+                        )}
                         {line.variants && line.variants.length > 0 && (
                           <p className="text-xs text-ht-mute mt-1">
                             {line.variants.map(v => v.name).join(', ')}
@@ -1833,7 +1839,8 @@ export default function Order() {
 
                       {/* Price */}
                       <div className="text-right flex-shrink-0">
-                        <p className="text-ht-ink font-bold text-lg">₹{lineTotal}</p>
+                        <p className="text-ht-ink font-bold text-lg">₹{money(lineTotal - (lineOffer?.total || 0))}</p>
+                        {lineOffer && <s className="text-sm text-ht-mute">₹{lineTotal}</s>}
                       </div>
                     </div>
 
@@ -2461,10 +2468,28 @@ export default function Order() {
                 
                 {/* Price Summary with Discount */}
                 <div className="space-y-2 mb-4">
-                  <div className="flex justify-between text-ht-mute">
-                    <span>Subtotal</span>
-                    <span className="text-ht-ink font-medium">₹{money(cartTotal)}</span>
-                  </div>
+                  {dishOfferInUse ? (
+                    <div>
+                      <div className="flex justify-between text-ht-mute">
+                        <span>Subtotal</span>
+                        <span className="tabular-nums">
+                          <span className="text-ht-ink font-bold">₹{money(cartTotal - discountAmount)}</span>
+                          <s className="ml-2 text-ht-mute">₹{money(cartTotal)}</s>
+                        </span>
+                      </div>
+                      <p className="text-xs font-medium text-ht-red2 mt-0.5">
+                        Dish offer applied
+                        {isDineIn
+                          ? ' · no packaging for dine-in'
+                          : packagingDeduction > 0 ? ` · includes ₹${money(packagingDeduction)} packaging` : ''}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between text-ht-mute">
+                      <span>Subtotal</span>
+                      <span className="text-ht-ink font-medium">₹{money(cartTotal)}</span>
+                    </div>
+                  )}
                   
                   {/* Fixed-price bundle in the cart: no code and no loyalty can
                       apply. Stated up front rather than discovered — the server
@@ -2485,7 +2510,7 @@ export default function Order() {
                       beside an automatic dish offer (owner, 9 Oct 2026): a code
                       may be taken INSTEAD of it, and the choice card below
                       preselects whichever saves more. */}
-                  {!hasNoStackItem && isAuthenticated && customer?.phone && (
+                  {!hasNoStackItem && !dishOfferInUse && isAuthenticated && customer?.phone && (
                     <OffersPanel
                       cartTotal={cartTotal}
                       customerPhone={customer.phone}
@@ -2499,7 +2524,7 @@ export default function Order() {
                   {/* Welcome-code hint for new customers (WELCOME15 replaced FIRST30
                       on 2026-07-25). Hidden below the offer floor — pre-filling a code
                       the server will refuse just wastes a tap. */}
-                  {isAuthenticated && loyaltyPoints === 0 && !appliedCode && offersAllowed && (
+                  {isAuthenticated && loyaltyPoints === 0 && !appliedCode && offersAllowed && !dishOfferInUse && (
                     <button
                       onClick={() => { setCodeInput('WELCOME15'); setCodeExpanded(true); }}
                       className="w-full py-2 text-sm text-ht-veg bg-ht-veg/10 rounded text-center font-medium"
@@ -2584,7 +2609,7 @@ export default function Order() {
 
                   {/* The saving, named. An automatic offer with an unexplained
                       deduction reads as a pricing error; this says which offer. */}
-                  {(discountOptions ? autoChoice === 'offer' : serverQuote?.autoItemOffers?.titles?.length > 0) && (
+                  {!dishOfferInUse && (discountOptions ? autoChoice === 'offer' : serverQuote?.autoItemOffers?.titles?.length > 0) && (
                     <p className="text-xs text-ht-veg bg-ht-veg/10 border border-ht-veg/25 rounded px-3 py-2 leading-relaxed">
                       {(discountOptions?.offer.titles || serverQuote.autoItemOffers.titles).join(' · ')} — applied automatically.
                       {/* Said once, plainly, BEFORE the buttons. Menu prices include
@@ -2677,7 +2702,7 @@ export default function Order() {
                   )}
 
                   {/* 💚 DISCOUNT ROW */}
-                  {discountAmount > 0 && (
+                  {discountAmount > 0 && !dishOfferInUse && (
                     <div className="flex justify-between items-center bg-ht-veg/10 -mx-6 px-6 py-2 rounded">
                       {/* Name the offer the SERVER actually applied. This read
                           appliedOffer, which is offers.find(o => o.apply_automatically)
@@ -2705,7 +2730,7 @@ export default function Order() {
                       packaging read Subtotal ₹480, No packaging -₹20, Total ₹480,
                       which does not add up. The saving is real and still worth
                       saying — it just isn't arithmetic. */}
-                  {isDineIn && packagingDeduction > 0 && (
+                  {isDineIn && packagingDeduction > 0 && !dishOfferInUse && (
                     <div className="bg-ht-veg/10 -mx-6 px-6 py-2 rounded">
                       <span className="text-ht-veg font-medium text-sm">
                         ✓ No packaging charge on dine-in — saves ₹{money(packagingDeduction)}
@@ -2776,12 +2801,14 @@ export default function Order() {
                       confirmation and order-details pages. */}
                   {gstOnTop && (
                     <div className="flex justify-between text-ht-mute">
-                      <span>GST (5%)</span>
+                      <span>{dishOfferInUse ? 'GST 5% (added on offer prices)' : 'GST (5%)'}</span>
                       <span className="text-ht-ink">₹{money(gstAmount)}</span>
                     </div>
                   )}
 
-                  {/* Delivery Charge / Pickup */}
+                  {/* Delivery Charge / Pickup — no row for dine-in, which has
+                      neither (it used to read "Delivery FREE"). */}
+                  {orderType !== 'dine_in' && (
                   <div className="flex justify-between text-ht-mute">
                     <span className="flex items-center gap-1.5">
                       {orderType === 'pickup' ? <MapPin className="w-3.5 h-3.5" /> : <Truck className="w-3.5 h-3.5" />}
@@ -2795,6 +2822,7 @@ export default function Order() {
                       <span className="text-ht-veg font-medium">FREE</span>
                     )}
                   </div>
+                  )}
 
                   <div className="mt-2 flex justify-between border-t-[1.5px] border-ht-ink pt-3 text-xl font-extrabold tabular-nums text-ht-ink">
                     <span>To pay</span>
@@ -2810,6 +2838,26 @@ export default function Order() {
                       <p className="text-ht-veg font-semibold text-sm">
                         You saved ₹{discountAmount + pointsDiscount} on this order!
                       </p>
+                    </div>
+                  )}
+
+                  {/* Codes, moved BELOW the bill while the dish offer is in use:
+                      above it, "Add ₹170 more" read as a missed saving, when a
+                      code would replace the dish offer, not add to it. A code that
+                      saves more is still offered up top, in the choice card. */}
+                  {dishOfferInUse && !hasNoStackItem && isAuthenticated && customer?.phone && (
+                    <div className="pt-3 mt-3 border-t border-ht-ink/10">
+                      <p className="text-xs text-ht-mute mb-2">
+                        Other offers replace the dish offer — one discount per order.
+                      </p>
+                      <OffersPanel
+                        cartTotal={cartTotal}
+                        customerPhone={customer.phone}
+                        cartItemIds={lines.map(l => l.itemId)}
+                        onApplyOffer={handlePanelApplyOffer}
+                        onRemoveOffer={handlePanelRemoveOffer}
+                        appliedCode={appliedCode}
+                      />
                     </div>
                   )}
                 </div>
