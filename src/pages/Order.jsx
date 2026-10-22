@@ -63,10 +63,8 @@ const RESTAURANT_LOCATION = {
   longitude: 88.36730591294373
 };
 
-// Maximum delivery radius in km. Normally 8 — the server's MAX_DELIVERY_KM is the
-// real gate. TEMPORARILY 3 (15 Oct 2026, Pujo traffic, owner): restore to 8
-// together with removing MAX_DELIVERY_KM=3 from /opt/vps/.env.
-const MAX_DELIVERY_RADIUS_KM = 3;
+// Maximum delivery radius in km
+const MAX_DELIVERY_RADIUS_KM = 8;
 
 // Delivery charge tiers — the server's resolver prices the same tiers
 function calculateDeliveryCharge(distanceKm) {
