@@ -1804,6 +1804,21 @@ export default function Order() {
                         <p className="text-sm text-ht-mute mt-1">
                           ₹{unitPrice} each
                         </p>
+                        {(() => {
+                          // The dish offer on THIS line, from the server quote
+                          // (never computed here) — shown only while the dish
+                          // offer is the discount in use.
+                          const auto = serverQuote?.autoItemOffers;
+                          if (!auto || (discountOptions && autoChoice !== 'offer')) return null;
+                          const hit = (auto.lines || []).find((q) => String(q.itemId) === String(line.itemId)
+                            && Number(q.qty) === Number(line.qty || 1));
+                          if (!hit || !(hit.discount > 0)) return null;
+                          return (
+                            <p className="text-sm font-semibold text-ht-red mt-0.5">
+                              Dish offer −₹{money(hit.discount / (line.qty || 1))} each
+                            </p>
+                          );
+                        })()}
                         {line.variants && line.variants.length > 0 && (
                           <p className="text-xs text-ht-mute mt-1">
                             {line.variants.map(v => v.name).join(', ')}

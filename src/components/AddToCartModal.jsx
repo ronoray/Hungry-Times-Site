@@ -11,6 +11,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { trackAddToCart } from "../utils/analytics";
 import { X, Plus, Minus, AlertCircle } from "lucide-react";
 import { useBackableOverlay } from "../hooks/useBackableOverlay";
+import { unitOfferOff } from '../lib/offerPrice';
 
 const CDN_BASE = import.meta.env.VITE_CDN_BASE || "http://localhost:5000";
 
@@ -252,7 +253,16 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
     return total;
   }, [basePrice, selectedSize, selectedStyle, selectedFamilyVariants, selectedAddons, selectedFamilyAddons]);
 
-  const finalTotal = unitPrice * quantity;
+  // Dish offer (owner, 22 Oct 2026): the sheet shows the offer price, so a
+  // ₹239 poster dish never reads ₹290 here. The saving is looked up from the
+  // server badge (lib/offerPrice) for the selected size/style; family variants
+  // are not keyed, so those selections fall back to the list price + badge.
+  const offerOff = Object.keys(selectedFamilyVariants).length
+    ? null
+    : unitOfferOff(item.autoOffer, [selectedSize, selectedStyle].filter(Boolean));
+  const offerUnitPrice = offerOff ? unitPrice - offerOff : unitPrice;
+  const bareOfferOff = unitOfferOff(item.autoOffer, []);
+  const finalTotal = offerUnitPrice * quantity;
 
   // ============================================================================
   // VALIDATION
@@ -541,9 +551,15 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
                 </p>
               )}
               <p className="mt-2 text-lg font-bold text-ht-red">
-                ₹{basePrice.toFixed(0)}
-                <span className="ml-2 text-xs font-medium text-ht-mute">base price</span>
+                ₹{(bareOfferOff ? basePrice - bareOfferOff : basePrice).toFixed(0)}
+                {bareOfferOff ? <s className="ml-2 text-sm font-medium text-ht-mute">₹{basePrice.toFixed(0)}</s> : null}
+                <span className="ml-2 text-xs font-medium text-ht-mute">{bareOfferOff ? 'offer price' : 'base price'}</span>
               </p>
+              {item.autoOffer && (
+                <p className="mt-1 text-xs font-semibold text-ht-red2">
+                  {item.autoOffer.label} · applied automatically, no code
+                </p>
+              )}
             </div>
 
             {/* SIZE and STYLE — two independent optional groups.
@@ -691,9 +707,15 @@ export default function AddToCartModal({ item, isOpen, onClose, onAdd, isDineIn 
                     <span>+₹{a.priceDelta}</span>
                   </div>
                 ))}
+              {offerOff ? (
+                <div className="flex justify-between font-semibold text-ht-red">
+                  <span>Dish offer</span>
+                  <span>−₹{offerOff.toFixed(0)}</span>
+                </div>
+              ) : null}
               <div className="flex justify-between border-t-[1.5px] border-ht-ink pt-2 text-base font-extrabold text-ht-ink">
                 <span>Price per item</span>
-                <span>₹{unitPrice.toFixed(0)}</span>
+                <span>₹{offerUnitPrice.toFixed(0)}</span>
               </div>
             </div>
           </div>

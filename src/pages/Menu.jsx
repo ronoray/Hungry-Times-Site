@@ -24,6 +24,7 @@ import { useAuth } from '../context/AuthContext';
 import { useBackableOverlay } from '../hooks/useBackableOverlay';
 import { hasRealOptions } from '../utils/menuItems';
 import { packagingAddonOf } from '../utils/cartLine';
+import { unitOfferOff } from '../lib/offerPrice';
 
 import API_BASE from "../config/api";
 import { getVisitorSessionId, getVisitorId, isTestDevice, authHeaders } from "../utils/siteActivity";
@@ -907,11 +908,16 @@ export default function Menu() {
     const isDisabled = !acceptingOnlineOrders || it.effectiveDisabled || dineInOnlyBlocked || preOrderDineInBlocked;
     
     // Price display: show range for items with variants
+    // A dish offer shows its offer price, list struck through (owner, 22 Oct
+    // 2026). The figure is the server's (lib/offerPrice) — never computed here.
+    const bareOff = unitOfferOff(it.autoOffer, []);
     const priceDisplay = (() => {
       const base = Number(it.basePrice || 0);
-      if (!hasVariants) return `₹${base.toFixed(0)}`;
+      const shown = bareOff ? base - bareOff : base;
+      const struck = bareOff ? <s className="ml-1 text-[13px] font-medium text-ht-mute">₹{base.toFixed(0)}</s> : null;
+      if (!hasVariants) return <>₹{shown.toFixed(0)}{struck}</>;
       // "From ₹XX" for items with variants
-      return `From ₹${base.toFixed(0)}`;
+      return <>From ₹{shown.toFixed(0)}{struck}</>;
     })();
 
     // Two sizes (Regular / Large): the row shows two price chips instead of
@@ -923,6 +929,7 @@ export default function Menu() {
       && !hasRealOptions({ ...it, variants: [] });
     const base = Number(it.basePrice || 0);
     const largePrice = largeVariant ? base + Number(largeVariant.priceDelta || 0) : null;
+    const largeOff = largeVariant ? unitOfferOff(it.autoOffer, [largeVariant]) : null;
     const simpleQty = getSimpleItemQty(it.id);
 
     const addSize = (variant) => {
@@ -1068,10 +1075,11 @@ export default function Menu() {
               onClick={() => addSize(null)}
               disabled={isDisabled}
               className={`price-chip ${sizeOnly && simpleQty > 0 ? 'is-on' : ''}`}
-              aria-label={`${it.name}, regular, ₹${base}`}
+              aria-label={`${it.name}, regular, ₹${bareOff ? base - bareOff : base}`}
             >
               <small>REGULAR</small>
-              <b className={isDisabled ? 'line-through' : ''}>₹{base.toFixed(0)}</b>
+              <b className={isDisabled ? 'line-through' : ''}>₹{(bareOff ? base - bareOff : base).toFixed(0)}</b>
+              {bareOff ? <s className="text-[11px] text-ht-mute">₹{base.toFixed(0)}</s> : null}
               {sizeOnly && simpleQty > 0 ? <span className="text-xs font-bold">× {simpleQty}</span> : <Plus className="h-4 w-4 text-ht-red" />}
             </button>
             <button
@@ -1079,23 +1087,23 @@ export default function Menu() {
               onClick={() => addSize(largeVariant)}
               disabled={isDisabled}
               className="price-chip"
-              aria-label={`${it.name}, ${largeVariant.name}, ₹${largePrice}`}
+              aria-label={`${it.name}, ${largeVariant.name}, ₹${largeOff ? largePrice - largeOff : largePrice}`}
             >
               <small>{String(largeVariant.name).toUpperCase()}</small>
-              <b className={isDisabled ? 'line-through' : ''}>₹{Number(largePrice).toFixed(0)}</b>
+              <b className={isDisabled ? 'line-through' : ''}>₹{(largeOff ? largePrice - largeOff : Number(largePrice)).toFixed(0)}</b>
+              {largeOff ? <s className="text-[11px] text-ht-mute">₹{Number(largePrice).toFixed(0)}</s> : null}
               <Plus className="h-4 w-4 text-ht-red" />
             </button>
           </div>
         )}
 
         {/* Tags line — its own line under the name, never inside it. The offer
-            LABEL comes from the server and the price above stays the list
-            price; the saving lands at checkout (one money authority). */}
+            label and the offer price above both come from the server badge. */}
         {(it.autoOffer || it.preOrder || (isCustomisable && !twoSize)) && (
         <div className="row-tags mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1">
           {it.autoOffer ? (
             <span
-              title={`${it.autoOffer.title} — applied automatically at checkout. Discounted orders are charged 5% GST on top.`}
+              title={`${it.autoOffer.title} — applied automatically. Discounted orders are charged 5% GST on top.`}
               className="whitespace-nowrap rounded bg-ht-gold2 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[.05em] text-ht-red2"
             >
               {it.autoOffer.label}

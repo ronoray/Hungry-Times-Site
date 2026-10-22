@@ -24,6 +24,7 @@ import { useToast } from './Toast';
 import { trackAddToCart } from '../utils/analytics';
 import VegDot from './VegDot';
 import { useRecommended } from '../hooks/useRecommended';
+import { unitOfferOff } from '../lib/offerPrice';
 import { preOrderCards } from '../lib/recommended';
 
 // The cleaned campaign photograph (kitchen shot, Oct 2026). Swap the file at
@@ -128,7 +129,19 @@ export default function RecommendedPanel({ canOrder = true, className = '' }) {
                 {it.name}
               </h3>
               <div className="flex items-center gap-2">
-                <span className="text-[14px] font-bold tabular-nums text-ht-ink">₹{Math.round(Number(it.basePrice) || 0)}</span>
+                {(() => {
+                  // Dish offer: offer price from the server badge, list struck.
+                  const list = Math.round(Number(it.basePrice) || 0);
+                  const off = unitOfferOff(it.autoOffer, []);
+                  return off ? (
+                    <span className="flex flex-col items-start leading-tight">
+                      <span className="text-[14px] font-bold tabular-nums text-ht-red">₹{Math.round(list - off)}</span>
+                      <s className="text-[11px] tabular-nums text-ht-mute">₹{list}</s>
+                    </span>
+                  ) : (
+                    <span className="text-[14px] font-bold tabular-nums text-ht-ink">₹{list}</span>
+                  );
+                })()}
                 {canOrder && (it.needsOptions !== false ? (
                   <Link
                     to={`/menu?highlight=${it.id}`}

@@ -4,7 +4,10 @@ import { useCart } from '../context/CartContext';
 import { ChevronRight } from 'lucide-react';
 
 export default function FloatingCartBar() {
-  const { lines, total, orderMode } = useCart();
+  const { lines, total, offerSavings = 0, orderMode } = useCart();
+  // Dish offers come off before the customer sees the bag total (display only;
+  // checkout re-prices through /offers/quote).
+  const shown = total - offerSavings;
   const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
 
@@ -26,10 +29,11 @@ export default function FloatingCartBar() {
                    rounded-full bg-ht-red pl-5 pr-2 text-white
                    shadow-[0_12px_24px_-8px_rgba(90,7,13,.6)] transition active:scale-[.98]
                    ${visible ? 'animate-slideUp' : 'opacity-0'}`}
-        aria-label={`View bag, ${itemCount} item${itemCount > 1 ? 's' : ''}, ₹${total.toFixed(0)}`}
+        aria-label={`View bag, ${itemCount} item${itemCount > 1 ? 's' : ''}, ₹${shown.toFixed(0)}`}
       >
         <span className="min-w-0 truncate text-sm font-semibold">
-          {itemCount} item{itemCount > 1 ? 's' : ''} · <b className="font-extrabold text-ht-gold2">₹{total.toFixed(0)}</b>
+          {itemCount} item{itemCount > 1 ? 's' : ''} · <b className="font-extrabold text-ht-gold2">₹{shown.toFixed(0)}</b>
+          {offerSavings > 0 && <s className="ml-1 text-ht-ivory/60">₹{total.toFixed(0)}</s>}
           {(orderMode === 'dine_in' || orderMode === 'pickup') && (
             <span className="text-ht-ivory/75"> · {orderMode === 'dine_in' ? 'Dine-in' : 'Takeaway'}</span>
           )}

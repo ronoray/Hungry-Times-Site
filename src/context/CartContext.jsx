@@ -3,6 +3,7 @@ import API_BASE from "../config/api.js";
 import { useAuth } from "./AuthContext.jsx";
 import { isPackagingAddon, packagingAddonOf } from "../utils/cartLine";
 import { syncCartSnapshot, logCartAdd } from "../utils/siteActivity";
+import { unitOfferOff } from "../lib/offerPrice";
 
 const CartCtx = createContext(null);
 export const useCart = () => useContext(CartCtx);
@@ -437,10 +438,13 @@ export function CartProvider({ children }) {
 
   // Auto-reconcile on mount: silently fetch fresh menu in the background and
   // correct any stale priceDelta values that may be cached in localStorage.
+  // The same fetch also yields the dish offers (item.autoOffer), so the bag
+  // can show what the customer will actually pay — owner, 22 Oct 2026: a bag
+  // reading ₹290 for a ₹239 poster dish looked like a broken offer. Fetched
+  // even with an empty cart, because the cart fills after this mount.
+  const [offerByItem, setOfferByItem] = useState(() => new Map());
   useEffect(() => {
-    // No cart items — nothing to reconcile
     const stored = (() => { try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); } catch { return []; } })();
-    if (stored.length === 0) return;
 
     fetch(`${API_BASE}/public/menu`)
       .then(r => r.ok ? r.json() : null)
@@ -452,7 +456,11 @@ export function CartProvider({ children }) {
             for (const item of (sc.items || [])) allItems.push(item);
           }
         }
-        if (allItems.length > 0) reconcileWithMenu(allItems);
+        const offers = new Map();
+        for (const it of allItems) if (it.autoOffer) offers.set(String(it.id), it.autoOffer);
+        setOfferByItem(offers);
+        // No cart items — nothing to reconcile
+        if (stored.length > 0 && allItems.length > 0) reconcileWithMenu(allItems);
       })
       .catch(() => {}); // never surface errors to the user
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -461,6 +469,17 @@ export function CartProvider({ children }) {
   const total = useMemo(
     () => lines.reduce((s, l) => s + calcUnit(l) * (l.qty || 1), 0),
     [lines]
+  );
+
+  // Dish-offer saving on the bag, looked up from the server's figures
+  // (lib/offerPrice) — DISPLAY only. Checkout re-prices the cart through
+  // /offers/quote, and a code or points chosen there replaces this saving.
+  const offerSavings = useMemo(
+    () => lines.reduce((s, l) => {
+      const off = unitOfferOff(offerByItem.get(String(l.itemId)), l.variants);
+      return s + (off ? off * (l.qty || 1) : 0);
+    }, 0),
+    [lines, offerByItem]
   );
 
   // ============================================================================
@@ -542,6 +561,7 @@ export function CartProvider({ children }) {
       updateQty,
       clearCart,
       total,
+      offerSavings,
       calcUnit,
       reconcileWithMenu,
       findSimpleItem,
