@@ -1887,9 +1887,19 @@ export default function Order() {
         {lines.length > 0 && !isAuthenticated && (
           <div className="bg-gradient-to-r from-ht-red/20 to-ht-red/10 border-2 border-ht-red/50 rounded-[14px] p-6 mb-6 text-center">
             <div className="text-3xl mb-3">🔐</div>
-            <h2 className="text-xl font-bold text-ht-ink mb-2">Login to Place Your Order</h2>
-            <p className="text-ht-ink mb-4 text-sm">
-              Create an account or login to add your delivery address and pay online or choose cash on delivery.
+            <h2 className="text-xl font-bold text-ht-ink mb-2">Log in to see your real price</h2>
+            {/* Owner, 24 Oct 2026: visitors cart and leave without logging in.
+                Say plainly that the price on screen is not the final one. */}
+            <p className="text-ht-ink mb-2 text-sm">
+              The total below is <b>before login</b>. These only show once you log in or sign up:
+            </p>
+            <ul className="mx-auto mb-4 max-w-sm list-none space-y-1 !p-0 text-left text-sm text-ht-ink">
+              <li>• <b>Delivery charge</b> for your address (free within 2 km)</li>
+              <li>• <b>15% off your first order</b> with WELCOME15</li>
+              <li>• <b>Your loyalty points</b>, to use on this order</li>
+            </ul>
+            <p className="text-ht-mute mb-4 text-xs">
+              Sign-up takes a minute: your phone number, a one-time code, then a username and password.
             </p>
             <button
               onClick={() => setShowAuthModal(true)}
@@ -2816,6 +2826,11 @@ export default function Order() {
                     </span>
                     {orderType === 'pickup' ? (
                       <span className="text-ht-veg font-medium">FREE</span>
+                    ) : !selectedAddressId ? (
+                      // No address yet, so no distance and no fee. "FREE" here
+                      // promised a price the customer might not get (owner,
+                      // 24 Oct 2026: visitors carting and leaving logged out).
+                      <span className="text-ht-mute text-sm">{isAuthenticated ? 'Add address' : 'After login'}</span>
                     ) : deliveryCharge > 0 ? (
                       <span className="text-ht-ink">₹{money(deliveryCharge)}</span>
                     ) : (
@@ -2825,11 +2840,21 @@ export default function Order() {
                   )}
 
                   <div className="mt-2 flex justify-between border-t-[1.5px] border-ht-ink pt-3 text-xl font-extrabold tabular-nums text-ht-ink">
-                    <span>To pay</span>
+                    <span>{isAuthenticated ? 'To pay' : 'Before login'}</span>
                     <span>₹{money(finalTotal)}</span>
                   </div>
                   {!gstOnTop && (
                     <p className="text-ht-mute text-xs text-right">{gstIncludedNote(gstAmount)}</p>
+                  )}
+                  {!isAuthenticated && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAuthModal(true)}
+                      className="mt-2 w-full rounded-[10px] border-[1.5px] border-ht-red/40 bg-ht-red/10 px-3 py-2 text-left text-sm leading-snug text-ht-ink"
+                    >
+                      <b>Not your final price yet.</b> Log in to see your delivery charge, your first-order discount and your points.{' '}
+                      <span className="font-bold text-ht-red underline">Log in</span>
+                    </button>
                   )}
 
                   {/* 🎊 SAVINGS MESSAGE */}
